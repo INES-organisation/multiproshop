@@ -22,7 +22,7 @@
                             <td>
                                 <div class="d-flex align-items-center">
                                     <img src="{{ item.product.image_url or url_for('static', filename='images/default-product.jpg') }}" 
-                                         alt="{{ item.product.name }}" class="cart-img-thumb">
+                                         alt="{{ item.product.name }}" class="cart-img-thumb" loading="lazy" decoding="async">
                                     <span class="ms-2">{{ item.product.name }}</span>
                                 </div>
                             </td>

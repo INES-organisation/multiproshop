@@ -1,0 +1,265 @@
+<!-- Footer Moderne -->
+<footer class="modern-footer">
+    <!-- Newsletter Section -->
+    <div class="footer-newsletter">
+        <div class="container">
+            <div class="newsletter-content">
+                <div class="newsletter-text">
+                    <h3>
+                        <i class="fas fa-envelope-open"></i>
+                        Restez connecté
+                    </h3>
+                    <p>Inscrivez-vous pour recevoir nos offres exclusives et nouveautés</p>
+                </div>
+                <form class="newsletter-form-footer" id="footerNewsletterForm">
+                    <div class="input-wrapper">
+                        <i class="fas fa-envelope input-icon"></i>
+                        <input type="email" placeholder="Votre adresse email" required>
+                        <button type="submit">
+                            <span>S'abonner</span>
+                            <i class="fas fa-paper-plane"></i>
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- Main Footer Content -->
+    <div class="footer-main">
+        <div class="container">
+            <div class="footer-grid">
+                <!-- À propos -->
+                <div class="footer-column">
+                    <h4 class="footer-title">
+                        <i class="fas fa-store"></i>
+                        MultiProShop
+                    </h4>
+                    <p class="footer-description">
+                        Votre marketplace de confiance pour tous vos achats en ligne. 
+                        Qualité, prix et service garantis.
+                    </p>
+                    <div class="social-links">
+                        <a href="#" class="social-link" title="Facebook">
+                            <i class="fab fa-facebook-f"></i>
+                        </a>
+                        <a href="#" class="social-link" title="Twitter">
+                            <i class="fab fa-twitter"></i>
+                        </a>
+                        <a href="#" class="social-link" title="Instagram">
+                            <i class="fab fa-instagram"></i>
+                        </a>
+                        <a href="#" class="social-link" title="LinkedIn">
+                            <i class="fab fa-linkedin-in"></i>
+                        </a>
+                        <a href="#" class="social-link" title="YouTube">
+                            <i class="fab fa-youtube"></i>
+                        </a>
+                    </div>
+                </div>
+
+                <!-- Liens rapides -->
+                <div class="footer-column">
+                    <h4 class="footer-title">Liens Rapides</h4>
+                    <ul class="footer-links">
+                        <li>
+                            <a href="{{ url_for('main.index') }}">
+                                <i class="fas fa-chevron-right"></i>
+                                Accueil
+                            </a>
+                        </li>
+                        <li>
+                            <a href="{{ url_for('products.list_products') }}">
+                                <i class="fas fa-chevron-right"></i>
+                                Tous les produits
+                            </a>
+                        </li>
+                        <li>
+                            <a href="#">
+                                <i class="fas fa-chevron-right"></i>
+                                Promotions
+                            </a>
+                        </li>
+                        <li>
+                            <a href="{{ url_for('main.about') }}">
+                                <i class="fas fa-chevron-right"></i>
+                                À propos
+                            </a>
+                        </li>
+                        <li>
+                            <a href="{{ url_for('main.contact') }}">
+                                <i class="fas fa-chevron-right"></i>
+                                Contact
+                            </a>
+                        </li>
+                    </ul>
+                </div>
+
+                <!-- Service client -->
+                <div class="footer-column">
+                    <h4 class="footer-title">Service Client</h4>
+                    <ul class="footer-links">
+                        <li>
+                            <a href="#">
+                                <i class="fas fa-chevron-right"></i>
+                                Suivi de commande
+                            </a>
+                        </li>
+                        <li>
+                            <a href="#">
+                                <i class="fas fa-chevron-right"></i>
+                                Retours & Remboursements
+                            </a>
+                        </li>
+                        <li>
+                            <a href="#">
+                                <i class="fas fa-chevron-right"></i>
+                                Livraison
+                            </a>
+                        </li>
+                        <li>
+                            <a href="#">
+                                <i class="fas fa-chevron-right"></i>
+                                FAQ
+                            </a>
+                        </li>
+                        <li>
+                            <a href="#">
+                                <i class="fas fa-chevron-right"></i>
+                                Support 24/7
+                            </a>
+                        </li>
+                    </ul>
+                </div>
+
+                <!-- Informations légales -->
+                <div class="footer-column">
+                    <h4 class="footer-title">Informations</h4>
+                    <ul class="footer-links">
+                        <li>
+                            <a href="{{ url_for('main.terms') }}">
+                                <i class="fas fa-chevron-right"></i>
+                                Conditions d'utilisation
+                            </a>
+                        </li>
+                        <li>
+                            <a href="{{ url_for('main.privacy') }}">
+                                <i class="fas fa-chevron-right"></i>
+                                Politique de confidentialité
+                            </a>
+                        </li>
+                        <li>
+                            <a href="{{ url_for('main.legal') }}">
+                                <i class="fas fa-chevron-right"></i>
+                                Mentions légales
+                            </a>
+                        </li>
+                        <li>
+                            <a href="#">
+                                <i class="fas fa-chevron-right"></i>
+                                Cookies
+                            </a>
+                        </li>
+                        <li>
+                            <a href="#">
+                                <i class="fas fa-chevron-right"></i>
+                                Plan du site
+                            </a>
+                        </li>
+                    </ul>
+                </div>
+
+                <!-- Contact -->
+                <div class="footer-column">
+                    <h4 class="footer-title">Contactez-nous</h4>
+                    <ul class="footer-contact">
+                        <li>
+                            <i class="fas fa-map-marker-alt"></i>
+                            <span>123 Rue du Commerce<br>75001 Paris, France</span>
+                        </li>
+                        <li>
+                            <i class="fas fa-phone"></i>
+                            <span>+33 1 23 45 67 89</span>
+                        </li>
+                        <li>
+                            <i class="fas fa-envelope"></i>
+                            <span>contact@multiproshop.fr</span>
+                        </li>
+                        <li>
+                            <i class="fas fa-clock"></i>
+                            <span>Lun - Ven: 9h - 18h</span>
+                        </li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Payment Methods -->
+    <div class="footer-payment">
+        <div class="container">
+            <div class="payment-content">
+                <div class="payment-text">
+                    <i class="fas fa-shield-alt"></i>
+                    <span>Paiement 100% sécurisé</span>
+                </div>
+                <div class="payment-methods">
+                    <i class="fab fa-cc-visa" title="Visa"></i>
+                    <i class="fab fa-cc-mastercard" title="Mastercard"></i>
+                    <i class="fab fa-cc-paypal" title="PayPal"></i>
+                    <i class="fab fa-cc-amex" title="American Express"></i>
+                    <i class="fas fa-credit-card" title="Carte bancaire"></i>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Copyright -->
+    <div class="footer-bottom">
+        <div class="container">
+            <div class="footer-bottom-content">
+                <p class="copyright">
+                    &copy; {{ now.year }} <strong>MultiProShop</strong>. Tous droits réservés.
+                </p>
+                <p class="made-with">
+                    Fait avec <i class="fas fa-heart"></i> en France
+                </p>
+            </div>
+        </div>
+    </div>
+</footer>
+
+<!-- Scroll to Top Button -->
+<button class="scroll-to-top" id="scrollToTop" title="Retour en haut">
+    <i class="fas fa-arrow-up"></i>
+</button>
+
+<script>
+// Newsletter Form
+document.getElementById('footerNewsletterForm')?.addEventListener('submit', function(e) {
+    e.preventDefault();
+    const input = this.querySelector('input[type="email"]');
+    if (input) {
+        alert('Merci pour votre inscription !');
+        input.value = '';
+    }
+});
+
+// Scroll to Top
+const scrollToTopBtn = document.getElementById('scrollToTop');
+
+window.addEventListener('scroll', function() {
+    if (window.scrollY > 300) {
+        scrollToTopBtn?.classList.add('visible');
+    } else {
+        scrollToTopBtn?.classList.remove('visible');
+    }
+});
+
+scrollToTopBtn?.addEventListener('click', function() {
+    window.scrollTo({
+        top: 0,
+        behavior: 'smooth'
+    });
+});
+</script>

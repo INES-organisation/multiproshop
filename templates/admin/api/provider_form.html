@@ -1,0 +1,252 @@
+{% extends "admin/layout_admin_modern.html" %}
+
+{% block title %}{{ 'Éditer' if provider else 'Ajouter' }} Provider - Admin{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4">
+    <!-- Header -->
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h1 class="h3 mb-0">{{ '✏️ Éditer' if provider else '➕ Ajouter' }} un Provider</h1>
+            <p class="text-muted">Configurez l'intégration API d'un fournisseur</p>
+        </div>
+        <a href="{{ url_for('api_management.list_providers') }}" class="btn btn-outline-secondary">
+            <i class="fas fa-arrow-left"></i> Retour
+        </a>
+    </div>
+
+    <div class="row">
+        <!-- Formulaire -->
+        <div class="col-lg-8">
+            <div class="card border-0 shadow-sm">
+                <div class="card-header bg-white py-3">
+                    <h5 class="mb-0">Informations du Provider</h5>
+                </div>
+                <div class="card-body">
+                    <form method="POST" id="providerForm">
+                        <!-- Informations de base -->
+                        <div class="mb-4">
+                            <h6 class="text-primary mb-3">📋 Informations de Base</h6>
+                            
+                            <div class="mb-3">
+                                <label for="name" class="form-label">Nom du Provider <span class="text-danger">*</span></label>
+                                <input type="text" class="form-control" id="name" name="name" 
+                                       value="{{ provider.name if provider else '' }}" required>
+                                <small class="text-muted">Ex: CJ Dropshipping, Printify, Amazon</small>
+                            </div>
+
+                            <div class="mb-3">
+                                <label for="slug" class="form-label">Slug <span class="text-danger">*</span></label>
+                                <input type="text" class="form-control" id="slug" name="slug" 
+                                       value="{{ provider.slug if provider else '' }}" required>
+                                <small class="text-muted">Ex: cj-dropshipping (minuscules, tirets uniquement)</small>
+                            </div>
+
+                            <div class="mb-3">
+                                <label for="provider_type" class="form-label">Type de Provider <span class="text-danger">*</span></label>
+                                <select class="form-select" id="provider_type" name="provider_type" required>
+                                    <option value="">-- Sélectionner --</option>
+                                    <option value="dropshipping" {{ 'selected' if provider and provider.provider_type == 'dropshipping' else '' }}>Dropshipping</option>
+                                    <option value="print-on-demand" {{ 'selected' if provider and provider.provider_type == 'print-on-demand' else '' }}>Print on Demand</option>
+                                    <option value="marketplace" {{ 'selected' if provider and provider.provider_type == 'marketplace' else '' }}>Marketplace</option>
+                                    <option value="affiliate" {{ 'selected' if provider and provider.provider_type == 'affiliate' else '' }}>Affiliation</option>
+                                    <option value="wholesale" {{ 'selected' if provider and provider.provider_type == 'wholesale' else '' }}>Grossiste</option>
+                                </select>
+                            </div>
+
+                            <div class="mb-3">
+                                <label for="description" class="form-label">Description</label>
+                                <textarea class="form-control" id="description" name="description" rows="3">{{ provider.description if provider else '' }}</textarea>
+                            </div>
+                        </div>
+
+                        <!-- Configuration API -->
+                        <div class="mb-4">
+                            <h6 class="text-primary mb-3">🔌 Configuration API</h6>
+                            
+                            <div class="mb-3">
+                                <label for="api_endpoint" class="form-label">URL de l'API</label>
+                                <input type="url" class="form-control" id="api_endpoint" name="api_endpoint" 
+                                       value="{{ provider.api_endpoint if provider else '' }}"
+                                       placeholder="https://api.example.com/v1">
+                            </div>
+
+                            <div class="row">
+                                <div class="col-md-6 mb-3">
+                                    <label for="api_version" class="form-label">Version</label>
+                                    <input type="text" class="form-control" id="api_version" name="api_version" 
+                                           value="{{ provider.api_version if provider else '' }}"
+                                           placeholder="v1">
+                                </div>
+
+                                <div class="col-md-6 mb-3">
+                                    <label for="auth_type" class="form-label">Type d'Authentification</label>
+                                    <select class="form-select" id="auth_type" name="auth_type">
+                                        <option value="">-- Sélectionner --</option>
+                                        <option value="api_key" {{ 'selected' if provider and provider.auth_type == 'api_key' else '' }}>API Key</option>
+                                        <option value="bearer" {{ 'selected' if provider and provider.auth_type == 'bearer' else '' }}>Bearer Token</option>
+                                        <option value="basic" {{ 'selected' if provider and provider.auth_type == 'basic' else '' }}>Basic Auth</option>
+                                        <option value="oauth" {{ 'selected' if provider and provider.auth_type == 'oauth' else '' }}>OAuth 2.0</option>
+                                        <option value="signature" {{ 'selected' if provider and provider.auth_type == 'signature' else '' }}>Signature</option>
+                                    </select>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Credentials -->
+                        <div class="mb-4">
+                            <h6 class="text-primary mb-3">🔑 Credentials</h6>
+                            
+                            <div class="mb-3">
+                                <label for="api_key" class="form-label">API Key / Email</label>
+                                <input type="text" class="form-control" id="api_key" name="api_key" 
+                                       value="{{ provider.api_key if provider else '' }}">
+                                <small class="text-muted">Votre clé API ou email (selon le provider)</small>
+                            </div>
+
+                            <div class="mb-3">
+                                <label for="api_secret" class="form-label">API Secret / Password</label>
+                                <input type="password" class="form-control" id="api_secret" name="api_secret" 
+                                       value="{{ provider.api_secret if provider else '' }}">
+                                <small class="text-muted">Votre clé secrète ou mot de passe</small>
+                            </div>
+                        </div>
+
+                        <!-- Limites -->
+                        <div class="mb-4">
+                            <h6 class="text-primary mb-3">⚡ Limites & Quotas</h6>
+                            
+                            <div class="row">
+                                <div class="col-md-6 mb-3">
+                                    <label for="rate_limit" class="form-label">Rate Limit (req/min)</label>
+                                    <input type="number" class="form-control" id="rate_limit" name="rate_limit" 
+                                           value="{{ provider.rate_limit if provider else '' }}"
+                                           placeholder="60">
+                                    <small class="text-muted">Nombre de requêtes par minute</small>
+                                </div>
+
+                                <div class="col-md-6 mb-3">
+                                    <label for="daily_quota" class="form-label">Quota Journalier</label>
+                                    <input type="number" class="form-control" id="daily_quota" name="daily_quota" 
+                                           value="{{ provider.daily_quota if provider else '' }}"
+                                           placeholder="10000">
+                                    <small class="text-muted">Nombre de requêtes par jour</small>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Statut -->
+                        <div class="mb-4">
+                            <div class="form-check form-switch">
+                                <input class="form-check-input" type="checkbox" id="is_active" name="is_active" 
+                                       {{ 'checked' if not provider or provider.is_active else '' }}>
+                                <label class="form-check-label" for="is_active">
+                                    <strong>Provider Actif</strong>
+                                    <br><small class="text-muted">Désactivez pour mettre en pause sans supprimer</small>
+                                </label>
+                            </div>
+                        </div>
+
+                        <!-- Boutons -->
+                        <div class="d-flex gap-2">
+                            <button type="submit" class="btn btn-primary">
+                                <i class="fas fa-save"></i> {{ 'Mettre à jour' if provider else 'Créer le Provider' }}
+                            </button>
+                            <a href="{{ url_for('api_management.list_providers') }}" class="btn btn-outline-secondary">
+                                Annuler
+                            </a>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+
+        <!-- Sidebar - Templates -->
+        <div class="col-lg-4">
+            {% if not provider and templates %}
+            <div class="card border-0 shadow-sm mb-3">
+                <div class="card-header bg-primary text-white py-3">
+                    <h6 class="mb-0"><i class="fas fa-magic"></i> Templates Prédéfinis</h6>
+                </div>
+                <div class="card-body">
+                    <p class="small text-muted">Utilisez un template pour pré-remplir le formulaire</p>
+                    
+                    {% for key, template in templates.items() %}
+                    <button type="button" class="btn btn-outline-primary btn-sm w-100 mb-2" 
+                            onclick="loadTemplate('{{ key }}')">
+                        <i class="fas fa-download"></i> {{ template.name }}
+                    </button>
+                    {% endfor %}
+                </div>
+            </div>
+            {% endif %}
+
+            <!-- Aide -->
+            <div class="card border-0 shadow-sm">
+                <div class="card-header bg-info text-white py-3">
+                    <h6 class="mb-0"><i class="fas fa-info-circle"></i> Aide</h6>
+                </div>
+                <div class="card-body">
+                    <h6 class="small"><strong>Comment obtenir vos clés API ?</strong></h6>
+                    
+                    <div class="mb-3">
+                        <strong class="small">CJ Dropshipping:</strong>
+                        <p class="small text-muted mb-1">1. Créez un compte sur cjdropshipping.com</p>
+                        <p class="small text-muted mb-1">2. Allez dans Settings > API</p>
+                        <p class="small text-muted">3. Copiez votre email et clé secrète</p>
+                    </div>
+
+                    <div class="mb-3">
+                        <strong class="small">Printify:</strong>
+                        <p class="small text-muted mb-1">1. Connectez-vous à printify.com</p>
+                        <p class="small text-muted mb-1">2. Allez dans My Account > Connections</p>
+                        <p class="small text-muted">3. Générez un Personal Access Token</p>
+                    </div>
+
+                    <hr>
+
+                    <h6 class="small"><strong>Besoin d'aide ?</strong></h6>
+                    <p class="small text-muted">Consultez le guide : <code>API_SYSTEM_GUIDE.md</code></p>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+// Templates prédéfinis
+const templates = {{ templates|tojson|safe }};
+
+function loadTemplate(key) {
+    const template = templates[key];
+    if (!template) return;
+    
+    document.getElementById('name').value = template.name || '';
+    document.getElementById('slug').value = template.slug || '';
+    document.getElementById('provider_type').value = template.provider_type || '';
+    document.getElementById('api_endpoint').value = template.api_endpoint || '';
+    document.getElementById('api_version').value = template.api_version || '';
+    document.getElementById('auth_type').value = template.auth_type || '';
+    
+    // Scroll vers le haut
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+    
+    // Highlight
+    document.getElementById('providerForm').classList.add('border', 'border-primary', 'rounded', 'p-3');
+    setTimeout(() => {
+        document.getElementById('providerForm').classList.remove('border', 'border-primary', 'rounded', 'p-3');
+    }, 2000);
+}
+
+// Auto-générer le slug depuis le nom
+document.getElementById('name').addEventListener('input', function(e) {
+    if (!{{ 'true' if provider else 'false' }}) {
+        const slug = e.target.value
+            .toLowerCase()
+            .replace(/[^a-z0-9]+/g, '-')
+            .replace(/^-+|-+$/g, '');
+        document.getElementById('slug').value = slug;
+    }
+});
+</script>
+{% endblock %}

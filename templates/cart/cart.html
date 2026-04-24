@@ -27,7 +27,7 @@
                             <img src="{{ url_for('static', filename='images/' + item.product.image) }}" 
                                  alt="{{ item.product.name }}" 
                                  class="img-thumbnail me-3" 
-                                 class="cart-img-thumb">
+                                 class="cart-img-thumb" loading="lazy" decoding="async">
                             {% endif %}
                             <div>
                                 <h6 class="mb-0">{{ item.product.name }}</h6>

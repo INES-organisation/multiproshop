@@ -1,0 +1,463 @@
+{% extends "admin/layout_admin_modern.html" %}
+
+{% block title %}Détail Commande CJ #{{ order.cj_order_number }}{% endblock %}
+
+{% block extra_css %}
+<style>
+    .order-detail-header {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+        padding: 2rem;
+        border-radius: 8px;
+        margin-bottom: 2rem;
+    }
+    
+    .order-number {
+        font-size: 1.5rem;
+        font-weight: 700;
+        margin-bottom: 0.5rem;
+    }
+    
+    .order-status-badge {
+        display: inline-block;
+        padding: 0.5rem 1rem;
+        border-radius: 50px;
+        font-weight: 600;
+        font-size: 0.9rem;
+    }
+    
+    .status-pending {
+        background: #ffc107;
+        color: #000;
+    }
+    
+    .status-processing {
+        background: #17a2b8;
+        color: white;
+    }
+    
+    .status-shipped {
+        background: #28a745;
+        color: white;
+    }
+    
+    .status-delivered {
+        background: #6f42c1;
+        color: white;
+    }
+    
+    .status-cancelled {
+        background: #dc3545;
+        color: white;
+    }
+    
+    .info-card {
+        background: white;
+        border-radius: 8px;
+        padding: 1.5rem;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        margin-bottom: 1.5rem;
+    }
+    
+    .info-card h3 {
+        font-size: 1.2rem;
+        font-weight: 700;
+        margin-bottom: 1rem;
+        color: #333;
+        border-bottom: 2px solid #667eea;
+        padding-bottom: 0.5rem;
+    }
+    
+    .info-row {
+        display: flex;
+        justify-content: space-between;
+        padding: 0.75rem 0;
+        border-bottom: 1px solid #eee;
+    }
+    
+    .info-row:last-child {
+        border-bottom: none;
+    }
+    
+    .info-label {
+        font-weight: 600;
+        color: #666;
+    }
+    
+    .info-value {
+        color: #333;
+    }
+    
+    .product-item {
+        display: flex;
+        gap: 1rem;
+        padding: 1rem;
+        border: 1px solid #eee;
+        border-radius: 8px;
+        margin-bottom: 1rem;
+    }
+    
+    .product-image {
+        width: 80px;
+        height: 80px;
+        object-fit: cover;
+        border-radius: 8px;
+    }
+    
+    .product-info {
+        flex: 1;
+    }
+    
+    .product-name {
+        font-weight: 600;
+        color: #333;
+        margin-bottom: 0.5rem;
+    }
+    
+    .product-variant {
+        font-size: 0.9rem;
+        color: #666;
+    }
+    
+    .product-price {
+        font-weight: 700;
+        color: #667eea;
+    }
+    
+    .timeline {
+        position: relative;
+        padding-left: 2rem;
+    }
+    
+    .timeline-item {
+        position: relative;
+        padding-bottom: 1.5rem;
+    }
+    
+    .timeline-item::before {
+        content: '';
+        position: absolute;
+        left: -2rem;
+        top: 0;
+        width: 12px;
+        height: 12px;
+        border-radius: 50%;
+        background: #667eea;
+        border: 3px solid white;
+        box-shadow: 0 0 0 2px #667eea;
+    }
+    
+    .timeline-item::after {
+        content: '';
+        position: absolute;
+        left: -1.7rem;
+        top: 12px;
+        width: 2px;
+        height: calc(100% - 12px);
+        background: #ddd;
+    }
+    
+    .timeline-item:last-child::after {
+        display: none;
+    }
+    
+    .timeline-date {
+        font-size: 0.85rem;
+        color: #999;
+        margin-bottom: 0.25rem;
+    }
+    
+    .timeline-title {
+        font-weight: 600;
+        color: #333;
+    }
+    
+    .timeline-description {
+        font-size: 0.9rem;
+        color: #666;
+    }
+    
+    .action-buttons {
+        display: flex;
+        gap: 1rem;
+        margin-top: 2rem;
+    }
+    
+    .btn-action {
+        padding: 0.75rem 1.5rem;
+        border-radius: 8px;
+        font-weight: 600;
+        border: none;
+        cursor: pointer;
+        transition: all 0.3s ease;
+    }
+    
+    .btn-sync {
+        background: #667eea;
+        color: white;
+    }
+    
+    .btn-sync:hover {
+        background: #5568d3;
+    }
+    
+    .btn-cancel {
+        background: #dc3545;
+        color: white;
+    }
+    
+    .btn-cancel:hover {
+        background: #c82333;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <!-- Header -->
+    <div class="order-detail-header">
+        <div class="d-flex justify-content-between align-items-center">
+            <div>
+                <div class="order-number">
+                    <i class="fas fa-shopping-cart"></i> Commande CJ #{{ order.cj_order_number or 'N/A' }}
+                </div>
+                <div class="text-white-50">
+                    Commande locale #{{ order.id }} - {{ order.created_at.strftime('%d/%m/%Y %H:%M') }}
+                </div>
+            </div>
+            <div>
+                <span class="order-status-badge status-{{ order.status }}">
+                    {{ order.status|upper }}
+                </span>
+            </div>
+        </div>
+    </div>
+    
+    <div class="row">
+        <!-- Colonne gauche -->
+        <div class="col-md-8">
+            <!-- Produits -->
+            <div class="info-card">
+                <h3><i class="fas fa-box"></i> Produits Commandés</h3>
+                {% for item in order.items %}
+                <div class="product-item">
+                    {% if item.product.image_url %}
+                    <img src="{{ item.product.image_url }}" alt="{{ item.product.name }}" class="product-image" loading="lazy" decoding="async">
+                    {% else %}
+                    <div class="product-image bg-light d-flex align-items-center justify-content-center">
+                        <i class="fas fa-image fa-2x text-muted"></i>
+                    </div>
+                    {% endif %}
+                    <div class="product-info">
+                        <div class="product-name">{{ item.product.name }}</div>
+                        {% if item.variant %}
+                        <div class="product-variant">
+                            Variante: {{ item.variant.color }} / {{ item.variant.size }}
+                        </div>
+                        {% endif %}
+                        <div class="text-muted">Quantité: {{ item.quantity }}</div>
+                    </div>
+                    <div class="text-end">
+                        <div class="product-price">{{ item.price }}€</div>
+                        <div class="text-muted">Total: {{ (item.price * item.quantity)|round(2) }}€</div>
+                    </div>
+                </div>
+                {% endfor %}
+                
+                <div class="mt-3 pt-3 border-top">
+                    <div class="info-row">
+                        <span class="info-label">Sous-total</span>
+                        <span class="info-value">{{ order.subtotal }}€</span>
+                    </div>
+                    <div class="info-row">
+                        <span class="info-label">Frais de livraison</span>
+                        <span class="info-value">{{ order.shipping_cost or 0 }}€</span>
+                    </div>
+                    <div class="info-row">
+                        <span class="info-label"><strong>Total</strong></span>
+                        <span class="info-value"><strong>{{ order.total }}€</strong></span>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Timeline -->
+            <div class="info-card">
+                <h3><i class="fas fa-history"></i> Historique de la Commande</h3>
+                <div class="timeline">
+                    <div class="timeline-item">
+                        <div class="timeline-date">{{ order.created_at.strftime('%d/%m/%Y %H:%M') }}</div>
+                        <div class="timeline-title">Commande créée</div>
+                        <div class="timeline-description">La commande a été enregistrée dans le système</div>
+                    </div>
+                    
+                    {% if order.payment_status == 'paid' %}
+                    <div class="timeline-item">
+                        <div class="timeline-date">{{ order.updated_at.strftime('%d/%m/%Y %H:%M') }}</div>
+                        <div class="timeline-title">Paiement confirmé</div>
+                        <div class="timeline-description">Le paiement a été validé avec succès</div>
+                    </div>
+                    {% endif %}
+                    
+                    {% if order.cj_order_number %}
+                    <div class="timeline-item">
+                        <div class="timeline-date">{{ order.updated_at.strftime('%d/%m/%Y %H:%M') }}</div>
+                        <div class="timeline-title">Commande CJ créée</div>
+                        <div class="timeline-description">Numéro CJ: {{ order.cj_order_number }}</div>
+                    </div>
+                    {% endif %}
+                    
+                    {% if order.status == 'shipped' %}
+                    <div class="timeline-item">
+                        <div class="timeline-date">{{ order.updated_at.strftime('%d/%m/%Y %H:%M') }}</div>
+                        <div class="timeline-title">Commande expédiée</div>
+                        <div class="timeline-description">
+                            {% if order.tracking_number %}
+                            Numéro de suivi: {{ order.tracking_number }}
+                            {% else %}
+                            En cours d'expédition
+                            {% endif %}
+                        </div>
+                    </div>
+                    {% endif %}
+                    
+                    {% if order.status == 'delivered' %}
+                    <div class="timeline-item">
+                        <div class="timeline-date">{{ order.updated_at.strftime('%d/%m/%Y %H:%M') }}</div>
+                        <div class="timeline-title">Commande livrée</div>
+                        <div class="timeline-description">La commande a été livrée au client</div>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+        
+        <!-- Colonne droite -->
+        <div class="col-md-4">
+            <!-- Informations Client -->
+            <div class="info-card">
+                <h3><i class="fas fa-user"></i> Client</h3>
+                <div class="info-row">
+                    <span class="info-label">Nom</span>
+                    <span class="info-value">{{ order.user.username if order.user else 'Invité' }}</span>
+                </div>
+                <div class="info-row">
+                    <span class="info-label">Email</span>
+                    <span class="info-value">{{ order.user.email if order.user else 'N/A' }}</span>
+                </div>
+            </div>
+            
+            <!-- Adresse de Livraison -->
+            <div class="info-card">
+                <h3><i class="fas fa-map-marker-alt"></i> Livraison</h3>
+                {% if order.shipping_address %}
+                <div class="info-value">
+                    {{ order.shipping_address.street }}<br>
+                    {{ order.shipping_address.city }}, {{ order.shipping_address.postal_code }}<br>
+                    {{ order.shipping_address.country }}
+                </div>
+                {% else %}
+                <div class="text-muted">Adresse non renseignée</div>
+                {% endif %}
+            </div>
+            
+            <!-- Informations CJ -->
+            <div class="info-card">
+                <h3><i class="fas fa-shipping-fast"></i> CJ Dropshipping</h3>
+                <div class="info-row">
+                    <span class="info-label">Numéro CJ</span>
+                    <span class="info-value">{{ order.cj_order_number or 'Non créée' }}</span>
+                </div>
+                <div class="info-row">
+                    <span class="info-label">Tracking</span>
+                    <span class="info-value">{{ order.tracking_number or 'N/A' }}</span>
+                </div>
+                <div class="info-row">
+                    <span class="info-label">Méthode d'expédition</span>
+                    <span class="info-value">{{ order.shipping_method or 'Standard' }}</span>
+                </div>
+            </div>
+            
+            <!-- Paiement -->
+            <div class="info-card">
+                <h3><i class="fas fa-credit-card"></i> Paiement</h3>
+                <div class="info-row">
+                    <span class="info-label">Statut</span>
+                    <span class="info-value">
+                        {% if order.payment_status == 'paid' %}
+                        <span class="badge bg-success">Payé</span>
+                        {% else %}
+                        <span class="badge bg-warning">{{ order.payment_status }}</span>
+                        {% endif %}
+                    </span>
+                </div>
+                <div class="info-row">
+                    <span class="info-label">Méthode</span>
+                    <span class="info-value">{{ order.payment_method or 'Stripe' }}</span>
+                </div>
+            </div>
+            
+            <!-- Actions -->
+            <div class="action-buttons">
+                <button class="btn-action btn-sync" onclick="syncOrderStatus()">
+                    <i class="fas fa-sync-alt"></i> Synchroniser
+                </button>
+                {% if order.status not in ['cancelled', 'delivered'] %}
+                <button class="btn-action btn-cancel" onclick="cancelOrder()">
+                    <i class="fas fa-times"></i> Annuler
+                </button>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+function syncOrderStatus() {
+    if (confirm('Synchroniser le statut de cette commande avec CJ Dropshipping ?')) {
+        fetch('/admin/cj/orders/{{ order.id }}/sync', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            }
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                alert('Statut synchronisé avec succès');
+                location.reload();
+            } else {
+                alert('Erreur: ' + data.message);
+            }
+        })
+        .catch(error => {
+            alert('Erreur de synchronisation');
+            console.error(error);
+        });
+    }
+}
+
+function cancelOrder() {
+    if (confirm('Êtes-vous sûr de vouloir annuler cette commande ?')) {
+        fetch('/admin/cj/orders/{{ order.id }}/cancel', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            }
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                alert('Commande annulée avec succès');
+                location.reload();
+            } else {
+                alert('Erreur: ' + data.message);
+            }
+        })
+        .catch(error => {
+            alert('Erreur d\'annulation');
+            console.error(error);
+        });
+    }
+}
+</script>
+{% endblock %}

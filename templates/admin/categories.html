@@ -1,47 +1,60 @@
-{% extends 'layout.html' %}
+{% extends 'admin/layout_admin_modern.html' %}
+{% block title %}Gestion Catégories{% endblock %}
 {% block content %}
-{% extends "base.html" %}
-{% block title %}Gestion des catégories{% endblock %}
-{% block content %}
-<div class="container mt-5">
-    <h2>Catégories</h2>
-    <form class="row mb-3" method="get">
-        <div class="col-md-4">
-            <input type="text" class="form-control" name="search" placeholder="Recherche nom" value="{{ search|default('') }}">
-        </div>
-        <div class="col-md-2">
-            <button type="submit" class="btn btn-outline-primary">Rechercher</button>
-        </div>
-        <div class="col-md-2">
-            <a href="{{ url_for('admin.export_categories') }}" class="btn btn-outline-success">Exporter CSV</a>
-        </div>
-        <div class="col-md-2">
-            <a href="{{ url_for('admin.create_category') }}" class="btn btn-primary">Créer une catégorie</a>
-        </div>
-    </form>
-    <table class="table table-striped">
-        <thead>
-            <tr>
-                <th>ID</th>
-                <th>Nom</th>
-                <th>Description</th>
-                <th>Actions</th>
-            </tr>
-        </thead>
-        <tbody>
-            {% for category in categories %}
-            <tr>
-                <td>{{ category.id }}</td>
-                <td>{{ category.name }}</td>
-                <td>{{ category.description }}</td>
-                <td>
-                    <a href="{{ url_for('admin.edit_category', category_id=category.id) }}" class="btn btn-sm btn-warning">Modifier</a>
-                    <a href="{{ url_for('admin.delete_category', category_id=category.id) }}" class="btn btn-sm btn-danger">Supprimer</a>
-                </td>
-            </tr>
-            {% endfor %}
-        </tbody>
-    </table>
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <div>
+        <h1 style="font-weight: 800; margin-bottom: 0.5rem;">
+            <i class="fas fa-folder"></i> Gestion des Catégories
+        </h1>
+        <p style="color: #999; margin: 0;">{{ categories|length if categories else 0 }} catégories au total</p>
+    </div>
+    <div>
+        <a href="{{ url_for('admin.create_category') }}" class="admin-btn admin-btn-primary">
+            <i class="fas fa-plus"></i>
+            Nouvelle Catégorie
+        </a>
+    </div>
 </div>
-{% endblock %}
+<div class="admin-card">
+    <div class="admin-card-body" style="padding: 0;">
+        <table class="admin-table">
+            <thead>
+                <tr>
+                    <th>ID</th>
+                    <th>Nom</th>
+                    <th>Description</th>
+                    <th>Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% if categories %}
+                    {% for category in categories %}
+                    <tr>
+                        <td>#{{ category.id }}</td>
+                        <td><div style="font-weight: 600;">{{ category.name }}</div></td>
+                        <td>{{ category.description if category.description else 'N/A' }}</td>
+                        <td>
+                            <div class="admin-table-actions">
+                                <a href="{{ url_for('admin.edit_category', category_id=category.id) }}" class="admin-btn admin-btn-sm admin-btn-primary">
+                                    <i class="fas fa-edit"></i>
+                                </a>
+                                <a href="{{ url_for('admin.delete_category', category_id=category.id) }}" class="admin-btn admin-btn-sm admin-btn-danger" onclick="return confirm('Supprimer cette catégorie ?')">
+                                    <i class="fas fa-trash"></i>
+                                </a>
+                            </div>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                {% else %}
+                    <tr>
+                        <td colspan="4" style="text-align: center; padding: 3rem; color: #999;">
+                            <i class="fas fa-folder" style="font-size: 3rem; margin-bottom: 1rem; display: block;"></i>
+                            Aucune catégorie trouvée
+                        </td>
+                    </tr>
+                {% endif %}
+            </tbody>
+        </table>
+    </div>
+</div>
 {% endblock %}

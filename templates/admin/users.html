@@ -1,51 +1,83 @@
-{% extends 'layout.html' %}
+{% extends 'admin/layout_admin_modern.html' %}
+{% block title %}Gestion Utilisateurs{% endblock %}
 {% block content %}
-{% extends "base.html" %}
-{% block title %}Gestion des utilisateurs{% endblock %}
-{% block content %}
-<div class="container mt-5">
-    <h2>Utilisateurs</h2>
-    <form class="row mb-3" method="get">
-        <div class="col-md-4">
-            <input type="text" class="form-control" name="search" placeholder="Recherche nom ou email" value="{{ search|default('') }}">
-        </div>
-        <div class="col-md-2">
-            <button type="submit" class="btn btn-outline-primary">Rechercher</button>
-        </div>
-        <div class="col-md-2">
-            <a href="{{ url_for('admin.export_users') }}" class="btn btn-outline-success">Exporter CSV</a>
-        </div>
-        <div class="col-md-2">
-            <a href="{{ url_for('admin.create_user') }}" class="btn btn-primary">Créer un utilisateur</a>
-        </div>
-    </form>
-    <table class="table table-striped">
-        <thead>
-            <tr>
-                <th>ID</th>
-                <th>Nom</th>
-                <th>Email</th>
-                <th>Rôle</th>
-                <th>Date création</th>
-                <th>Actions</th>
-            </tr>
-        </thead>
-        <tbody>
-            {% for user in users %}
-            <tr>
-                <td>{{ user.id }}</td>
-                <td>{{ user.username }}</td>
-                <td>{{ user.email }}</td>
-                <td>{{ user.role.name if user.role else '' }}</td>
-                <td>{{ user.created_at.strftime('%d/%m/%Y') }}</td>
-                <td>
-                    <a href="{{ url_for('admin.edit_user', user_id=user.id) }}" class="btn btn-sm btn-warning">Modifier</a>
-                    <a href="{{ url_for('admin.delete_user', user_id=user.id) }}" class="btn btn-sm btn-danger">Supprimer</a>
-                </td>
-            </tr>
-            {% endfor %}
-        </tbody>
-    </table>
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <div>
+        <h1 style="font-weight: 800; margin-bottom: 0.5rem;">
+            <i class="fas fa-users"></i> Gestion des Utilisateurs
+        </h1>
+        <p style="color: #999; margin: 0;">{{ users|length if users else 0 }} utilisateurs au total</p>
+    </div>
+    <div>
+        <a href="{{ url_for('admin.create_user') }}" class="admin-btn admin-btn-primary">
+            <i class="fas fa-user-plus"></i>
+            Nouvel Utilisateur
+        </a>
+    </div>
 </div>
-{% endblock %}
+<div class="admin-card">
+    <div class="admin-card-body" style="padding: 0;">
+        <table class="admin-table">
+            <thead>
+                <tr>
+                    <th>ID</th>
+                    <th>Utilisateur</th>
+                    <th>Email</th>
+                    <th>Rôle</th>
+                    <th>Inscription</th>
+                    <th>Statut</th>
+                    <th>Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% if users %}
+                    {% for user in users %}
+                    <tr>
+                        <td>#{{ user.id }}</td>
+                        <td>
+                            <div style="display: flex; align-items: center; gap: 0.8rem;">
+                                <div class="admin-avatar" style="width: 35px; height: 35px; font-size: 0.9rem;">
+                                    {{ user.username[0].upper() if user.username else 'U' }}
+                                </div>
+                                <div>
+                                    <div style="font-weight: 600;">{{ user.username }}</div>
+                                </div>
+                            </div>
+                        </td>
+                        <td>{{ user.email }}</td>
+                        <td>
+                            {% if user.is_admin %}
+                            <span class="admin-badge admin-badge-danger">Admin</span>
+                            {% else %}
+                            <span class="admin-badge admin-badge-info">Client</span>
+                            {% endif %}
+                        </td>
+                        <td>{{ user.created_at.strftime('%d/%m/%Y') if user.created_at else 'N/A' }}</td>
+                        <td>
+                            <span class="admin-badge admin-badge-success">Actif</span>
+                        </td>
+                        <td>
+                            <div class="admin-table-actions">
+                                <a href="{{ url_for('admin.edit_user', user_id=user.id) }}" class="admin-btn admin-btn-sm admin-btn-primary">
+                                    <i class="fas fa-edit"></i>
+                                </a>
+                                <a href="{{ url_for('admin.delete_user', user_id=user.id) }}" class="admin-btn admin-btn-sm admin-btn-danger" onclick="return confirm('Supprimer cet utilisateur ?')">
+                                    <i class="fas fa-trash"></i>
+                                </a>
+                            </div>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                {% else %}
+                    <tr>
+                        <td colspan="7" style="text-align: center; padding: 3rem; color: #999;">
+                            <i class="fas fa-users" style="font-size: 3rem; margin-bottom: 1rem; display: block;"></i>
+                            Aucun utilisateur trouvé
+                        </td>
+                    </tr>
+                {% endif %}
+            </tbody>
+        </table>
+    </div>
+</div>
 {% endblock %}

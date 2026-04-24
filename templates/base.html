@@ -3,31 +3,78 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>{% block title %}MultiProShop{% endblock %}</title>
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
-    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <title>{% block title %}MultiProShop - Votre marketplace de confiance{% endblock %}</title>
+    
+    <!-- Optimisations de performance -->
+    <link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin>
+    <link rel="preconnect" href="https://cdnjs.cloudflare.com" crossorigin>
+    <link rel="dns-prefetch" href="https://cdn.jsdelivr.net">
+    <link rel="dns-prefetch" href="https://cdnjs.cloudflare.com">
+    
+    <!-- Preload des ressources critiques -->
+    <link rel="preload" href="{{ url_for('static', filename='css/styles.css') }}?v=3" as="style">
+    <link rel="preload" href="{{ url_for('static', filename='css/layout_modern.css') }}?v=5" as="style">
+    <link rel="preload" href="{{ url_for('static', filename='js/cart.js') }}" as="script">
+    
+    <!-- Bootstrap CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+    <!-- Font Awesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+    
+    <!-- Styles -->
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/styles.css') }}?v=3">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/layout_modern.css') }}?v=5">
+    {% block extra_css %}{% endblock %}
 </head>
 <body>
-    {% include 'partials/premium_header.html' %}
-    <div class="container mt-4">
-        <div class="container mt-3">
-            {% with messages = get_flashed_messages(with_categories=true) %}
-                {% if messages %}
-                    {% for category, message in messages %}
-                        <div class="alert alert-{{ category }} alert-dismissible fade show" role="alert">
-                            {{ message }}
-                            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
-                        </div>
-                    {% endfor %}
-                {% endif %}
-            {% endwith %}
-        </div>
-        <main class="container py-4">
-            {% block content %}{% endblock %}
-        </main>
-    </div>
-    {% include 'partials/footer.html' %}
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <!-- Header Moderne -->
+    {% include 'partials/header_modern.html' %}
+    
+    <!-- Messages Flash -->
+    {% with messages = get_flashed_messages(with_categories=true) %}
+        {% if messages %}
+            <div class="flash-messages-container">
+                {% for category, message in messages %}
+                    <div class="alert alert-{{ category }} alert-dismissible fade show" role="alert">
+                        <i class="fas fa-{% if category == 'success' %}check-circle{% elif category == 'error' %}exclamation-circle{% else %}info-circle{% endif %}"></i>
+                        {{ message }}
+                        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                    </div>
+                {% endfor %}
+            </div>
+        {% endif %}
+    {% endwith %}
+    
+    <!-- Contenu Principal -->
+    <main class="main-content">
+        {% block content %}{% endblock %}
+    </main>
+    
+    <!-- Footer Moderne -->
+    {% include 'partials/footer_modern.html' %}
+    
+    <!-- Bootstrap Bundle JS (incl. Popper) -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+    
+    <!-- Script panier global -->
+    <script src="{{ url_for('static', filename='js/cart.js') }}"></script>
+    
+    <!-- Scripts personnalisés -->
     {% block extra_js %}{% endblock %}
+    
+    <!-- Service Worker pour cache offline -->
+    <script>
+    if ('serviceWorker' in navigator) {
+        window.addEventListener('load', () => {
+            navigator.serviceWorker.register('/static/js/sw.js')
+                .then(registration => {
+                    console.log('✅ Service Worker enregistré:', registration.scope);
+                })
+                .catch(error => {
+                    console.log('❌ Erreur Service Worker:', error);
+                });
+        });
+    }
+    </script>
 </body>
 </html>

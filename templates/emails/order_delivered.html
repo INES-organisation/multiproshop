@@ -1,0 +1,35 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <style>
+        body { font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; }
+        .header { background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%); color: white; padding: 30px; text-align: center; border-radius: 10px 10px 0 0; }
+        .content { background: #f9f9f9; padding: 30px; border-radius: 0 0 10px 10px; }
+        .button { display: inline-block; padding: 12px 30px; background: #f59e0b; color: white; text-decoration: none; border-radius: 5px; margin: 10px 5px; }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>🎉 Commande Livrée !</h1>
+    </div>
+    <div class="content">
+        <p>Bonjour <strong>{{ order.shipping_first_name }}</strong>,</p>
+        <p>Votre commande <strong>{{ order.order_number }}</strong> a été livrée avec succès !</p>
+        
+        <p>Nous espérons que vous êtes satisfait(e) de votre achat. 😊</p>
+        
+        <p><strong>Votre avis compte !</strong><br>
+        N'hésitez pas à nous laisser un commentaire sur nos produits.</p>
+        
+        <center>
+            <a href="http://multiproshop.local/user/orders/{{ order.id }}" class="button">Voir ma commande</a>
+            <a href="http://multiproshop.local/products" class="button">Continuer mes achats</a>
+        </center>
+        
+        <p style="text-align: center; color: #999; font-size: 12px; margin-top: 30px;">
+            Merci de votre confiance !<br>L'équipe MultiProShop
+        </p>
+    </div>
+</body>
+</html>

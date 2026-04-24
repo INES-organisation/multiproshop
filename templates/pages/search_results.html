@@ -1,0 +1,445 @@
+{% extends "layout.html" %}
+
+{% block title %}Recherche{% if query %}: {{ query }}{% endif %}{% endblock %}
+
+{% block extra_css %}
+<style>
+    .search-header {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+        padding: 3rem 0;
+        margin-bottom: 2rem;
+    }
+    
+    .search-box {
+        max-width: 600px;
+        margin: 0 auto;
+    }
+    
+    .search-input {
+        border-radius: 50px;
+        padding: 1rem 1.5rem;
+        border: none;
+        font-size: 1.1rem;
+    }
+    
+    .search-btn {
+        border-radius: 50px;
+        padding: 1rem 2rem;
+    }
+    
+    .filters-sidebar {
+        background: white;
+        border-radius: 8px;
+        padding: 1.5rem;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        margin-bottom: 2rem;
+    }
+    
+    .filter-section {
+        margin-bottom: 1.5rem;
+        padding-bottom: 1.5rem;
+        border-bottom: 1px solid #eee;
+    }
+    
+    .filter-section:last-child {
+        border-bottom: none;
+    }
+    
+    .filter-title {
+        font-weight: 600;
+        margin-bottom: 1rem;
+        color: #333;
+    }
+    
+    .price-inputs {
+        display: flex;
+        gap: 10px;
+        align-items: center;
+    }
+    
+    .price-inputs input {
+        width: 100px;
+        padding: 0.5rem;
+        border: 1px solid #ddd;
+        border-radius: 4px;
+    }
+    
+    .sort-select {
+        padding: 0.5rem 1rem;
+        border: 1px solid #ddd;
+        border-radius: 4px;
+        background: white;
+    }
+    
+    .results-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 1.5rem;
+        padding: 1rem;
+        background: white;
+        border-radius: 8px;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+    }
+    
+    .results-count {
+        font-size: 1.1rem;
+        color: #666;
+    }
+    
+    .product-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+        gap: 1.5rem;
+        margin-bottom: 2rem;
+    }
+    
+    .product-card {
+        background: white;
+        border-radius: 8px;
+        overflow: hidden;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        transition: transform 0.3s, box-shadow 0.3s;
+        text-decoration: none;
+        color: inherit;
+        display: block;
+    }
+    
+    .product-card:hover {
+        transform: translateY(-5px);
+        box-shadow: 0 4px 16px rgba(0,0,0,0.2);
+    }
+    
+    .product-image {
+        width: 100%;
+        height: 250px;
+        object-fit: cover;
+    }
+    
+    .product-info {
+        padding: 1rem;
+    }
+    
+    .product-name {
+        font-weight: 600;
+        margin-bottom: 0.5rem;
+        color: #333;
+        display: -webkit-box;
+        -webkit-line-clamp: 2;
+        -webkit-box-orient: vertical;
+        overflow: hidden;
+    }
+    
+    .product-price {
+        font-size: 1.3rem;
+        font-weight: bold;
+        color: #667eea;
+    }
+    
+    .product-stock {
+        font-size: 0.85rem;
+        color: #666;
+        margin-top: 0.5rem;
+    }
+    
+    .stock-available {
+        color: #27ae60;
+    }
+    
+    .stock-low {
+        color: #f39c12;
+    }
+    
+    .stock-out {
+        color: #e74c3c;
+    }
+    
+    .pagination {
+        display: flex;
+        justify-content: center;
+        gap: 0.5rem;
+        margin-top: 2rem;
+    }
+    
+    .pagination a, .pagination span {
+        padding: 0.5rem 1rem;
+        border: 1px solid #ddd;
+        border-radius: 4px;
+        text-decoration: none;
+        color: #333;
+    }
+    
+    .pagination a:hover {
+        background: #667eea;
+        color: white;
+        border-color: #667eea;
+    }
+    
+    .pagination .active {
+        background: #667eea;
+        color: white;
+        border-color: #667eea;
+    }
+    
+    .no-results {
+        text-align: center;
+        padding: 3rem;
+        background: white;
+        border-radius: 8px;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+    }
+    
+    .no-results i {
+        font-size: 4rem;
+        color: #ddd;
+        margin-bottom: 1rem;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<!-- Search Header -->
+<div class="search-header">
+    <div class="container">
+        <h1 class="text-center mb-4">
+            {% if query %}
+                Résultats pour "{{ query }}"
+            {% else %}
+                Rechercher des produits
+            {% endif %}
+        </h1>
+        
+        <form method="GET" action="{{ url_for('search.search') }}" class="search-box">
+            <div class="input-group">
+                <input type="text" 
+                       name="q" 
+                       class="form-control search-input" 
+                       placeholder="Rechercher un produit..."
+                       value="{{ query }}"
+                       autocomplete="off"
+                       id="searchInput">
+                <button type="submit" class="btn btn-light search-btn">
+                    <i class="fas fa-search"></i> Rechercher
+                </button>
+            </div>
+            
+            <!-- Conserver les filtres -->
+            {% if filters.category_id %}
+            <input type="hidden" name="category" value="{{ filters.category_id }}">
+            {% endif %}
+            {% if filters.min_price %}
+            <input type="hidden" name="min_price" value="{{ filters.min_price }}">
+            {% endif %}
+            {% if filters.max_price %}
+            <input type="hidden" name="max_price" value="{{ filters.max_price }}">
+            {% endif %}
+            {% if filters.in_stock %}
+            <input type="hidden" name="in_stock" value="true">
+            {% endif %}
+            {% if filters.sort_by %}
+            <input type="hidden" name="sort" value="{{ filters.sort_by }}">
+            {% endif %}
+        </form>
+    </div>
+</div>
+
+<div class="container">
+    <div class="row">
+        <!-- Sidebar Filtres -->
+        <div class="col-md-3">
+            <div class="filters-sidebar">
+                <h5 class="mb-3">Filtres</h5>
+                
+                <form method="GET" action="{{ url_for('search.search') }}" id="filtersForm">
+                    <input type="hidden" name="q" value="{{ query }}">
+                    
+                    <!-- Filtre Prix -->
+                    <div class="filter-section">
+                        <div class="filter-title">Prix</div>
+                        <div class="price-inputs">
+                            <input type="number" 
+                                   name="min_price" 
+                                   placeholder="Min"
+                                   value="{{ filters.min_price or '' }}"
+                                   step="0.01">
+                            <span>-</span>
+                            <input type="number" 
+                                   name="max_price" 
+                                   placeholder="Max"
+                                   value="{{ filters.max_price or '' }}"
+                                   step="0.01">
+                        </div>
+                    </div>
+                    
+                    <!-- Filtre Catégorie -->
+                    {% if facets.success and facets.categories %}
+                    <div class="filter-section">
+                        <div class="filter-title">Catégories</div>
+                        <select name="category" class="form-control">
+                            <option value="">Toutes les catégories</option>
+                            {% for cat in facets.categories %}
+                            <option value="{{ cat.id }}" {% if filters.category_id == cat.id %}selected{% endif %}>
+                                {{ cat.name }} ({{ cat.count }})
+                            </option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    {% endif %}
+                    
+                    <!-- Filtre Stock -->
+                    <div class="filter-section">
+                        <div class="filter-title">Disponibilité</div>
+                        <div class="form-check">
+                            <input type="checkbox" 
+                                   name="in_stock" 
+                                   value="true"
+                                   class="form-check-input" 
+                                   id="inStockCheck"
+                                   {% if filters.in_stock %}checked{% endif %}>
+                            <label class="form-check-label" for="inStockCheck">
+                                En stock uniquement
+                            </label>
+                        </div>
+                    </div>
+                    
+                    <button type="submit" class="btn btn-primary w-100">
+                        Appliquer les filtres
+                    </button>
+                    <a href="{{ url_for('search.search') }}" class="btn btn-outline-secondary w-100 mt-2">
+                        Réinitialiser
+                    </a>
+                </form>
+            </div>
+        </div>
+        
+        <!-- Résultats -->
+        <div class="col-md-9">
+            {% if results.success %}
+                <!-- Header Résultats -->
+                <div class="results-header">
+                    <div class="results-count">
+                        <strong>{{ results.total }}</strong> produit(s) trouvé(s)
+                    </div>
+                    
+                    <!-- Tri -->
+                    <form method="GET" action="{{ url_for('search.search') }}" class="d-flex align-items-center gap-2">
+                        <input type="hidden" name="q" value="{{ query }}">
+                        {% if filters.category_id %}
+                        <input type="hidden" name="category" value="{{ filters.category_id }}">
+                        {% endif %}
+                        {% if filters.min_price %}
+                        <input type="hidden" name="min_price" value="{{ filters.min_price }}">
+                        {% endif %}
+                        {% if filters.max_price %}
+                        <input type="hidden" name="max_price" value="{{ filters.max_price }}">
+                        {% endif %}
+                        {% if filters.in_stock %}
+                        <input type="hidden" name="in_stock" value="true">
+                        {% endif %}
+                        
+                        <label for="sortSelect" class="mb-0">Trier par:</label>
+                        <select name="sort" id="sortSelect" class="sort-select" onchange="this.form.submit()">
+                            <option value="relevance" {% if filters.sort_by == 'relevance' %}selected{% endif %}>Pertinence</option>
+                            <option value="price_asc" {% if filters.sort_by == 'price_asc' %}selected{% endif %}>Prix croissant</option>
+                            <option value="price_desc" {% if filters.sort_by == 'price_desc' %}selected{% endif %}>Prix décroissant</option>
+                            <option value="name" {% if filters.sort_by == 'name' %}selected{% endif %}>Nom A-Z</option>
+                            <option value="newest" {% if filters.sort_by == 'newest' %}selected{% endif %}>Nouveautés</option>
+                        </select>
+                    </form>
+                </div>
+                
+                {% if results.products %}
+                    <!-- Grille Produits -->
+                    <div class="product-grid">
+                        {% for product in results.products %}
+                        <a href="{{ url_for('products.product_detail', product_id=product.id) }}" class="product-card">
+                            <img src="{{ product.image_url or '/static/images/no-image.png' }}" 
+                                 alt="{{ product.name }}" 
+                                 class="product-image"
+                                 onerror="this.src='/static/images/no-image.png'" loading="lazy" decoding="async">
+                            <div class="product-info">
+                                <div class="product-name">{{ product.name }}</div>
+                                <div class="product-price">${{ "%.2f"|format(product.price) }}</div>
+                                <div class="product-stock">
+                                    {% if product.stock > 10 %}
+                                        <span class="stock-available">✓ En stock</span>
+                                    {% elif product.stock > 0 %}
+                                        <span class="stock-low">⚠ Stock limité ({{ product.stock }})</span>
+                                    {% else %}
+                                        <span class="stock-out">✗ Rupture de stock</span>
+                                    {% endif %}
+                                </div>
+                            </div>
+                        </a>
+                        {% endfor %}
+                    </div>
+                    
+                    <!-- Pagination -->
+                    {% if results.pages > 1 %}
+                    <div class="pagination">
+                        {% if results.has_prev %}
+                        <a href="{{ url_for('search.search', q=query, page=results.page-1, **filters) }}">
+                            <i class="fas fa-chevron-left"></i> Précédent
+                        </a>
+                        {% endif %}
+                        
+                        {% for p in range(1, results.pages + 1) %}
+                            {% if p == results.page %}
+                                <span class="active">{{ p }}</span>
+                            {% elif p <= 3 or p > results.pages - 3 or (p >= results.page - 1 and p <= results.page + 1) %}
+                                <a href="{{ url_for('search.search', q=query, page=p, **filters) }}">{{ p }}</a>
+                            {% elif p == 4 or p == results.pages - 3 %}
+                                <span>...</span>
+                            {% endif %}
+                        {% endfor %}
+                        
+                        {% if results.has_next %}
+                        <a href="{{ url_for('search.search', q=query, page=results.page+1, **filters) }}">
+                            Suivant <i class="fas fa-chevron-right"></i>
+                        </a>
+                        {% endif %}
+                    </div>
+                    {% endif %}
+                {% else %}
+                    <!-- Aucun résultat -->
+                    <div class="no-results">
+                        <i class="fas fa-search"></i>
+                        <h3>Aucun produit trouvé</h3>
+                        <p>Essayez de modifier vos critères de recherche ou vos filtres.</p>
+                        <a href="{{ url_for('search.search') }}" class="btn btn-primary mt-3">
+                            Réinitialiser la recherche
+                        </a>
+                    </div>
+                {% endif %}
+            {% else %}
+                <!-- Erreur -->
+                <div class="alert alert-danger">
+                    <i class="fas fa-exclamation-triangle"></i>
+                    Une erreur est survenue lors de la recherche.
+                </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+// Auto-complétion recherche (à implémenter)
+const searchInput = document.getElementById('searchInput');
+if (searchInput) {
+    let timeout = null;
+    searchInput.addEventListener('input', function() {
+        clearTimeout(timeout);
+        timeout = setTimeout(() => {
+            const query = this.value;
+            if (query.length >= 2) {
+                // TODO: Appeler API suggestions
+                // fetch(`/search/api/suggestions?q=${query}`)
+            }
+        }, 300);
+    });
+}
+</script>
+{% endblock %}

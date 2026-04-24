@@ -1,0 +1,15 @@
+# Requirements pour monitoring avancé
+# Phase 4 - Monitoring Prometheus/Grafana
+
+# Prometheus client
+prometheus-client==0.19.0
+
+# Flask-RESTX pour Swagger
+flask-restx==1.3.0
+
+# Tests E2E
+requests==2.31.0
+playwright==1.40.0
+
+# Monitoring additionnel
+psutil==5.9.6

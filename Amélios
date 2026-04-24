@@ -5,3 +5,126 @@ Set-Location "C:\Users\Anthony\CascadeProjects\multiproshop"
 .\run_multiproshop.ps1
 
 
+# Lancer Celery
+.\start_celery.bat
+
+# Arrêter Celery (dans un autre terminal ou après)
+.\stop_celery.bat
+
+# Récupérer TOUS les produits CJ (des dizaines de milliers)
+python scripts\sync_all_cj_products.py
+
+# Enrichissement COMPLET (variantes + détails + stock + avis + description)
+python scripts\full_enrich_all_products.py
+
+# OU enrichissement rapide (variantes uniquement)
+python scripts\enrich_all_products_now.py
+
+# Synchroniser les STOCKS via listV2 (seul endpoint CJ avec les stocks)
+python scripts\sync_stocks_v2_global.py
+
+# Vider le cache + corriger les compteurs
+python scripts\clear_cache_and_enrich.py
+python scripts\fix_cj_stats_counters.py
+
+# Enrichissement complet (stocks + détails + variantes + avis)
+python scripts\fast_enrich_all.py
+
+# Seulement les stocks (très rapide, ~1 min pour des milliers)
+python scripts\fast_enrich_all.py --stock-only
+
+# Forcer le ré-enrichissement même si fait récemment
+python scripts\fast_enrich_all.py --force
+
+# Plus de threads pour aller plus vite (attention au rate limit)
+python scripts\fast_enrich_all.py --workers 5
+
+# Sans les avis (plus rapide, les avis sont lents)
+python scripts\fast_enrich_all.py --no-ratings
+
+# Combiner les options
+python scripts\fast_enrich_all.py --workers 5 --no-ratings
+
+python scripts/sync_shipping_rates.py
+
+Voici une **liste complète des fournisseurs dropshipping avec API développeur** basée sur les informations disponibles :
+
+## Fournisseurs Européens avec API
+
+### Généralistes
+- **BigBuy** - API, XML, CSV, FTP disponibles, +400 000 références[1]
+- **Webdrop Market** - API compatible avec 85% des plateformes e-commerce[7]
+- **Octopia Products** - API compatible avec 85% des plateformes[7]
+- **VidaXL** - API disponible, +16 000 produits[1]
+- **NetAppro** - API disponible[1]
+
+### Informatique & High-Tech
+- **Also (AlsoPriceList)** - API disponible[1]
+- **Ingram Micro** - API disponible[1]
+- **DCS** - API disponible[1]
+- **Pixmania Pro** - API disponible[1]
+- **Nove.fr** - API disponible (Guadeloupe)[1]
+
+### Mode & Accessoires
+- **B2B Montres** - API disponible, montres et bijoux[1]
+- **Watchimport** - API disponible, montres et accessoires[1]
+- **Stefanie Renoma** - API disponible, mode[1]
+- **BTooStore (Spartoo)** - API disponible, chaussures[1]
+- **Réservoir Mode** - API disponible[1]
+
+### Consommables & Bureautique
+- **Inkia** - API disponible, cartouches d'encre[1]
+- **SDE** - API disponible[1]
+- **LamaFrance** - API disponible, consommables d'impression[1]
+- **HQ Patronen** - API disponible[1]
+
+### Meubles & Décoration
+- **Delorm** - API disponible, mobilier contemporain[1]
+- **Menzzo** - API disponible, meubles modernes[1]
+- **Meuble Rousseau** - API disponible[1]
+
+### Spécialisés
+- **SIFAM** - API disponible[1]
+- **NovaEngel** - API disponible, logistique[1]
+- **Dépôt Bingo** - API disponible[1]
+- **Bihr** - API disponible, moto[1]
+- **Toolstream** - API disponible, outillage[1]
+- **Tigris Wholesale** - API disponible, instruments de musique[1]
+- **OPTIMA** - API disponible depuis Pologne[1]
+- **Matterhorn** - API disponible[1]
+- **Channel Distribution** - API disponible, cadeaux et gadgets[1]
+- **Chinavision** - API disponible[1]
+- **B2B Griffati** - API disponible[1]
+- **B2B PlanetDrink** - API disponible, boissons[1]
+- **Tuscany Leather** - API disponible, maroquinerie[1]
+- **Grossiste en ligne** - API disponible[1]
+- **VitaForce** - API disponible[1]
+- **Makant-Europe** - API disponible[1]
+- **Apokin** - API disponible[1]
+
+### Niches spécifiques
+- **BTSWholesaler** - API disponible, cosmétique et parfumerie[1]
+- **Grutinet** - API disponible, produits érotiques[1]
+- **Jouetprive** - API disponible, jouets[1]
+- **France-Case** - API disponible, coques smartphones[1]
+- **OutiDrop** - API disponible, outillage[1]
+
+## Fournisseurs Internationaux avec API
+
+- **CJdropshipping** - API complète avec webhooks et sandbox, +500 000 produits
+- **AliExpress** - API disponible[1]
+- **Spocket** - API disponible
+- **EPROLO** - API disponible
+- **Zentrada** - API disponible
+
+## Bases de données produits (ERP/PIM)
+
+- **Icecat** - API disponible, 4 millions de fiches produits en 47 langues[1]
+- **Etilize** - API disponible, 20 millions de produits[1]
+- **Medipim** - API disponible, 550 000 articles médicaux et parapharmacie[1]
+
+## Module générique
+
+- **EcImport** - Module adaptable à tout fournisseur via connecteurs spécifiques aux API[5]
+
+**Note importante** : La plupart de ces fournisseurs nécessitent un compte professionnel actif avant d'accéder à leur API. Il est recommandé de tester l'API en environnement sandbox avant l'intégration complète.

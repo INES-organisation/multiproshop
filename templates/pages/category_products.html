@@ -2,13 +2,14 @@
 {% block content %}
 <div class="container py-5 premium-page">
     <h1 class="mb-4">{{ category.name }}</h1>
-    <div class="row">
+    <div class="row" id="productsContainer">
         {% for product in products %}
         <div class="col-md-4 mb-4">
             <div class="card h-100 shadow-sm premium-shadow">
-                <img src="{{ product.image_url or url_for('static', filename='images/default-product.jpg') }}" class="card-img-top" alt="{{ product.name }}">
+                <img src="{{ product.image_url or url_for('static', filename='images/default-product.jpg') }}" class="card-img-top" alt="{{ product.name }}" loading="lazy" decoding="async">
                 <div class="card-body text-center">
                     <h5 class="card-title">{{ product.name }}</h5>
+                    <p class="card-text text-muted small">{{ product.category.name if product.category else '' }}</p>
                     <p class="card-text">{{ product.price }} €</p>
                     <a href="{{ url_for('products.product_detail', product_id=product.id) }}" class="btn btn-warning premium-btn">Voir détails</a>
                 </div>
@@ -16,6 +17,18 @@
         </div>
         {% endfor %}
     </div>
+    
+    {% if pagination.has_next %}
+    <div class="text-center my-4">
+        <button id="loadMoreBtn" class="btn btn-primary btn-lg" data-next-page="{{ pagination.next_num }}" data-category-id="{{ category.id }}">
+            <i class="fas fa-plus-circle"></i> Charger plus de produits
+        </button>
+        <div id="loadingSpinner" class="spinner-border text-primary mt-3" role="status" style="display: none;">
+            <span class="visually-hidden">Chargement...</span>
+        </div>
+    </div>
+    {% endif %}
+    
     <div class="premium-feature-row row mt-5 justify-content-center">
         <div class="col-md-2 premium-feature">
             <i class="fas fa-shipping-fast"></i><br>Livraison gratuite
@@ -31,4 +44,67 @@
         </div>
     </div>
 </div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const loadMoreBtn = document.getElementById('loadMoreBtn');
+    if (!loadMoreBtn) return;
+    
+    loadMoreBtn.addEventListener('click', function() {
+        const nextPage = this.dataset.nextPage;
+        const categoryId = this.dataset.categoryId;
+        const spinner = document.getElementById('loadingSpinner');
+        
+        // Afficher le spinner, masquer le bouton
+        this.style.display = 'none';
+        spinner.style.display = 'block';
+        
+        // Charger les produits suivants
+        fetch(`/products/category/${categoryId}?page=${nextPage}`, {
+            headers: {
+                'X-Requested-With': 'XMLHttpRequest'
+            }
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                const container = document.getElementById('productsContainer');
+                
+                // Ajouter les nouveaux produits
+                data.products.forEach(product => {
+                    const col = document.createElement('div');
+                    col.className = 'col-md-4 mb-4';
+                    col.innerHTML = `
+                        <div class="card h-100 shadow-sm premium-shadow">
+                            <img src="${product.image_url || '/static/images/default-product.jpg'}" class="card-img-top" alt="${product.name}" loading="lazy" decoding="async">
+                            <div class="card-body text-center">
+                                <h5 class="card-title">${product.name}</h5>
+                                <p class="card-text text-muted small">${product.category_name}</p>
+                                <p class="card-text">${product.price} €</p>
+                                <a href="/products/${product.id}" class="btn btn-warning premium-btn">Voir détails</a>
+                            </div>
+                        </div>
+                    `;
+                    container.appendChild(col);
+                });
+                
+                // Mettre à jour ou masquer le bouton
+                if (data.has_more) {
+                    loadMoreBtn.dataset.nextPage = data.next_page;
+                    loadMoreBtn.style.display = 'block';
+                } else {
+                    loadMoreBtn.remove();
+                }
+            }
+            spinner.style.display = 'none';
+        })
+        .catch(error => {
+            console.error('Erreur:', error);
+            spinner.style.display = 'none';
+            loadMoreBtn.style.display = 'block';
+            alert('Erreur lors du chargement des produits');
+        });
+    });
+});
+</script>
 {% endblock %}

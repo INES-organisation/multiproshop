@@ -1,0 +1,106 @@
+/* ===== Catégories CJ Dropshipping - Admin ===== */
+
+/* Arbre hiérarchique */
+.category-tree {
+    padding-left: 0;
+}
+
+.category-level-1 {
+    background: #f8f9fa;
+    border-left: 4px solid #007bff;
+}
+
+.category-level-2 {
+    background: #fff;
+    border-left: 4px solid #28a745;
+    margin-left: 20px;
+}
+
+.category-level-3 {
+    background: #fff;
+    border-left: 4px solid #ffc107;
+    margin-left: 40px;
+}
+
+.category-card {
+    margin-bottom: 8px;
+    transition: all 0.2s;
+    cursor: pointer;
+}
+
+.category-card:hover {
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+    transform: translateX(3px);
+}
+
+/* Badges de niveau */
+.level-badge-1 {
+    background-color: #007bff;
+    color: #fff;
+}
+
+.level-badge-2 {
+    background-color: #28a745;
+    color: #fff;
+}
+
+.level-badge-3 {
+    background-color: #ffc107;
+    color: #212529;
+}
+
+/* Noms EN / FR */
+.cj-name-en {
+    color: #495057;
+}
+
+.cj-name-fr {
+    color: #0d6efd;
+}
+
+/* Badge non mappé */
+.cj-no-mapping {
+    border: 1px solid #6c757d;
+    color: #6c757d;
+    background: transparent;
+}
+
+/* Tableau */
+.cj-cat-table th {
+    font-size: 0.85rem;
+    white-space: nowrap;
+}
+
+.cj-cat-table td {
+    font-size: 0.85rem;
+    vertical-align: middle;
+}
+
+.cj-cat-row:hover {
+    background-color: #f0f7ff;
+}
+
+/* Modal */
+.cj-modal-th {
+    width: 120px;
+    background-color: #f8f9fa;
+    font-size: 0.85rem;
+}
+
+/* Loading overlay */
+#loading-overlay {
+    display: none;
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.5);
+    z-index: 9999;
+    justify-content: center;
+    align-items: center;
+}
+
+#loading-overlay.show {
+    display: flex;
+}

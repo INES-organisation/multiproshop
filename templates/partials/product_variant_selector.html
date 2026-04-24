@@ -1,0 +1,38 @@
+<!-- Sélecteur de variantes de produit -->
+<div class="variant-selector" id="variant-selector">
+    <!-- Sélecteur de couleur -->
+    <div id="color-selector"></div>
+    
+    <!-- Sélecteur de taille -->
+    <div id="size-selector"></div>
+    
+    <!-- Info stock -->
+    <div id="product-stock" class="variant-stock-info mt-3">
+        <i class="bi bi-box-seam"></i>
+        <span>Vérification du stock...</span>
+    </div>
+</div>
+
+<!-- Scripts nécessaires -->
+<link rel="stylesheet" href="{{ url_for('static', filename='css/product_variants.css') }}">
+<script src="{{ url_for('static', filename='js/product_variants.js') }}"></script>
+
+<script>
+// Initialiser le sélecteur de variantes
+document.addEventListener('DOMContentLoaded', function() {
+    const productId = {{ product.id }};
+    
+    // Créer l'instance du sélecteur
+    window.productVariantSelector = new ProductVariantSelector(productId);
+    
+    // Modifier le bouton d'ajout au panier pour utiliser la nouvelle fonction
+    const addToCartBtn = document.getElementById('add-to-cart-btn');
+    if (addToCartBtn) {
+        addToCartBtn.addEventListener('click', function(e) {
+            e.preventDefault();
+            const quantity = parseInt(document.getElementById('quantity')?.value || 1);
+            addToCartWithVariant(productId, quantity);
+        });
+    }
+});
+</script>

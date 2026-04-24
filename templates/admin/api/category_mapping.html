@@ -1,0 +1,304 @@
+{% extends "admin/layout_admin_modern.html" %}
+
+{% block title %}Mapping Catégories - {{ provider.name }} - Admin{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4">
+    <!-- Header -->
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h1 class="h3 mb-0">🗺️ Mapping des Catégories</h1>
+            <p class="text-muted">{{ provider.name }} → MultiProShop</p>
+        </div>
+        <a href="{{ url_for('api_management.list_providers') }}" class="btn btn-outline-secondary">
+            <i class="fas fa-arrow-left"></i> Retour
+        </a>
+    </div>
+
+    <!-- Info Provider -->
+    <div class="card border-0 shadow-sm mb-4">
+        <div class="card-body">
+            <div class="row align-items-center">
+                <div class="col-md-8">
+                    <h5 class="mb-1">{{ provider.name }}</h5>
+                    <p class="text-muted mb-0">
+                        <span class="badge bg-secondary">{{ provider.provider_type }}</span>
+                        {% if provider.is_connected %}
+                        <span class="badge bg-success ms-2"><i class="fas fa-check-circle"></i> Connecté</span>
+                        {% endif %}
+                    </p>
+                </div>
+                <div class="col-md-4 text-end">
+                    <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#addMappingModal">
+                        <i class="fas fa-plus"></i> Ajouter un Mapping
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row">
+        <!-- Mappings Existants -->
+        <div class="col-lg-8">
+            <div class="card border-0 shadow-sm">
+                <div class="card-header bg-white py-3">
+                    <h5 class="mb-0">Mappings Configurés ({{ mappings|length }})</h5>
+                </div>
+                <div class="card-body p-0">
+                    {% if mappings %}
+                    <div class="table-responsive">
+                        <table class="table table-hover mb-0">
+                            <thead class="bg-light">
+                                <tr>
+                                    <th>Catégorie Externe</th>
+                                    <th>→</th>
+                                    <th>Catégorie MPS</th>
+                                    <th>Marge</th>
+                                    <th>Auto-Import</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for mapping in mappings %}
+                                <tr>
+                                    <td>
+                                        <strong>{{ mapping.external_category_name }}</strong><br>
+                                        <small class="text-muted">ID: {{ mapping.external_category_id }}</small>
+                                        {% if mapping.external_category_path %}
+                                        <br><small class="text-muted">{{ mapping.external_category_path }}</small>
+                                        {% endif %}
+                                    </td>
+                                    <td class="text-center">
+                                        <i class="fas fa-arrow-right text-primary"></i>
+                                    </td>
+                                    <td>
+                                        <strong>{{ mapping.mps_category.name }}</strong><br>
+                                        <small class="text-muted">{{ mapping.mps_category.slug }}</small>
+                                    </td>
+                                    <td>
+                                        <span class="badge bg-info">
+                                            +{{ ((mapping.apply_markup - 1) * 100)|int }}%
+                                        </span>
+                                    </td>
+                                    <td>
+                                        {% if mapping.auto_import %}
+                                        <span class="badge bg-success">
+                                            <i class="fas fa-check"></i> Oui
+                                        </span>
+                                        {% else %}
+                                        <span class="badge bg-secondary">
+                                            <i class="fas fa-times"></i> Non
+                                        </span>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        <form method="POST" action="{{ url_for('api_management.delete_mapping', mapping_id=mapping.id) }}" 
+                                              style="display: inline;" 
+                                              onsubmit="return confirm('Supprimer ce mapping ?');">
+                                            <button type="submit" class="btn btn-sm btn-outline-danger" title="Supprimer">
+                                                <i class="fas fa-trash"></i>
+                                            </button>
+                                        </form>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                    {% else %}
+                    <div class="text-center py-5">
+                        <i class="fas fa-sitemap fa-3x text-muted mb-3"></i>
+                        <p class="text-muted">Aucun mapping configuré</p>
+                        <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#addMappingModal">
+                            <i class="fas fa-plus"></i> Créer votre premier mapping
+                        </button>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+
+        <!-- Guide -->
+        <div class="col-lg-4">
+            <div class="card border-0 shadow-sm mb-3">
+                <div class="card-header bg-primary text-white py-3">
+                    <h6 class="mb-0"><i class="fas fa-lightbulb"></i> Comment ça marche ?</h6>
+                </div>
+                <div class="card-body">
+                    <div class="mb-3">
+                        <h6 class="small"><strong>1. Créer un Mapping</strong></h6>
+                        <p class="small text-muted">Associez une catégorie externe à une catégorie MPS</p>
+                    </div>
+
+                    <div class="mb-3">
+                        <h6 class="small"><strong>2. Configurer la Marge</strong></h6>
+                        <p class="small text-muted">Ex: 1.3 = +30% sur le prix externe</p>
+                    </div>
+
+                    <div class="mb-3">
+                        <h6 class="small"><strong>3. Activer Auto-Import</strong></h6>
+                        <p class="small text-muted">Les produits seront importés automatiquement lors de la sync</p>
+                    </div>
+
+                    <div class="mb-3">
+                        <h6 class="small"><strong>4. Synchroniser</strong></h6>
+                        <p class="small text-muted">Retournez à la liste des providers et cliquez sur Sync</p>
+                    </div>
+                </div>
+            </div>
+
+            <div class="card border-0 shadow-sm">
+                <div class="card-header bg-info text-white py-3">
+                    <h6 class="mb-0"><i class="fas fa-calculator"></i> Calculateur de Marge</h6>
+                </div>
+                <div class="card-body">
+                    <div class="mb-3">
+                        <label class="form-label small">Prix Externe</label>
+                        <input type="number" class="form-control form-control-sm" id="calcExternal" value="10" step="0.01">
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label small">Marge</label>
+                        <input type="number" class="form-control form-control-sm" id="calcMarkup" value="1.3" step="0.1">
+                    </div>
+                    <div class="alert alert-success mb-0">
+                        <strong>Prix MPS:</strong> <span id="calcResult">13.00</span>€
+                        <br><small>Marge: <span id="calcProfit">3.00</span>€ (<span id="calcPercent">30</span>%)</small>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal Ajouter Mapping -->
+<div class="modal fade" id="addMappingModal" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Ajouter un Mapping de Catégorie</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <form id="mappingForm">
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label for="external_category" class="form-label">Catégorie Externe <span class="text-danger">*</span></label>
+                            <select class="form-select" id="external_category" name="external_category" required>
+                                <option value="">-- Sélectionner --</option>
+                                {% for cat in external_categories %}
+                                <option value="{{ cat.id }}" 
+                                        data-name="{{ cat.name }}" 
+                                        data-path="{{ cat.path if cat.path else '' }}">
+                                    {{ cat.name }}
+                                    {% if cat.path %}
+                                    <small>({{ cat.path }})</small>
+                                    {% endif %}
+                                </option>
+                                {% endfor %}
+                            </select>
+                            <small class="text-muted">Catégorie du provider {{ provider.name }}</small>
+                        </div>
+
+                        <div class="col-md-6 mb-3">
+                            <label for="mps_category_id" class="form-label">Catégorie MPS <span class="text-danger">*</span></label>
+                            <select class="form-select" id="mps_category_id" name="mps_category_id" required>
+                                <option value="">-- Sélectionner --</option>
+                                {% for cat in mps_categories %}
+                                <option value="{{ cat.id }}">{{ cat.name }}</option>
+                                {% endfor %}
+                            </select>
+                            <small class="text-muted">Catégorie de destination dans MPS</small>
+                        </div>
+                    </div>
+
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label for="apply_markup" class="form-label">Marge <span class="text-danger">*</span></label>
+                            <input type="number" class="form-control" id="apply_markup" name="apply_markup" 
+                                   value="1.3" step="0.1" min="1" required>
+                            <small class="text-muted">1.3 = +30%, 1.5 = +50%, 2.0 = +100%</small>
+                        </div>
+
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">Options</label>
+                            <div class="form-check form-switch">
+                                <input class="form-check-input" type="checkbox" id="auto_import" name="auto_import" checked>
+                                <label class="form-check-label" for="auto_import">
+                                    Auto-Import des Produits
+                                </label>
+                            </div>
+                            <small class="text-muted">Importer automatiquement lors de la synchronisation</small>
+                        </div>
+                    </div>
+
+                    <input type="hidden" id="external_category_id" name="external_category_id">
+                    <input type="hidden" id="external_category_name" name="external_category_name">
+                    <input type="hidden" id="external_category_path" name="external_category_path">
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Annuler</button>
+                <button type="button" class="btn btn-primary" onclick="submitMapping()">
+                    <i class="fas fa-save"></i> Créer le Mapping
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+// Calculateur de marge
+function updateCalculator() {
+    const external = parseFloat(document.getElementById('calcExternal').value) || 0;
+    const markup = parseFloat(document.getElementById('calcMarkup').value) || 1;
+    
+    const mpsPrice = external * markup;
+    const profit = mpsPrice - external;
+    const percent = ((markup - 1) * 100);
+    
+    document.getElementById('calcResult').textContent = mpsPrice.toFixed(2);
+    document.getElementById('calcProfit').textContent = profit.toFixed(2);
+    document.getElementById('calcPercent').textContent = percent.toFixed(0);
+}
+
+document.getElementById('calcExternal')?.addEventListener('input', updateCalculator);
+document.getElementById('calcMarkup')?.addEventListener('input', updateCalculator);
+
+// Remplir les champs cachés
+document.getElementById('external_category')?.addEventListener('change', function(e) {
+    const option = e.target.selectedOptions[0];
+    document.getElementById('external_category_id').value = option.value;
+    document.getElementById('external_category_name').value = option.dataset.name || '';
+    document.getElementById('external_category_path').value = option.dataset.path || '';
+});
+
+// Soumettre le mapping
+function submitMapping() {
+    const form = document.getElementById('mappingForm');
+    
+    if (!form.checkValidity()) {
+        form.reportValidity();
+        return;
+    }
+    
+    const formData = new FormData(form);
+    
+    fetch('{{ url_for("api_management.map_category", provider_id=provider.id) }}', {
+        method: 'POST',
+        body: formData
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            alert('✅ ' + data.message);
+            location.reload();
+        } else {
+            alert('❌ ' + data.message);
+        }
+    })
+    .catch(error => {
+        alert('Erreur: ' + error);
+    });
+}
+</script>
+{% endblock %}

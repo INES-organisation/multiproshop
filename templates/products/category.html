@@ -22,10 +22,10 @@
             <div class="col-md-4 mb-4">
                 <div class="card h-100">
                     {% if product.image_url %}
-                    <img src="{{ product.image_url }}" class="card-img-top" alt="{{ product.name }}">
+                    <img src="{{ product.image_url }}" class="card-img-top" alt="{{ product.name }}" loading="lazy" decoding="async">
                     {% else %}
                     <img src="{{ url_for('static', filename='images/default-product.jpg') }}" 
-                         class="card-img-top" alt="Image par défaut">
+                         class="card-img-top" alt="Image par défaut" loading="lazy" decoding="async">
                     {% endif %}
                     <div class="card-body">
                         <h5 class="card-title">{{ product.name }}</h5>

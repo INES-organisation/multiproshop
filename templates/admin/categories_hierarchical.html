@@ -1,0 +1,142 @@
+{% extends 'admin/layout_admin_modern.html' %}
+{% block title %}Gestion Catégories{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <div>
+        <h1 style="font-weight: 800; margin-bottom: 0.5rem;">
+            <i class="fas fa-sitemap"></i> Gestion des Catégories
+        </h1>
+        <p style="color: #999; margin: 0;">
+            {{ stats.total }} catégories au total 
+            ({{ stats.level1 }} principales, {{ stats.level2 }} sous-catégories, {{ stats.level3 }} items)
+        </p>
+    </div>
+    <div>
+        <a href="{{ url_for('admin.create_category') }}" class="admin-btn admin-btn-primary">
+            <i class="fas fa-plus"></i>
+            Nouvelle Catégorie
+        </a>
+    </div>
+</div>
+
+<!-- Filtres par niveau -->
+<div class="admin-card mb-4">
+    <div class="admin-card-body">
+        <div class="btn-group" role="group">
+            <a href="{{ url_for('admin.categories', level=1) }}" 
+               class="btn {{ 'btn-primary' if current_level == 1 else 'btn-outline-primary' }}">
+                <i class="fas fa-layer-group"></i> Niveau 1 ({{ stats.level1 }})
+            </a>
+            <a href="{{ url_for('admin.categories', level=2) }}" 
+               class="btn {{ 'btn-primary' if current_level == 2 else 'btn-outline-primary' }}">
+                <i class="fas fa-list"></i> Niveau 2 ({{ stats.level2 }})
+            </a>
+            <a href="{{ url_for('admin.categories', level=3) }}" 
+               class="btn {{ 'btn-primary' if current_level == 3 else 'btn-outline-primary' }}">
+                <i class="fas fa-tags"></i> Niveau 3 ({{ stats.level3 }})
+            </a>
+        </div>
+    </div>
+</div>
+
+<!-- Table des catégories -->
+<div class="admin-card">
+    <div class="admin-card-body" style="padding: 0;">
+        <table class="admin-table">
+            <thead>
+                <tr>
+                    <th style="width: 80px;">ID</th>
+                    <th style="width: 80px;">Niveau</th>
+                    <th style="width: 80px;">Icône</th>
+                    <th>Nom</th>
+                    <th>Parent</th>
+                    <th>Slug</th>
+                    <th style="width: 200px;">Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% if categories %}
+                    {% for category in categories %}
+                    <tr>
+                        <td><strong>#{{ category.id }}</strong></td>
+                        <td>
+                            <span class="badge bg-{{ 'primary' if category.level == 1 else ('info' if category.level == 2 else 'secondary') }}">
+                                Niveau {{ category.level }}
+                            </span>
+                        </td>
+                        <td>
+                            {% if category.icon %}
+                                <i class="fas {{ category.icon }}" style="font-size: 1.5rem;"></i>
+                            {% endif %}
+                        </td>
+                        <td>
+                            <div style="font-weight: 600;">{{ category.name }}</div>
+                            {% if category.description %}
+                                <small style="color: #999;">{{ category.description[:50] }}...</small>
+                            {% endif %}
+                        </td>
+                        <td>
+                            {% if category.parent %}
+                                <span class="badge bg-light text-dark">{{ category.parent.name }}</span>
+                            {% else %}
+                                <span style="color: #999;">-</span>
+                            {% endif %}
+                        </td>
+                        <td>
+                            <code style="font-size: 0.85rem;">{{ category.slug }}</code>
+                        </td>
+                        <td>
+                            <div class="admin-table-actions">
+                                <!-- Voir les enfants -->
+                                {% if category.level < 3 %}
+                                    <a href="{{ url_for('admin.categories', level=category.level + 1) }}" 
+                                       class="admin-btn admin-btn-sm admin-btn-info"
+                                       title="Voir les sous-catégories">
+                                        <i class="fas fa-sitemap"></i>
+                                    </a>
+                                {% endif %}
+                                
+                                <!-- Éditer -->
+                                <a href="{{ url_for('admin.edit_category', category_id=category.id) }}" 
+                                   class="admin-btn admin-btn-sm admin-btn-primary"
+                                   title="Modifier">
+                                    <i class="fas fa-edit"></i>
+                                </a>
+                                
+                                <!-- Supprimer -->
+                                <form method="POST" action="{{ url_for('admin.delete_category', category_id=category.id) }}" 
+                                      style="display: inline;"
+                                      onsubmit="return confirm('Supprimer cette catégorie ? Toutes les sous-catégories seront également supprimées.');">
+                                    <button type="submit" class="admin-btn admin-btn-sm admin-btn-danger" title="Supprimer">
+                                        <i class="fas fa-trash"></i>
+                                    </button>
+                                </form>
+                            </div>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                {% else %}
+                    <tr>
+                        <td colspan="7" style="text-align: center; padding: 3rem; color: #999;">
+                            <i class="fas fa-folder-open" style="font-size: 3rem; margin-bottom: 1rem; display: block;"></i>
+                            Aucune catégorie de niveau {{ current_level }} trouvée
+                        </td>
+                    </tr>
+                {% endif %}
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<style>
+.btn-group .btn {
+    padding: 0.75rem 1.5rem;
+    font-weight: 600;
+}
+.badge {
+    padding: 0.5rem 0.75rem;
+    font-weight: 600;
+}
+</style>
+{% endblock %}

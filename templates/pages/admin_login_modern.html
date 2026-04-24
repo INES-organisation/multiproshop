@@ -1,0 +1,94 @@
+{% extends 'layout.html' %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/pages_modern.css') }}">
+{% endblock %}
+
+{% block content %}
+<!-- Page Header -->
+<div class="page-header" style="background: linear-gradient(135deg, #2c3e50, #34495e);">
+    <div class="container">
+        <h1 class="page-title" style="color: white;">
+            <i class="fas fa-shield-alt"></i>
+            Connexion Administrateur
+        </h1>
+        <p class="page-subtitle" style="color: rgba(255,255,255,0.8);">Accès réservé aux administrateurs</p>
+    </div>
+</div>
+
+<!-- Login Content -->
+<div class="container page-container">
+    <div class="row justify-content-center">
+        <div class="col-lg-5 col-md-7">
+            <div class="card-modern">
+                <div class="card-modern-header" style="background: linear-gradient(135deg, #2c3e50, #34495e); color: white;">
+                    <i class="fas fa-lock"></i> Authentification Sécurisée
+                </div>
+                <div class="card-modern-body">
+                    {% with messages = get_flashed_messages(with_categories=true) %}
+                        {% if messages %}
+                            {% for category, message in messages %}
+                            <div class="alert-modern alert-{{ category }} mb-3">
+                                <i class="fas fa-exclamation-circle"></i>
+                                <div>{{ message }}</div>
+                            </div>
+                            {% endfor %}
+                        {% endif %}
+                    {% endwith %}
+                    
+                    <form method="post">
+                        <div class="form-group-modern">
+                            <label class="form-label-modern">
+                                <i class="fas fa-user"></i> Nom d'utilisateur ou Email
+                            </label>
+                            <input type="text" class="form-control-modern" id="username" name="username" placeholder="admin@multiproshop.com" required autofocus>
+                        </div>
+                        
+                        <div class="form-group-modern">
+                            <label class="form-label-modern">
+                                <i class="fas fa-key"></i> Mot de passe
+                            </label>
+                            <input type="password" class="form-control-modern" id="password" name="password" placeholder="••••••••" required>
+                        </div>
+                        
+                        <div class="form-check-modern mb-3">
+                            <input type="checkbox" class="form-check-input" id="remember" name="remember">
+                            <label class="form-check-label" for="remember">
+                                Rester connecté
+                            </label>
+                        </div>
+                        
+                        <button type="submit" class="btn-modern btn-modern-primary w-100">
+                            <i class="fas fa-sign-in-alt"></i>
+                            Se Connecter
+                        </button>
+                    </form>
+                </div>
+            </div>
+            
+            <!-- Security Info -->
+            <div class="card-modern mt-3">
+                <div class="card-modern-body" style="background: rgba(220,53,69,0.05);">
+                    <div style="display: flex; align-items: center; gap: 1rem;">
+                        <i class="fas fa-exclamation-triangle" style="font-size: 2rem; color: #dc3545;"></i>
+                        <div>
+                            <strong style="color: #dc3545;">Accès Restreint</strong>
+                            <p style="margin: 0; color: #666; font-size: 0.9rem;">
+                                Cette zone est réservée aux administrateurs du site. Toute tentative d'accès non autorisée sera enregistrée.
+                            </p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Back Link -->
+            <div class="text-center mt-3">
+                <a href="{{ url_for('auth.login') }}" style="color: #666; text-decoration: none;">
+                    <i class="fas fa-arrow-left"></i>
+                    Retour à la connexion classique
+                </a>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

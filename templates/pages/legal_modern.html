@@ -1,0 +1,292 @@
+{% extends 'layout.html' %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/pages_modern.css') }}">
+<style>
+.legal-toc {
+    position: sticky;
+    top: 100px;
+}
+
+.legal-toc-item {
+    padding: 0.8rem 1rem;
+    border-left: 3px solid var(--border-color);
+    margin-bottom: 0.5rem;
+    cursor: pointer;
+    transition: var(--transition);
+    color: #666;
+}
+
+.legal-toc-item:hover,
+.legal-toc-item.active {
+    border-left-color: var(--primary-color);
+    background: var(--light-bg);
+    color: var(--primary-color);
+    font-weight: 600;
+}
+
+.legal-section {
+    margin-bottom: 3rem;
+    scroll-margin-top: 100px;
+}
+
+.legal-section h2 {
+    font-weight: 800;
+    margin-bottom: 1.5rem;
+    color: var(--dark-color);
+    padding-bottom: 0.5rem;
+    border-bottom: 3px solid var(--primary-color);
+}
+
+.legal-section h3 {
+    font-weight: 700;
+    margin: 2rem 0 1rem 0;
+    color: var(--dark-color);
+}
+
+.legal-section p {
+    line-height: 1.8;
+    color: #666;
+    margin-bottom: 1rem;
+}
+
+.legal-section ul,
+.legal-section ol {
+    line-height: 1.8;
+    color: #666;
+    margin-bottom: 1rem;
+}
+
+.legal-highlight {
+    background: linear-gradient(135deg, rgba(255,179,0,0.1), rgba(255,152,0,0.1));
+    padding: 1.5rem;
+    border-left: 4px solid var(--primary-color);
+    border-radius: var(--border-radius);
+    margin: 1.5rem 0;
+}
+
+.legal-date {
+    color: #999;
+    font-size: 0.9rem;
+    font-style: italic;
+}
+</style>
+{% endblock %}
+
+{% block content %}
+<!-- Page Header -->
+<div class="page-header">
+    <div class="container">
+        <h1 class="page-title">
+            <i class="fas fa-gavel"></i>
+            Mentions Légales
+        </h1>
+        <p class="page-subtitle">Informations légales et réglementaires</p>
+        <p class="legal-date">Dernière mise à jour : 2 Novembre 2025</p>
+    </div>
+</div>
+
+<!-- Legal Content -->
+<div class="container page-container">
+    <div class="row g-4">
+        <!-- Table of Contents -->
+        <div class="col-lg-3">
+            <div class="legal-toc">
+                <div class="card-modern">
+                    <div class="card-modern-header">
+                        <i class="fas fa-list"></i> Sommaire
+                    </div>
+                    <div class="card-modern-body" style="padding: 0.5rem;">
+                        <div class="legal-toc-item active" onclick="scrollToSection('editeur')">
+                            1. Éditeur du Site
+                        </div>
+                        <div class="legal-toc-item" onclick="scrollToSection('hebergeur')">
+                            2. Hébergeur
+                        </div>
+                        <div class="legal-toc-item" onclick="scrollToSection('propriete')">
+                            3. Propriété Intellectuelle
+                        </div>
+                        <div class="legal-toc-item" onclick="scrollToSection('donnees')">
+                            4. Données Personnelles
+                        </div>
+                        <div class="legal-toc-item" onclick="scrollToSection('cookies')">
+                            5. Cookies
+                        </div>
+                        <div class="legal-toc-item" onclick="scrollToSection('responsabilite')">
+                            6. Responsabilité
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Content -->
+        <div class="col-lg-9">
+            <!-- Section 1 -->
+            <div class="legal-section" id="editeur">
+                <h2>1. Éditeur du Site</h2>
+                <p>
+                    Le site <strong>MultiProShop</strong> est édité par :
+                </p>
+                <div class="legal-highlight">
+                    <p style="margin: 0;"><strong>MultiProShop SAS</strong></p>
+                    <p style="margin: 0;">Capital social : 50 000 €</p>
+                    <p style="margin: 0;">SIRET : 123 456 789 00012</p>
+                    <p style="margin: 0;">RCS Paris B 123 456 789</p>
+                    <p style="margin: 0;">TVA Intracommunautaire : FR12 123456789</p>
+                    <p style="margin: 0;">Siège social : 123 Rue du Commerce, 75000 Paris, France</p>
+                    <p style="margin: 0;">Téléphone : +33 1 23 45 67 89</p>
+                    <p style="margin: 0;">Email : contact@multiproshop.com</p>
+                </div>
+                <p>
+                    <strong>Directeur de la publication :</strong> Jean Dupont
+                </p>
+            </div>
+            
+            <!-- Section 2 -->
+            <div class="legal-section" id="hebergeur">
+                <h2>2. Hébergeur</h2>
+                <p>
+                    Le site est hébergé par :
+                </p>
+                <div class="legal-highlight">
+                    <p style="margin: 0;"><strong>OVH SAS</strong></p>
+                    <p style="margin: 0;">2 rue Kellermann, 59100 Roubaix, France</p>
+                    <p style="margin: 0;">Téléphone : +33 9 72 10 10 07</p>
+                    <p style="margin: 0;">Site web : www.ovh.com</p>
+                </div>
+            </div>
+            
+            <!-- Section 3 -->
+            <div class="legal-section" id="propriete">
+                <h2>3. Propriété Intellectuelle</h2>
+                <h3>3.1 Droits d'auteur</h3>
+                <p>
+                    L'ensemble du contenu du site MultiProShop (textes, images, vidéos, logos, icônes, etc.) est protégé par le droit d'auteur et appartient à MultiProShop SAS ou à ses partenaires.
+                </p>
+                <p>
+                    Toute reproduction, représentation, modification, publication, adaptation de tout ou partie des éléments du site, quel que soit le moyen ou le procédé utilisé, est interdite, sauf autorisation écrite préalable de MultiProShop SAS.
+                </p>
+                
+                <h3>3.2 Marques</h3>
+                <p>
+                    Les marques, logos et signes distinctifs reproduits sur le site sont la propriété de MultiProShop SAS ou de ses partenaires. Toute utilisation non autorisée constitue une contrefaçon.
+                </p>
+            </div>
+            
+            <!-- Section 4 -->
+            <div class="legal-section" id="donnees">
+                <h2>4. Données Personnelles</h2>
+                <p>
+                    Conformément au Règlement Général sur la Protection des Données (RGPD) et à la loi Informatique et Libertés, vous disposez d'un droit d'accès, de rectification, de suppression et d'opposition aux données personnelles vous concernant.
+                </p>
+                <p>
+                    Pour exercer ces droits, vous pouvez nous contacter :
+                </p>
+                <ul>
+                    <li>Par email : dpo@multiproshop.com</li>
+                    <li>Par courrier : MultiProShop SAS - DPO, 123 Rue du Commerce, 75000 Paris</li>
+                </ul>
+                <p>
+                    Pour plus d'informations, consultez notre <a href="{{ url_for('main.privacy') }}" style="color: var(--primary-color); font-weight: 600;">Politique de Confidentialité</a>.
+                </p>
+            </div>
+            
+            <!-- Section 5 -->
+            <div class="legal-section" id="cookies">
+                <h2>5. Cookies</h2>
+                <p>
+                    Le site utilise des cookies pour améliorer votre expérience de navigation et réaliser des statistiques de visite.
+                </p>
+                <h3>5.1 Types de cookies utilisés</h3>
+                <ul>
+                    <li><strong>Cookies essentiels :</strong> Nécessaires au fonctionnement du site</li>
+                    <li><strong>Cookies de performance :</strong> Pour analyser l'utilisation du site</li>
+                    <li><strong>Cookies fonctionnels :</strong> Pour mémoriser vos préférences</li>
+                    <li><strong>Cookies publicitaires :</strong> Pour personnaliser les publicités</li>
+                </ul>
+                <p>
+                    Vous pouvez configurer vos préférences de cookies à tout moment via les paramètres de votre navigateur.
+                </p>
+            </div>
+            
+            <!-- Section 6 -->
+            <div class="legal-section" id="responsabilite">
+                <h2>6. Limitation de Responsabilité</h2>
+                <h3>6.1 Contenu du site</h3>
+                <p>
+                    MultiProShop s'efforce d'assurer l'exactitude et la mise à jour des informations diffusées sur le site. Toutefois, MultiProShop ne peut garantir l'exactitude, la précision ou l'exhaustivité des informations mises à disposition.
+                </p>
+                
+                <h3>6.2 Disponibilité</h3>
+                <p>
+                    MultiProShop ne peut être tenu responsable des interruptions du site, qu'elles soient volontaires ou non, notamment pour des opérations de maintenance ou en cas de force majeure.
+                </p>
+                
+                <h3>6.3 Liens externes</h3>
+                <p>
+                    Le site peut contenir des liens vers des sites externes. MultiProShop n'exerce aucun contrôle sur ces sites et décline toute responsabilité quant à leur contenu.
+                </p>
+            </div>
+            
+            <!-- Contact -->
+            <div class="card-modern">
+                <div class="card-modern-header">
+                    <i class="fas fa-envelope"></i> Nous Contacter
+                </div>
+                <div class="card-modern-body">
+                    <p style="color: #666; margin-bottom: 1rem;">
+                        Pour toute question concernant les mentions légales, vous pouvez nous contacter :
+                    </p>
+                    <div class="d-flex gap-2">
+                        <a href="{{ url_for('main.contact') }}" class="btn-modern btn-modern-primary">
+                            <i class="fas fa-paper-plane"></i>
+                            Formulaire de Contact
+                        </a>
+                        <a href="mailto:contact@multiproshop.com" class="btn-modern btn-modern-outline">
+                            <i class="fas fa-envelope"></i>
+                            Email
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+function scrollToSection(id) {
+    const element = document.getElementById(id);
+    if (element) {
+        element.scrollIntoView({ behavior: 'smooth' });
+        
+        // Update active state
+        document.querySelectorAll('.legal-toc-item').forEach(item => item.classList.remove('active'));
+        event.target.classList.add('active');
+    }
+}
+
+// Update active TOC item on scroll
+window.addEventListener('scroll', () => {
+    const sections = document.querySelectorAll('.legal-section');
+    const tocItems = document.querySelectorAll('.legal-toc-item');
+    
+    let current = '';
+    sections.forEach(section => {
+        const sectionTop = section.offsetTop;
+        if (scrollY >= sectionTop - 150) {
+            current = section.getAttribute('id');
+        }
+    });
+    
+    tocItems.forEach((item, index) => {
+        item.classList.remove('active');
+        if (item.getAttribute('onclick').includes(current)) {
+            item.classList.add('active');
+        }
+    });
+});
+</script>
+{% endblock %}

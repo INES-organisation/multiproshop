@@ -1,7 +1,6 @@
 from flask import Blueprint, render_template, redirect, url_for, flash, request
 from flask_login import login_user, logout_user, login_required, current_user
-from models.user import User
-from extensions import db
+from services.auth_service import AuthService
 
 auth = Blueprint('auth', __name__, url_prefix='/auth')
 
@@ -12,19 +11,14 @@ def register():
         email = request.form.get('email')
         password = request.form.get('password')
         
-        user_exists = User.query.filter((User.username == username) | (User.email == email)).first()
-        if user_exists:
-            flash('Un utilisateur avec ce nom ou cet email existe déjà')
+        success, message, user = AuthService.register_user(username, email, password)
+        
+        if success:
+            flash(message + ' Connectez-vous!')
+            return redirect(url_for('auth.login'))
+        else:
+            flash(message)
             return redirect(url_for('auth.register'))
-        
-        new_user = User(username=username, email=email)
-        new_user.set_password(password)
-        
-        db.session.add(new_user)
-        db.session.commit()
-        
-        flash('Inscription réussie. Connectez-vous!')
-        return redirect(url_for('auth.login'))
     
     return render_template('pages/register.html')
 
@@ -33,15 +27,15 @@ def login():
     if request.method == 'POST':
         identifiant = request.form.get('username')
         password = request.form.get('password')
-
-        # Permet la connexion avec username OU email
-        user = User.query.filter((User.username == identifiant) | (User.email == identifiant)).first()
-
-        if user and user.check_password(password):
+        
+        success, message, user = AuthService.authenticate_user(identifiant, password)
+        
+        if success:
             login_user(user)
             return redirect(url_for('main.index'))
         else:
-            flash('Identifiants invalides')
+            flash(message)
+    
     return render_template('pages/login.html')
 
 @auth.route('/admin-login', methods=['GET', 'POST'])
@@ -49,15 +43,18 @@ def admin_login():
     if request.method == 'POST':
         identifiant = request.form.get('username')
         password = request.form.get('password')
-        user = User.query.filter((User.username == identifiant) | (User.email == identifiant)).first()
-        if user and user.check_password(password):
-            if getattr(user.role, 'name', None) == 'admin':
-                login_user(user)
-                return redirect(url_for('admin.dashboard'))
-            else:
-                flash("Accès réservé aux administrateurs.")
+        remember = request.form.get('remember', False)
+        
+        success, message, user = AuthService.authenticate_admin(identifiant, password)
+        
+        if success:
+            login_user(user, remember=True)  # Toujours remember pour admin
+            from flask import session
+            session.permanent = True  # Marquer la session comme permanente
+            return redirect(url_for('admin.dashboard'))
         else:
-            flash('Identifiants invalides')
+            flash(message)
+    
     return render_template('pages/admin_login.html')
 
 @auth.route('/deconnexion')

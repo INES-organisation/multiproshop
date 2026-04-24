@@ -1,0 +1,292 @@
+{% extends "admin/layout_admin_modern.html" %}
+
+{% block title %}Gestion des APIs - Admin{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4">
+    <!-- Header -->
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h1 class="h3 mb-0">🔌 Gestion des APIs Partenaires</h1>
+            <p class="text-muted">Intégrez et gérez vos fournisseurs (CJ Dropshipping, Printify, Amazon, etc.)</p>
+        </div>
+        <a href="{{ url_for('api_management.create_provider') }}" class="btn btn-primary">
+            <i class="fas fa-plus"></i> Ajouter un Provider
+        </a>
+    </div>
+
+    <!-- Statistiques -->
+    <div class="row mb-4">
+        <div class="col-md-3">
+            <div class="card border-0 shadow-sm">
+                <div class="card-body">
+                    <div class="d-flex align-items-center">
+                        <div class="flex-shrink-0">
+                            <div class="bg-primary bg-opacity-10 p-3 rounded">
+                                <i class="fas fa-plug text-primary fa-2x"></i>
+                            </div>
+                        </div>
+                        <div class="flex-grow-1 ms-3">
+                            <h6 class="text-muted mb-1">Total Providers</h6>
+                            <h3 class="mb-0">{{ stats.total }}</h3>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card border-0 shadow-sm">
+                <div class="card-body">
+                    <div class="d-flex align-items-center">
+                        <div class="flex-shrink-0">
+                            <div class="bg-success bg-opacity-10 p-3 rounded">
+                                <i class="fas fa-check-circle text-success fa-2x"></i>
+                            </div>
+                        </div>
+                        <div class="flex-grow-1 ms-3">
+                            <h6 class="text-muted mb-1">Connectés</h6>
+                            <h3 class="mb-0">{{ stats.connected }}</h3>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card border-0 shadow-sm">
+                <div class="card-body">
+                    <div class="d-flex align-items-center">
+                        <div class="flex-shrink-0">
+                            <div class="bg-info bg-opacity-10 p-3 rounded">
+                                <i class="fas fa-box text-info fa-2x"></i>
+                            </div>
+                        </div>
+                        <div class="flex-grow-1 ms-3">
+                            <h6 class="text-muted mb-1">Produits Importés</h6>
+                            <h3 class="mb-0">{{ stats.total_products }}</h3>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card border-0 shadow-sm">
+                <div class="card-body">
+                    <div class="d-flex align-items-center">
+                        <div class="flex-shrink-0">
+                            <div class="bg-warning bg-opacity-10 p-3 rounded">
+                                <i class="fas fa-euro-sign text-warning fa-2x"></i>
+                            </div>
+                        </div>
+                        <div class="flex-grow-1 ms-3">
+                            <h6 class="text-muted mb-1">Revenu Total</h6>
+                            <h3 class="mb-0">{{ "%.2f"|format(stats.total_revenue) }}€</h3>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Liste des Providers -->
+    <div class="card border-0 shadow-sm">
+        <div class="card-header bg-white py-3">
+            <h5 class="mb-0">Providers Configurés</h5>
+        </div>
+        <div class="card-body p-0">
+            {% if providers %}
+            <div class="table-responsive">
+                <table class="table table-hover mb-0">
+                    <thead class="bg-light">
+                        <tr>
+                            <th>Provider</th>
+                            <th>Type</th>
+                            <th>Statut</th>
+                            <th>Produits</th>
+                            <th>Dernière Sync</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for provider in providers %}
+                        <tr>
+                            <td>
+                                <div class="d-flex align-items-center">
+                                    {% if provider.logo_url %}
+                                    <img src="{{ provider.logo_url }}" alt="{{ provider.name }}" class="rounded me-2" style="width: 40px; height: 40px; object-fit: contain;" loading="lazy" decoding="async">
+                                    {% else %}
+                                    <div class="bg-secondary bg-opacity-10 rounded me-2 d-flex align-items-center justify-content-center" style="width: 40px; height: 40px;">
+                                        <i class="fas fa-plug"></i>
+                                    </div>
+                                    {% endif %}
+                                    <div>
+                                        <strong>{{ provider.name }}</strong><br>
+                                        <small class="text-muted">{{ provider.slug }}</small>
+                                    </div>
+                                </div>
+                            </td>
+                            <td>
+                                <span class="badge bg-secondary">{{ provider.provider_type }}</span>
+                            </td>
+                            <td>
+                                {% if provider.is_active %}
+                                    {% if provider.is_connected %}
+                                    <span class="badge bg-success">
+                                        <i class="fas fa-check-circle"></i> Connecté
+                                    </span>
+                                    {% else %}
+                                    <span class="badge bg-warning">
+                                        <i class="fas fa-exclamation-triangle"></i> Non testé
+                                    </span>
+                                    {% endif %}
+                                {% else %}
+                                <span class="badge bg-danger">
+                                    <i class="fas fa-times-circle"></i> Inactif
+                                </span>
+                                {% endif %}
+                            </td>
+                            <td>
+                                <strong>{{ provider.real_products_count }}</strong> produits
+                            </td>
+                            <td>
+                                {% if provider.last_sync_at %}
+                                <small>{{ provider.last_sync_at.strftime('%d/%m/%Y %H:%M') }}</small>
+                                {% else %}
+                                <small class="text-muted">Jamais</small>
+                                {% endif %}
+                            </td>
+                            <td>
+                                <div class="btn-group btn-group-sm">
+                                    <button class="btn btn-outline-primary" onclick="testConnection({{ provider.id }})" title="Tester la connexion">
+                                        <i class="fas fa-plug"></i>
+                                    </button>
+                                    <a href="{{ url_for('api_management.manage_categories', provider_id=provider.id) }}" class="btn btn-outline-info" title="Mapper les catégories">
+                                        <i class="fas fa-sitemap"></i>
+                                    </a>
+                                    <button class="btn btn-outline-success" onclick="syncProducts({{ provider.id }})" title="Synchroniser les produits">
+                                        <i class="fas fa-sync"></i>
+                                    </button>
+                                    <a href="{{ url_for('api_management.edit_provider', provider_id=provider.id) }}" class="btn btn-outline-secondary" title="Éditer">
+                                        <i class="fas fa-edit"></i>
+                                    </a>
+                                    <button class="btn btn-outline-danger" onclick="deleteProvider({{ provider.id }}, '{{ provider.name }}')" title="Supprimer">
+                                        <i class="fas fa-trash"></i>
+                                    </button>
+                                </div>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            {% else %}
+            <div class="text-center py-5">
+                <i class="fas fa-plug fa-3x text-muted mb-3"></i>
+                <p class="text-muted">Aucun provider configuré</p>
+                <a href="{{ url_for('api_management.create_provider') }}" class="btn btn-primary">
+                    <i class="fas fa-plus"></i> Ajouter votre premier provider
+                </a>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+
+    <!-- Guide rapide -->
+    <div class="card border-0 shadow-sm mt-4">
+        <div class="card-header bg-primary text-white">
+            <h5 class="mb-0"><i class="fas fa-lightbulb"></i> Guide Rapide</h5>
+        </div>
+        <div class="card-body">
+            <div class="row">
+                <div class="col-md-3">
+                    <h6>1. Ajouter un Provider</h6>
+                    <p class="small text-muted">Configurez vos clés API (CJ Dropshipping, Printify, etc.)</p>
+                </div>
+                <div class="col-md-3">
+                    <h6>2. Tester la Connexion</h6>
+                    <p class="small text-muted">Vérifiez que l'API fonctionne correctement</p>
+                </div>
+                <div class="col-md-3">
+                    <h6>3. Mapper les Catégories</h6>
+                    <p class="small text-muted">Associez les catégories externes à vos catégories MPS</p>
+                </div>
+                <div class="col-md-3">
+                    <h6>4. Synchroniser</h6>
+                    <p class="small text-muted">Importez automatiquement les produits</p>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+function testConnection(providerId) {
+    if (confirm('Tester la connexion à ce provider ?')) {
+        fetch(`/admin/api/providers/${providerId}/test`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            }
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                alert('✅ ' + data.message);
+                location.reload();
+            } else {
+                alert('❌ ' + data.message);
+            }
+        })
+        .catch(error => {
+            alert('Erreur: ' + error);
+        });
+    }
+}
+
+function syncProducts(providerId) {
+    if (confirm('Synchroniser les produits de ce provider ? Cela peut prendre quelques minutes.')) {
+        const btn = event.target.closest('button');
+        btn.disabled = true;
+        btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i>';
+        
+        fetch(`/admin/api/providers/${providerId}/sync`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            credentials: 'same-origin'
+        })
+        .then(response => {
+            if (!response.ok) {
+                throw new Error(`HTTP ${response.status}`);
+            }
+            return response.json();
+        })
+        .then(data => {
+            if (data.success) {
+                alert(`✅ Synchronisation terminée !\n\n${data.created} produits créés\n${data.updated} produits mis à jour\n${data.failed} échecs`);
+                location.reload();
+            } else {
+                alert('❌ Erreur: ' + data.message);
+            }
+            btn.disabled = false;
+            btn.innerHTML = '<i class="fas fa-sync"></i>';
+        })
+        .catch(error => {
+            alert('Erreur: ' + error);
+            btn.disabled = false;
+            btn.innerHTML = '<i class="fas fa-sync"></i>';
+        });
+    }
+}
+
+function deleteProvider(providerId, providerName) {
+    if (confirm(`Supprimer le provider "${providerName}" ?\n\nCela supprimera aussi tous les mappings et sources associés.`)) {
+        const form = document.createElement('form');
+        form.method = 'POST';
+        form.action = `/admin/api/providers/${providerId}/delete`;
+        document.body.appendChild(form);
+        form.submit();
+    }
+}
+</script>
+{% endblock %}

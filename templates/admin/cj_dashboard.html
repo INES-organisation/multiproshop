@@ -1,0 +1,436 @@
+{% extends "admin/layout_admin_modern.html" %}
+
+{% block title %}Dashboard CJ Dropshipping{% endblock %}
+
+{% block extra_css %}
+<style>
+    .kpi-card {
+        background: white;
+        border-radius: 8px;
+        padding: 20px;
+        box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        margin-bottom: 20px;
+    }
+    
+    .kpi-value {
+        font-size: 2rem;
+        font-weight: bold;
+        color: #2c3e50;
+        margin: 10px 0;
+    }
+    
+    .kpi-label {
+        color: #7f8c8d;
+        font-size: 0.9rem;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+    }
+    
+    .kpi-change {
+        font-size: 0.85rem;
+        margin-top: 5px;
+    }
+    
+    .kpi-change.positive {
+        color: #27ae60;
+    }
+    
+    .kpi-change.negative {
+        color: #e74c3c;
+    }
+    
+    .alert-box {
+        padding: 15px;
+        border-radius: 6px;
+        margin-bottom: 15px;
+        display: flex;
+        align-items: center;
+        gap: 10px;
+    }
+    
+    .alert-box.warning {
+        background: #fff3cd;
+        border-left: 4px solid #ffc107;
+        color: #856404;
+    }
+    
+    .alert-box.info {
+        background: #d1ecf1;
+        border-left: 4px solid #17a2b8;
+        color: #0c5460;
+    }
+    
+    .alert-box.danger {
+        background: #f8d7da;
+        border-left: 4px solid #dc3545;
+        color: #721c24;
+    }
+    
+    .chart-container {
+        background: white;
+        border-radius: 8px;
+        padding: 20px;
+        box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        margin-bottom: 20px;
+    }
+    
+    .product-item {
+        display: flex;
+        align-items: center;
+        gap: 15px;
+        padding: 15px;
+        border-bottom: 1px solid #ecf0f1;
+    }
+    
+    .product-item:last-child {
+        border-bottom: none;
+    }
+    
+    .product-image {
+        width: 60px;
+        height: 60px;
+        object-fit: cover;
+        border-radius: 6px;
+    }
+    
+    .product-info {
+        flex: 1;
+    }
+    
+    .product-name {
+        font-weight: 600;
+        color: #2c3e50;
+        margin-bottom: 5px;
+    }
+    
+    .product-stats {
+        font-size: 0.85rem;
+        color: #7f8c8d;
+    }
+    
+    .period-selector {
+        display: flex;
+        gap: 10px;
+        margin-bottom: 20px;
+    }
+    
+    .period-btn {
+        padding: 8px 16px;
+        border: 1px solid #ddd;
+        background: white;
+        border-radius: 6px;
+        cursor: pointer;
+        transition: all 0.3s;
+    }
+    
+    .period-btn:hover {
+        background: #f8f9fa;
+    }
+    
+    .period-btn.active {
+        background: #007bff;
+        color: white;
+        border-color: #007bff;
+    }
+    
+    .stat-badge {
+        display: inline-block;
+        padding: 4px 12px;
+        border-radius: 12px;
+        font-size: 0.85rem;
+        font-weight: 600;
+    }
+    
+    .stat-badge.success {
+        background: #d4edda;
+        color: #155724;
+    }
+    
+    .stat-badge.warning {
+        background: #fff3cd;
+        color: #856404;
+    }
+    
+    .stat-badge.danger {
+        background: #f8d7da;
+        color: #721c24;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4">
+    <div class="row mb-4">
+        <div class="col-md-12">
+            <h2>📊 Dashboard CJ Dropshipping</h2>
+            <p class="text-muted">Vue d'ensemble de vos performances CJ</p>
+        </div>
+    </div>
+
+    <!-- Sélecteur de période -->
+    <div class="period-selector">
+        <button class="period-btn" data-days="7">7 jours</button>
+        <button class="period-btn active" data-days="30">30 jours</button>
+        <button class="period-btn" data-days="90">90 jours</button>
+    </div>
+
+    <!-- Alertes -->
+    {% if alerts and alerts.success and alerts.alerts %}
+    <div class="row mb-4">
+        <div class="col-md-12">
+            <h4>🚨 Alertes</h4>
+            {% for alert in alerts.alerts %}
+            <div class="alert-box {{ alert.type }}">
+                <div>
+                    <strong>{{ alert.title }}</strong>
+                    <div>{{ alert.message }}</div>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+    {% endif %}
+
+    <!-- KPIs Principaux -->
+    {% if kpis and kpis.success %}
+    <div class="row mb-4">
+        <div class="col-md-3">
+            <div class="kpi-card">
+                <div class="kpi-label">Commandes</div>
+                <div class="kpi-value">{{ kpis.total_orders }}</div>
+                <div class="kpi-change">{{ period_days }} derniers jours</div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="kpi-card">
+                <div class="kpi-label">Revenus</div>
+                <div class="kpi-value">${{ "%.2f"|format(kpis.total_revenue) }}</div>
+                <div class="kpi-change">Coût: ${{ "%.2f"|format(kpis.total_cost) }}</div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="kpi-card">
+                <div class="kpi-label">Marge</div>
+                <div class="kpi-value">${{ "%.2f"|format(kpis.total_margin) }}</div>
+                <div class="kpi-change positive">{{ "%.1f"|format(kpis.margin_percentage) }}%</div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="kpi-card">
+                <div class="kpi-label">Panier Moyen</div>
+                <div class="kpi-value">${{ "%.2f"|format(kpis.average_order_value) }}</div>
+                <div class="kpi-change">Par commande</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Statuts Commandes -->
+    {% if kpis.status_counts %}
+    <div class="row mb-4">
+        <div class="col-md-12">
+            <div class="kpi-card">
+                <h5>Commandes par Statut</h5>
+                <div class="d-flex gap-3 mt-3">
+                    {% for status, count in kpis.status_counts.items() %}
+                    <div>
+                        <span class="stat-badge 
+                            {% if status == 'delivered' %}success
+                            {% elif status in ['pending', 'processing'] %}warning
+                            {% elif status == 'cancelled' %}danger
+                            {% else %}info{% endif %}">
+                            {{ status|capitalize }}: {{ count }}
+                        </span>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+    {% endif %}
+
+    <!-- Graphique Évolution des Ventes -->
+    <div class="row mb-4">
+        <div class="col-md-12">
+            <div class="chart-container">
+                <h5>📈 Évolution des Ventes</h5>
+                <canvas id="salesChart" height="80"></canvas>
+            </div>
+        </div>
+    </div>
+
+    <div class="row">
+        <!-- Top Produits -->
+        <div class="col-md-6">
+            <div class="chart-container">
+                <h5>🏆 Top 10 Produits</h5>
+                <div id="topProductsList">
+                    <div class="text-center py-4">
+                        <div class="spinner-border" role="status">
+                            <span class="sr-only">Chargement...</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Stats Produits -->
+        <div class="col-md-6">
+            <div class="chart-container">
+                <h5>📦 Statistiques Produits</h5>
+                {% if product_stats and product_stats.success %}
+                <div class="mt-3">
+                    <div class="d-flex justify-content-between mb-3">
+                        <span>Total Produits CJ:</span>
+                        <strong>{{ product_stats.total_products }}</strong>
+                    </div>
+                    <div class="d-flex justify-content-between mb-3">
+                        <span>Produits Actifs:</span>
+                        <strong class="text-success">{{ product_stats.active_products }}</strong>
+                    </div>
+                    <div class="d-flex justify-content-between mb-3">
+                        <span>Produits Inactifs:</span>
+                        <strong class="text-warning">{{ product_stats.inactive_products }}</strong>
+                    </div>
+                    <div class="d-flex justify-content-between mb-3">
+                        <span>En Stock:</span>
+                        <strong class="text-success">{{ product_stats.in_stock }}</strong>
+                    </div>
+                    <div class="d-flex justify-content-between mb-3">
+                        <span>Rupture de Stock:</span>
+                        <strong class="text-danger">{{ product_stats.out_of_stock }}</strong>
+                    </div>
+                    <div class="d-flex justify-content-between">
+                        <span>Total Variantes:</span>
+                        <strong>{{ product_stats.total_variants }}</strong>
+                    </div>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js@3.9.1/dist/chart.min.js"></script>
+<script>
+let currentPeriod = 30;
+let salesChart = null;
+
+// Sélecteur de période
+document.querySelectorAll('.period-btn').forEach(btn => {
+    btn.addEventListener('click', function() {
+        document.querySelectorAll('.period-btn').forEach(b => b.classList.remove('active'));
+        this.classList.add('active');
+        currentPeriod = parseInt(this.dataset.days);
+        loadDashboardData();
+    });
+});
+
+// Charger les données du dashboard
+function loadDashboardData() {
+    loadSalesChart();
+    loadTopProducts();
+}
+
+// Charger le graphique des ventes
+function loadSalesChart() {
+    fetch(`/admin/cj/api/sales-evolution?days=${currentPeriod}`)
+        .then(res => res.json())
+        .then(data => {
+            if (data.success) {
+                renderSalesChart(data);
+            }
+        })
+        .catch(err => console.error('Erreur chargement graphique:', err));
+}
+
+// Afficher le graphique
+function renderSalesChart(data) {
+    const ctx = document.getElementById('salesChart').getContext('2d');
+    
+    if (salesChart) {
+        salesChart.destroy();
+    }
+    
+    salesChart = new Chart(ctx, {
+        type: 'line',
+        data: {
+            labels: data.dates,
+            datasets: [{
+                label: 'Revenus ($)',
+                data: data.revenues,
+                borderColor: '#007bff',
+                backgroundColor: 'rgba(0, 123, 255, 0.1)',
+                tension: 0.4,
+                fill: true
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: true,
+            plugins: {
+                legend: {
+                    display: true,
+                    position: 'top'
+                }
+            },
+            scales: {
+                y: {
+                    beginAtZero: true,
+                    ticks: {
+                        callback: function(value) {
+                            return '$' + value.toFixed(2);
+                        }
+                    }
+                }
+            }
+        }
+    });
+}
+
+// Charger les top produits
+function loadTopProducts() {
+    fetch(`/admin/cj/api/top-products?days=${currentPeriod}&limit=10`)
+        .then(res => res.json())
+        .then(data => {
+            if (data.success) {
+                renderTopProducts(data.products);
+            }
+        })
+        .catch(err => console.error('Erreur chargement top produits:', err));
+}
+
+// Afficher les top produits
+function renderTopProducts(products) {
+    const container = document.getElementById('topProductsList');
+    
+    if (products.length === 0) {
+        container.innerHTML = '<p class="text-center text-muted py-4">Aucune vente sur cette période</p>';
+        return;
+    }
+    
+    container.innerHTML = products.map((product, index) => `
+        <div class="product-item">
+            <div style="font-weight: bold; color: #7f8c8d; min-width: 30px;">#${index + 1}</div>
+            <img src="${product.image_url || '/static/images/no-image.png'}" 
+                 alt="${product.name}" 
+                 class="product-image"
+                 onerror="this.src='/static/images/no-image.png'" loading="lazy" decoding="async">
+            <div class="product-info">
+                <div class="product-name">${product.name}</div>
+                <div class="product-stats">
+                    ${product.quantity} vendus • $${product.revenue.toFixed(2)} • ${product.order_count} commandes
+                </div>
+            </div>
+        </div>
+    `).join('');
+}
+
+// Charger au démarrage
+document.addEventListener('DOMContentLoaded', function() {
+    loadDashboardData();
+});
+</script>
+{% endblock %}

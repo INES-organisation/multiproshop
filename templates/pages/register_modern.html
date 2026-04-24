@@ -1,0 +1,321 @@
+{% extends 'layout.html' %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/pages_modern.css') }}">
+<style>
+.auth-container {
+    min-height: calc(100vh - 200px);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 3rem 0;
+}
+
+.auth-card {
+    max-width: 600px;
+    width: 100%;
+}
+
+.auth-header {
+    text-align: center;
+    margin-bottom: 2rem;
+}
+
+.auth-header h1 {
+    font-size: 2rem;
+    font-weight: 800;
+    margin-bottom: 0.5rem;
+}
+
+.auth-header p {
+    color: #666;
+}
+
+.auth-divider {
+    display: flex;
+    align-items: center;
+    text-align: center;
+    margin: 2rem 0;
+}
+
+.auth-divider::before,
+.auth-divider::after {
+    content: '';
+    flex: 1;
+    border-bottom: 1px solid var(--border-color);
+}
+
+.auth-divider span {
+    padding: 0 1rem;
+    color: #999;
+    font-size: 0.9rem;
+}
+
+.social-login {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 1rem;
+    margin-bottom: 2rem;
+}
+
+.social-btn {
+    padding: 0.8rem;
+    border: 2px solid var(--border-color);
+    border-radius: var(--border-radius);
+    background: var(--white);
+    cursor: pointer;
+    transition: var(--transition);
+    font-weight: 600;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+}
+
+.social-btn:hover {
+    border-color: var(--primary-color);
+    background: var(--light-bg);
+}
+
+.social-btn.google {
+    color: #DB4437;
+}
+
+.social-btn.facebook {
+    color: #4267B2;
+}
+
+.password-strength {
+    height: 4px;
+    background: var(--border-color);
+    border-radius: 2px;
+    margin-top: 0.5rem;
+    overflow: hidden;
+}
+
+.password-strength-bar {
+    height: 100%;
+    width: 0%;
+    transition: all 0.3s ease;
+}
+
+.password-strength-bar.weak {
+    width: 33%;
+    background: var(--danger-color);
+}
+
+.password-strength-bar.medium {
+    width: 66%;
+    background: var(--warning-color);
+}
+
+.password-strength-bar.strong {
+    width: 100%;
+    background: var(--success-color);
+}
+
+.benefits-list {
+    list-style: none;
+    padding: 0;
+    margin: 1.5rem 0;
+}
+
+.benefits-list li {
+    padding: 0.5rem 0;
+    display: flex;
+    align-items: center;
+    gap: 0.8rem;
+    color: #666;
+}
+
+.benefits-list i {
+    color: var(--success-color);
+    font-size: 1.2rem;
+}
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="auth-container">
+    <div class="container">
+        <div class="row justify-content-center">
+            <div class="col-lg-6 col-md-8">
+                <div class="auth-card">
+                    <div class="card-modern">
+                        <div class="card-modern-body" style="padding: 3rem;">
+                            <!-- Header -->
+                            <div class="auth-header">
+                                <div style="width: 80px; height: 80px; margin: 0 auto 1.5rem; background: linear-gradient(135deg, var(--primary-color), var(--primary-dark)); border-radius: 50%; display: flex; align-items: center; justify-content: center; color: white; font-size: 2.5rem;">
+                                    <i class="fas fa-user-plus"></i>
+                                </div>
+                                <h1>Créer un compte</h1>
+                                <p>Rejoignez-nous et profitez de tous nos avantages</p>
+                            </div>
+                            
+                            <!-- Social Login -->
+                            <div class="social-login">
+                                <button class="social-btn google">
+                                    <i class="fab fa-google"></i>
+                                    Google
+                                </button>
+                                <button class="social-btn facebook">
+                                    <i class="fab fa-facebook-f"></i>
+                                    Facebook
+                                </button>
+                            </div>
+                            
+                            <div class="auth-divider">
+                                <span>OU</span>
+                            </div>
+                            
+                            <!-- Register Form -->
+                            <form method="post">
+                                <div class="row g-3">
+                                    <div class="col-md-6">
+                                        <div class="form-group-modern">
+                                            <label class="form-label-modern">
+                                                <i class="fas fa-user"></i>
+                                                Prénom
+                                            </label>
+                                            <input type="text" class="form-control-modern" name="first_name" placeholder="Votre prénom" required>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <div class="form-group-modern">
+                                            <label class="form-label-modern">
+                                                <i class="fas fa-user"></i>
+                                                Nom
+                                            </label>
+                                            <input type="text" class="form-control-modern" name="last_name" placeholder="Votre nom" required>
+                                        </div>
+                                    </div>
+                                </div>
+                                
+                                <div class="form-group-modern">
+                                    <label class="form-label-modern">
+                                        <i class="fas fa-envelope"></i>
+                                        Email
+                                    </label>
+                                    <input type="email" class="form-control-modern" id="email" name="email" placeholder="votre@email.com" required>
+                                </div>
+                                
+                                <div class="form-group-modern">
+                                    <label class="form-label-modern">
+                                        <i class="fas fa-lock"></i>
+                                        Mot de passe
+                                    </label>
+                                    <input type="password" class="form-control-modern" id="password" name="password" placeholder="Minimum 8 caractères" required onkeyup="checkPasswordStrength(this.value)">
+                                    <div class="password-strength">
+                                        <div class="password-strength-bar" id="strengthBar"></div>
+                                    </div>
+                                    <small class="form-text-modern" id="strengthText">Utilisez au moins 8 caractères avec lettres et chiffres</small>
+                                </div>
+                                
+                                <div class="form-group-modern">
+                                    <label class="form-label-modern">
+                                        <i class="fas fa-lock"></i>
+                                        Confirmer le mot de passe
+                                    </label>
+                                    <input type="password" class="form-control-modern" name="confirm_password" placeholder="Confirmez votre mot de passe" required>
+                                </div>
+                                
+                                <div class="form-check-modern">
+                                    <input type="checkbox" id="terms" required>
+                                    <label for="terms">
+                                        J'accepte les <a href="{{ url_for('main.terms') }}" style="color: var(--primary-color);">conditions d'utilisation</a> et la <a href="{{ url_for('main.privacy') }}" style="color: var(--primary-color);">politique de confidentialité</a>
+                                    </label>
+                                </div>
+                                
+                                <div class="form-check-modern">
+                                    <input type="checkbox" id="newsletter">
+                                    <label for="newsletter">
+                                        Je souhaite recevoir les offres et nouveautés par email
+                                    </label>
+                                </div>
+                                
+                                <button type="submit" class="btn-modern btn-modern-primary w-100 btn-modern-lg mt-3">
+                                    <i class="fas fa-user-plus"></i>
+                                    Créer mon compte
+                                </button>
+                            </form>
+                            
+                            <!-- Links -->
+                            <div class="text-center mt-4">
+                                <p style="color: #666;">
+                                    Vous avez déjà un compte ?
+                                    <a href="{{ url_for('auth.login') }}" style="color: var(--primary-color); text-decoration: none; font-weight: 700;">
+                                        Se connecter
+                                    </a>
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Benefits -->
+                    <div class="card-modern mt-4">
+                        <div class="card-modern-header">
+                            <i class="fas fa-gift"></i> Avantages membres
+                        </div>
+                        <div class="card-modern-body">
+                            <ul class="benefits-list">
+                                <li>
+                                    <i class="fas fa-check-circle"></i>
+                                    <span>Suivi de vos commandes en temps réel</span>
+                                </li>
+                                <li>
+                                    <i class="fas fa-check-circle"></i>
+                                    <span>Accès aux offres exclusives et promotions</span>
+                                </li>
+                                <li>
+                                    <i class="fas fa-check-circle"></i>
+                                    <span>Liste de souhaits et favoris</span>
+                                </li>
+                                <li>
+                                    <i class="fas fa-check-circle"></i>
+                                    <span>Historique de vos achats</span>
+                                </li>
+                                <li>
+                                    <i class="fas fa-check-circle"></i>
+                                    <span>Livraison gratuite dès 50€</span>
+                                </li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+function checkPasswordStrength(password) {
+    const strengthBar = document.getElementById('strengthBar');
+    const strengthText = document.getElementById('strengthText');
+    
+    let strength = 0;
+    
+    if (password.length >= 8) strength++;
+    if (password.match(/[a-z]/) && password.match(/[A-Z]/)) strength++;
+    if (password.match(/[0-9]/)) strength++;
+    if (password.match(/[^a-zA-Z0-9]/)) strength++;
+    
+    strengthBar.className = 'password-strength-bar';
+    
+    if (strength === 0 || strength === 1) {
+        strengthBar.classList.add('weak');
+        strengthText.textContent = 'Mot de passe faible';
+        strengthText.style.color = 'var(--danger-color)';
+    } else if (strength === 2 || strength === 3) {
+        strengthBar.classList.add('medium');
+        strengthText.textContent = 'Mot de passe moyen';
+        strengthText.style.color = 'var(--warning-color)';
+    } else {
+        strengthBar.classList.add('strong');
+        strengthText.textContent = 'Mot de passe fort';
+        strengthText.style.color = 'var(--success-color)';
+    }
+}
+</script>
+{% endblock %}

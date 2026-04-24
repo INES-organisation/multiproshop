@@ -19,10 +19,10 @@
         <div class="col-md-6 mb-4">
             <div class="card">
                 {% if product.image_url %}
-                <img src="{{ product.image_url }}" class="card-img-top" alt="{{ product.name }}">
+                <img src="{{ product.image_url }}" class="card-img-top" alt="{{ product.name }}" loading="lazy" decoding="async">
                 {% else %}
                 <img src="{{ url_for('static', filename='images/default-product.jpg') }}" 
-                     class="card-img-top" alt="Image par défaut">
+                     class="card-img-top" alt="Image par défaut" loading="lazy" decoding="async">
                 {% endif %}
             </div>
         </div>
@@ -93,10 +93,10 @@
             <div class="col-md-3 mb-4">
                 <div class="card h-100">
                     {% if related.image_url %}
-                    <img src="{{ related.image_url }}" class="card-img-top" alt="{{ related.name }}">
+                    <img src="{{ related.image_url }}" class="card-img-top" alt="{{ related.name }}" loading="lazy" decoding="async">
                     {% else %}
                     <img src="{{ url_for('static', filename='images/default-product.jpg') }}" 
-                         class="card-img-top" alt="Image par défaut">
+                         class="card-img-top" alt="Image par défaut" loading="lazy" decoding="async">
                     {% endif %}
                     <div class="card-body">
                         <h5 class="card-title">{{ related.name }}</h5>

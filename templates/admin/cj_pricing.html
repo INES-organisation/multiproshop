@@ -1,0 +1,394 @@
+{% extends "admin/layout_admin_modern.html" %}
+
+{% block title %}Configuration Tarification CJ{% endblock %}
+
+{% block extra_css %}
+<style>
+.loading-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0,0,0,0.7);
+    display: none;
+    justify-content: center;
+    align-items: center;
+    flex-direction: column;
+    z-index: 9999;
+}
+
+.loading-overlay.show {
+    display: flex;
+}
+
+.markup-input {
+    width: 100px;
+}
+
+.example-price {
+    font-size: 0.9em;
+}
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2><i class="bi bi-percent"></i> Configuration Tarification CJ</h2>
+        <div>
+            <button class="btn btn-success" onclick="saveAllMarkups()">
+                <i class="bi bi-save"></i> Enregistrer Tout
+            </button>
+            <button class="btn btn-primary" onclick="recalculateAllPrices()">
+                <i class="bi bi-calculator"></i> Recalculer Prix
+            </button>
+        </div>
+    </div>
+
+    <!-- Analytics -->
+    <div class="row mb-4">
+        <div class="col-md-3">
+            <div class="card text-center">
+                <div class="card-body">
+                    <h6 class="text-muted">Prix Moyen Achat</h6>
+                    <h3 class="text-danger" id="avg-cost">$0.00</h3>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card text-center">
+                <div class="card-body">
+                    <h6 class="text-muted">Prix Moyen Vente</h6>
+                    <h3 class="text-success" id="avg-price">$0.00</h3>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card text-center">
+                <div class="card-body">
+                    <h6 class="text-muted">Marge Moyenne</h6>
+                    <h3 class="text-primary" id="avg-margin">0%</h3>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card text-center">
+                <div class="card-body">
+                    <h6 class="text-muted">Profit Potentiel</h6>
+                    <h3 class="text-info" id="total-profit">$0.00</h3>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Configuration Marge Globale -->
+    <div class="card mb-4">
+        <div class="card-header bg-primary text-white">
+            <h5 class="mb-0"><i class="bi bi-globe"></i> Marge Globale par Défaut</h5>
+        </div>
+        <div class="card-body">
+            <div class="row align-items-center">
+                <div class="col-md-6">
+                    <label class="form-label">Marge par défaut (%) :</label>
+                    <input type="number" class="form-control" id="default-markup" value="60" min="0" max="500" step="5">
+                    <small class="text-muted">Appliquée aux catégories sans configuration spécifique</small>
+                </div>
+                <div class="col-md-6">
+                    <div class="alert alert-info mb-0">
+                        <strong>Exemple :</strong> Avec une marge de <span id="example-markup">60</span>%<br>
+                        Prix CJ $10.00 → Prix vente <strong>$<span id="example-price">16.99</span></strong><br>
+                        Profit : <strong>$<span id="example-profit">6.99</span></strong>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Configuration par Catégorie -->
+    <div class="card">
+        <div class="card-header bg-secondary text-white">
+            <h5 class="mb-0"><i class="bi bi-tags"></i> Marges par Catégorie</h5>
+        </div>
+        <div class="card-body">
+            <div class="mb-3">
+                <input type="text" class="form-control" id="search-category" placeholder="🔍 Rechercher une catégorie...">
+            </div>
+
+            <div class="table-responsive">
+                <table class="table table-hover">
+                    <thead class="table-light">
+                        <tr>
+                            <th width="40%">Catégorie</th>
+                            <th width="15%">Produits</th>
+                            <th width="20%">Marge (%)</th>
+                            <th width="25%">Exemple Prix</th>
+                        </tr>
+                    </thead>
+                    <tbody id="categories-table">
+                        <tr>
+                            <td colspan="4" class="text-center">
+                                <div class="spinner-border text-primary" role="status">
+                                    <span class="visually-hidden">Chargement...</span>
+                                </div>
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <!-- Répartition par Tranche de Marge -->
+    <div class="card mt-4">
+        <div class="card-header bg-info text-white">
+            <h5 class="mb-0"><i class="bi bi-bar-chart"></i> Répartition par Tranche de Marge</h5>
+        </div>
+        <div class="card-body">
+            <div class="row" id="margin-distribution">
+                <!-- Rempli dynamiquement -->
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Loading Overlay -->
+<div id="loading-overlay" class="loading-overlay">
+    <div class="spinner-border text-light" role="status"></div>
+    <p class="text-light mt-3" id="loading-text">Chargement...</p>
+</div>
+
+<script>
+let categories = [];
+let currentMarkups = {};
+let analytics = {};
+
+document.addEventListener('DOMContentLoaded', function() {
+    loadMarkups();
+    loadCategories();
+    loadAnalytics();
+    
+    // Mise à jour exemple en temps réel
+    document.getElementById('default-markup').addEventListener('input', updateExample);
+    
+    // Recherche catégories
+    document.getElementById('search-category').addEventListener('input', filterCategories);
+});
+
+function loadMarkups() {
+    fetch('/admin/pricing/api/markups')
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            currentMarkups = data.category_markups || {};
+            const defaultMarkup = data.default_markup || 60;
+            document.getElementById('default-markup').value = defaultMarkup;
+            updateExample();
+        }
+    })
+    .catch(error => console.error('Erreur chargement marges:', error));
+}
+
+function updateExample() {
+    const markup = parseFloat(document.getElementById('default-markup').value) || 60;
+    const costPrice = 10.00;
+    const sellingPrice = calculatePrice(costPrice, markup);
+    const profit = sellingPrice - costPrice;
+    
+    document.getElementById('example-markup').textContent = markup;
+    document.getElementById('example-price').textContent = sellingPrice.toFixed(2);
+    document.getElementById('example-profit').textContent = profit.toFixed(2);
+}
+
+function calculatePrice(cost, markup) {
+    const price = cost * (1 + markup / 100);
+    if (price >= 10) {
+        return Math.floor(price) + 0.99;
+    }
+    return Math.round(price * 100) / 100;
+}
+
+function loadCategories() {
+    fetch('/admin/api/cj/categories/all')
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            categories = data.categories;
+            renderCategories(categories);
+        }
+    })
+    .catch(error => console.error('Erreur:', error));
+}
+
+function loadAnalytics() {
+    fetch('/admin/api/cj/pricing/analytics')
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            analytics = data.analytics;
+            updateAnalyticsDisplay();
+        }
+    })
+    .catch(error => console.error('Erreur:', error));
+}
+
+function updateAnalyticsDisplay() {
+    document.getElementById('avg-cost').textContent = '$' + (analytics.avg_cost_price || 0).toFixed(2);
+    document.getElementById('avg-price').textContent = '$' + (analytics.avg_selling_price || 0).toFixed(2);
+    document.getElementById('avg-margin').textContent = (analytics.avg_margin_percentage || 0).toFixed(1) + '%';
+    document.getElementById('total-profit').textContent = '$' + (analytics.total_potential_profit || 0).toFixed(2);
+    
+    // Répartition
+    if (analytics.products_by_margin_range) {
+        const container = document.getElementById('margin-distribution');
+        let html = '';
+        
+        for (const [range, count] of Object.entries(analytics.products_by_margin_range)) {
+            const percentage = analytics.total_products > 0 
+                ? ((count / analytics.total_products) * 100).toFixed(1) 
+                : 0;
+            
+            html += `
+                <div class="col-md-2">
+                    <div class="card text-center">
+                        <div class="card-body">
+                            <h6 class="text-muted">${range}</h6>
+                            <h4>${count}</h4>
+                            <small class="text-muted">${percentage}%</small>
+                        </div>
+                    </div>
+                </div>
+            `;
+        }
+        
+        container.innerHTML = html;
+    }
+}
+
+function renderCategories(categoriesToRender) {
+    const tbody = document.getElementById('categories-table');
+    
+    if (categoriesToRender.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="4" class="text-center text-muted">Aucune catégorie trouvée</td></tr>';
+        return;
+    }
+    
+    let html = '';
+    
+    categoriesToRender.forEach(cat => {
+        const markup = currentMarkups[cat.name] || 60;
+        const exampleCost = 10.00;
+        const examplePrice = calculatePrice(exampleCost, markup);
+        const exampleProfit = examplePrice - exampleCost;
+        
+        html += `
+            <tr>
+                <td>
+                    <strong>${cat.name}</strong>
+                    ${cat.name_fr ? `<br><small class="text-muted">${cat.name_fr}</small>` : ''}
+                </td>
+                <td>
+                    <span class="badge bg-primary">${cat.product_count || 0}</span>
+                </td>
+                <td>
+                    <div class="input-group input-group-sm">
+                        <input type="number" 
+                               class="form-control markup-input" 
+                               value="${markup}" 
+                               min="0" 
+                               max="500" 
+                               step="5"
+                               data-category="${cat.name}"
+                               onchange="updateCategoryMarkup('${cat.name}', this.value)">
+                        <span class="input-group-text">%</span>
+                    </div>
+                </td>
+                <td class="example-price">
+                    <span class="text-muted">$${exampleCost.toFixed(2)}</span>
+                    <i class="bi bi-arrow-right mx-1"></i>
+                    <strong class="text-success">$${examplePrice.toFixed(2)}</strong>
+                    <br>
+                    <small class="text-info">Profit: $${exampleProfit.toFixed(2)}</small>
+                </td>
+            </tr>
+        `;
+    });
+    
+    tbody.innerHTML = html;
+}
+
+function updateCategoryMarkup(categoryName, markup) {
+    currentMarkups[categoryName] = parseFloat(markup);
+    renderCategories(categories);
+}
+
+function filterCategories() {
+    const search = document.getElementById('search-category').value.toLowerCase();
+    const filtered = categories.filter(cat => 
+        cat.name.toLowerCase().includes(search) || 
+        (cat.name_fr && cat.name_fr.toLowerCase().includes(search))
+    );
+    renderCategories(filtered);
+}
+
+function saveAllMarkups() {
+    const overlay = document.getElementById('loading-overlay');
+    document.getElementById('loading-text').textContent = 'Enregistrement des marges...';
+    overlay.classList.add('show');
+    
+    const defaultMarkup = parseFloat(document.getElementById('default-markup').value);
+    
+    fetch('/admin/api/cj/pricing/save-markups', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({
+            default_markup: defaultMarkup,
+            category_markups: currentMarkups
+        })
+    })
+    .then(response => response.json())
+    .then(data => {
+        overlay.classList.remove('show');
+        
+        if (data.success) {
+            alert('✓ Marges enregistrées avec succès');
+        } else {
+            alert('✗ Erreur: ' + data.message);
+        }
+    })
+    .catch(error => {
+        overlay.classList.remove('show');
+        alert('✗ Erreur réseau: ' + error);
+    });
+}
+
+function recalculateAllPrices() {
+    if (!confirm('Recalculer tous les prix des produits CJ avec les marges actuelles ?')) {
+        return;
+    }
+    
+    const overlay = document.getElementById('loading-overlay');
+    document.getElementById('loading-text').textContent = 'Recalcul des prix en cours...';
+    overlay.classList.add('show');
+    
+    fetch('/admin/api/cj/pricing/recalculate', {
+        method: 'POST'
+    })
+    .then(response => response.json())
+    .then(data => {
+        overlay.classList.remove('show');
+        
+        if (data.success) {
+            alert(`✓ ${data.updated} produits mis à jour sur ${data.total}`);
+            loadAnalytics();
+        } else {
+            alert('✗ Erreur: ' + data.message);
+        }
+    })
+    .catch(error => {
+        overlay.classList.remove('show');
+        alert('✗ Erreur réseau: ' + error);
+    });
+}
+</script>
+{% endblock %}

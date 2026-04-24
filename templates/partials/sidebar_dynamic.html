@@ -1,0 +1,402 @@
+<aside class="sidebar-modern" id="modernSidebar">
+    <div class="sidebar-header">
+        <h3><i class="fas fa-bars"></i> Catégories</h3>
+        <button class="sidebar-close" id="sidebarClose">
+            <i class="fas fa-times"></i>
+        </button>
+    </div>
+    
+    <nav class="sidebar-nav">
+        {% if main_categories %}
+            {% for category in main_categories %}
+            {# Filtrer les enfants actifs en Python pour éviter les requêtes N+1 #}
+            {% set active_children = category.children|selectattr('is_active')|selectattr('visible')|list %}
+            <div class="sidebar-category">
+                <a href="{{ url_for('products.by_category', category_id=category.id) }}" class="category-main">
+                    {% if category.icon %}
+                        <i class="fas {{ category.icon }}"></i>
+                    {% else %}
+                        <i class="fas fa-folder"></i>
+                    {% endif %}
+                    <span>{{ category.name }}</span>
+                    {% if active_children|length > 0 %}
+                        <i class="fas fa-chevron-down toggle-icon"></i>
+                    {% endif %}
+                </a>
+                
+                {% if active_children|length > 0 %}
+                <div class="subcategories">
+                    {% for subcategory in active_children|sort(attribute='name') %}
+                    {# Filtrer les sous-enfants actifs #}
+                    {% set active_subchildren = subcategory.children|selectattr('is_active')|selectattr('visible')|list %}
+                    <div class="subcategory-item">
+                        <a href="{{ url_for('products.by_category', category_id=subcategory.id) }}" class="subcategory-link">
+                            <i class="fas fa-angle-right"></i>
+                            <span>{{ subcategory.name }}</span>
+                            {% if active_subchildren|length > 0 %}
+                                <span class="badge">{{ active_subchildren|length }}</span>
+                            {% endif %}
+                        </a>
+                        
+                        {% if active_subchildren|length > 0 %}
+                        <div class="sub-subcategories">
+                            {% for item in (active_subchildren|sort(attribute='name'))[:15] %}
+                            {% set active_n4 = item.children|selectattr('is_active')|selectattr('visible')|list %}
+                            <div class="sub-subcategory-item">
+                                <a href="{{ url_for('products.by_category', category_id=item.id) }}" class="sub-subcategory-link">
+                                    <i class="fas fa-tag"></i>
+                                    {{ item.name }}
+                                    {% if active_n4|length > 0 %}
+                                        <span class="badge-n4">{{ active_n4|length }}</span>
+                                    {% endif %}
+                                </a>
+                                {% if active_n4|length > 0 %}
+                                <div class="n4-categories">
+                                    {% for n4 in (active_n4|sort(attribute='name'))[:10] %}
+                                    <a href="{{ url_for('products.by_category', category_id=n4.id) }}" class="n4-category-link">
+                                        <i class="fas fa-circle"></i>
+                                        {{ n4.name }}
+                                    </a>
+                                    {% endfor %}
+                                    {% if active_n4|length > 10 %}
+                                    <a href="{{ url_for('products.by_category', category_id=item.id) }}" class="see-more">
+                                        <i class="fas fa-plus"></i> Voir tout ({{ active_n4|length }})
+                                    </a>
+                                    {% endif %}
+                                </div>
+                                {% endif %}
+                            </div>
+                            {% endfor %}
+                            {% if active_subchildren|length > 15 %}
+                            <a href="{{ url_for('products.by_category', category_id=subcategory.id) }}" class="see-more">
+                                <i class="fas fa-plus"></i> Voir tout ({{ active_subchildren|length }})
+                            </a>
+                            {% endif %}
+                        </div>
+                        {% endif %}
+                    </div>
+                    {% endfor %}
+                </div>
+                {% endif %}
+            </div>
+            {% endfor %}
+        {% else %}
+            <div class="sidebar-empty">
+                <i class="fas fa-folder-open"></i>
+                <p>Aucune catégorie disponible</p>
+            </div>
+        {% endif %}
+    </nav>
+</aside>
+
+<style>
+/* Sidebar rétractable en overlay */
+.sidebar-modern {
+    position: fixed;
+    left: -320px;
+    top: 0;
+    width: 300px;
+    height: 100vh;
+    background: white;
+    box-shadow: 2px 0 10px rgba(0,0,0,0.1);
+    overflow-y: auto;
+    transition: left 0.3s ease;
+    z-index: 1000;
+}
+
+.sidebar-modern.active {
+    left: 0;
+}
+
+/* Overlay sombre quand sidebar ouverte */
+.sidebar-modern.active::before {
+    content: '';
+    position: fixed;
+    top: 0;
+    left: 300px;
+    right: 0;
+    bottom: 0;
+    background: rgba(0,0,0,0.5);
+    z-index: -1;
+}
+
+.sidebar-header {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    padding: 1.5rem;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.sidebar-header h3 {
+    margin: 0;
+    font-size: 1.25rem;
+    font-weight: 700;
+}
+
+.sidebar-header i {
+    margin-right: 0.5rem;
+}
+
+.sidebar-close {
+    background: none;
+    border: none;
+    color: white;
+    font-size: 1.5rem;
+    cursor: pointer;
+    padding: 0.5rem;
+    transition: transform 0.2s;
+}
+
+.sidebar-close:hover {
+    transform: scale(1.1);
+}
+
+.sidebar-nav {
+    max-height: calc(100vh - 200px);
+    overflow-y: auto;
+}
+
+.sidebar-category {
+    border-bottom: 1px solid #f0f0f0;
+}
+
+.category-main {
+    display: flex;
+    align-items: center;
+    padding: 1rem 1.5rem;
+    color: #333;
+    text-decoration: none;
+    font-weight: 600;
+    transition: all 0.3s;
+    cursor: pointer;
+}
+
+.category-main:hover {
+    background: #f8f9fa;
+    color: #667eea;
+}
+
+.category-main i:first-child {
+    margin-right: 0.75rem;
+    font-size: 1.1rem;
+    width: 20px;
+    text-align: center;
+}
+
+.category-main span {
+    flex: 1;
+}
+
+.toggle-icon {
+    transition: transform 0.3s;
+    font-size: 0.8rem;
+}
+
+.sidebar-category.active .toggle-icon {
+    transform: rotate(180deg);
+}
+
+.subcategories {
+    display: none;
+    background: #f8f9fa;
+    padding: 0.5rem 0;
+}
+
+.sidebar-category.active .subcategories {
+    display: block;
+}
+
+.subcategory-item {
+    margin-bottom: 0.25rem;
+}
+
+.subcategory-link {
+    display: flex;
+    align-items: center;
+    padding: 0.75rem 1.5rem 0.75rem 3rem;
+    color: #555;
+    text-decoration: none;
+    font-size: 0.95rem;
+    transition: all 0.2s;
+}
+
+.subcategory-link:hover {
+    background: white;
+    color: #667eea;
+    padding-left: 3.25rem;
+}
+
+.subcategory-link i {
+    margin-right: 0.5rem;
+    font-size: 0.8rem;
+}
+
+.subcategory-link .badge {
+    margin-left: auto;
+    background: #667eea;
+    color: white;
+    padding: 0.2rem 0.5rem;
+    border-radius: 10px;
+    font-size: 0.75rem;
+}
+
+.sub-subcategories {
+    display: none;
+    background: white;
+    padding: 0.5rem 0;
+    margin-left: 2rem;
+}
+
+.subcategory-item:hover .sub-subcategories {
+    display: block;
+}
+
+.sub-subcategory-link {
+    display: block;
+    padding: 0.5rem 1.5rem 0.5rem 2rem;
+    color: #666;
+    text-decoration: none;
+    font-size: 0.85rem;
+    transition: all 0.2s;
+}
+
+.sub-subcategory-link:hover {
+    background: #f8f9fa;
+    color: #667eea;
+    padding-left: 2.25rem;
+}
+
+.sub-subcategory-link i {
+    margin-right: 0.5rem;
+    font-size: 0.7rem;
+}
+
+.see-more {
+    display: block;
+    padding: 0.5rem 1.5rem 0.5rem 2rem;
+    color: #667eea;
+    text-decoration: none;
+    font-size: 0.85rem;
+    font-weight: 600;
+    transition: all 0.2s;
+}
+
+.see-more:hover {
+    background: #f8f9fa;
+    padding-left: 2.25rem;
+}
+
+.sub-subcategory-item {
+    position: relative;
+}
+
+.badge-n4 {
+    margin-left: auto;
+    background: #ffc107;
+    color: #333;
+    padding: 0.15rem 0.4rem;
+    border-radius: 8px;
+    font-size: 0.7rem;
+    font-weight: 600;
+}
+
+.n4-categories {
+    display: none;
+    background: #f0f2ff;
+    padding: 0.25rem 0;
+    margin-left: 1rem;
+    border-left: 2px solid #667eea;
+}
+
+.sub-subcategory-item:hover .n4-categories {
+    display: block;
+}
+
+.n4-category-link {
+    display: block;
+    padding: 0.4rem 1.5rem 0.4rem 1.5rem;
+    color: #555;
+    text-decoration: none;
+    font-size: 0.8rem;
+    transition: all 0.2s;
+}
+
+.n4-category-link:hover {
+    background: #e8ebff;
+    color: #667eea;
+    padding-left: 1.75rem;
+}
+
+.n4-category-link i {
+    margin-right: 0.4rem;
+    font-size: 0.35rem;
+    vertical-align: middle;
+}
+
+.sidebar-empty {
+    text-align: center;
+    padding: 3rem 1.5rem;
+    color: #999;
+}
+
+.sidebar-empty i {
+    font-size: 3rem;
+    margin-bottom: 1rem;
+    display: block;
+}
+
+/* Scrollbar personnalisée */
+.sidebar-nav::-webkit-scrollbar {
+    width: 6px;
+}
+
+.sidebar-nav::-webkit-scrollbar-track {
+    background: #f1f1f1;
+}
+
+.sidebar-nav::-webkit-scrollbar-thumb {
+    background: #667eea;
+    border-radius: 3px;
+}
+
+.sidebar-nav::-webkit-scrollbar-thumb:hover {
+    background: #764ba2;
+}
+
+</style>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const sidebar = document.getElementById('modernSidebar');
+    const closeBtn = document.getElementById('sidebarClose');
+    
+    // Fermer la sidebar
+    if (closeBtn) {
+        closeBtn.addEventListener('click', function() {
+            sidebar.classList.remove('active');
+            document.body.style.overflow = '';
+        });
+    }
+    
+    // Fermer en cliquant sur l'overlay
+    sidebar.addEventListener('click', function(e) {
+        if (e.target === this && this.classList.contains('active')) {
+            this.classList.remove('active');
+            document.body.style.overflow = '';
+        }
+    });
+    
+    // Toggle des catégories principales
+    document.querySelectorAll('.category-main').forEach(function(element) {
+        element.addEventListener('click', function(e) {
+            if (this.querySelector('.toggle-icon')) {
+                e.preventDefault();
+                const parent = this.closest('.sidebar-category');
+                parent.classList.toggle('active');
+            }
+        });
+    });
+});
+</script>

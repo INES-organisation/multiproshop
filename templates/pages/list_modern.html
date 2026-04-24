@@ -1,0 +1,714 @@
+{% extends 'layout.html' %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/pages_modern.css') }}">
+<style>
+/* Pleine largeur avec padding */
+.container-fluid.page-container {
+    padding-left: 2rem;
+    padding-right: 2rem;
+}
+
+/* Catégories hiérarchiques dans les filtres */
+.filter-options-hierarchical {
+    padding: 0;
+}
+
+.category-link-all {
+    display: flex;
+    align-items: center;
+    padding: 0.75rem;
+    color: #333;
+    text-decoration: none;
+    font-weight: 600;
+    border-radius: 8px;
+    transition: all 0.2s;
+}
+
+.category-link-all:hover {
+    background: #f8f9fa;
+    color: #667eea;
+}
+
+.category-link-all i {
+    margin-right: 0.5rem;
+}
+
+.category-link-all .filter-count {
+    margin-left: auto;
+    color: #999;
+    font-size: 0.85rem;
+}
+
+.category-group {
+    margin-bottom: 0.5rem;
+}
+
+.category-main-filter {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.category-toggle {
+    background: none;
+    border: none;
+    padding: 0.5rem;
+    cursor: pointer;
+    color: #666;
+    transition: transform 0.2s;
+}
+
+.category-toggle:hover {
+    color: #667eea;
+}
+
+.toggle-icon {
+    transition: transform 0.2s;
+    font-size: 0.8rem;
+}
+
+.toggle-icon.rotated {
+    transform: rotate(90deg);
+}
+
+.category-link {
+    display: flex;
+    align-items: center;
+    flex: 1;
+    padding: 0.75rem;
+    color: #333;
+    text-decoration: none;
+    font-weight: 600;
+    border-radius: 8px;
+    transition: all 0.2s;
+}
+
+.category-link:hover {
+    background: #f8f9fa;
+    color: #667eea;
+}
+
+.category-link i {
+    margin-right: 0.5rem;
+    width: 20px;
+    text-align: center;
+}
+
+.category-children {
+    margin-left: 2rem;
+    padding-left: 1rem;
+    border-left: 2px solid #e9ecef;
+}
+
+.category-sub-filter {
+    margin: 0.25rem 0;
+}
+
+.subcategory-link {
+    display: flex;
+    align-items: center;
+    padding: 0.5rem 0.75rem;
+    color: #555;
+    text-decoration: none;
+    font-size: 0.9rem;
+    border-radius: 6px;
+    transition: all 0.2s;
+}
+
+.subcategory-link:hover {
+    background: #f8f9fa;
+    color: #667eea;
+    padding-left: 1rem;
+}
+
+.subcategory-link i {
+    margin-right: 0.5rem;
+    font-size: 0.75rem;
+}
+
+.sub-count {
+    margin-left: auto;
+    color: #999;
+    font-size: 0.8rem;
+}
+
+.subcategory-header {
+    display: flex;
+    align-items: center;
+    gap: 0.25rem;
+}
+
+.subcategory-toggle {
+    background: none;
+    border: none;
+    padding: 0.25rem;
+    cursor: pointer;
+    color: #666;
+    transition: transform 0.2s;
+}
+
+.subcategory-toggle:hover {
+    color: #667eea;
+}
+
+.subcategory-spacer {
+    width: 20px;
+    display: inline-block;
+}
+
+.toggle-icon-sub {
+    transition: transform 0.2s;
+    font-size: 0.7rem;
+}
+
+.toggle-icon-sub.rotated {
+    transform: rotate(90deg);
+}
+
+.category-level3 {
+    margin-left: 2.5rem;
+    padding-left: 0.75rem;
+    border-left: 2px solid #f0f0f0;
+    margin-top: 0.5rem;
+}
+
+.level3-item {
+    margin-bottom: 0.15rem;
+}
+
+.level3-header {
+    display: flex;
+    align-items: center;
+}
+
+.n4-toggle {
+    background: none;
+    border: none;
+    cursor: pointer;
+    padding: 0.25rem;
+    color: #999;
+    font-size: 0.65rem;
+    flex-shrink: 0;
+}
+
+.n4-toggle:hover {
+    color: #667eea;
+}
+
+.toggle-icon-n4 {
+    transition: transform 0.2s;
+}
+
+.toggle-icon-n4.rotated {
+    transform: rotate(90deg);
+}
+
+.n4-count {
+    color: #999;
+    font-size: 0.75rem;
+    margin-left: 0.25rem;
+}
+
+.category-level4 {
+    margin-left: 1.5rem;
+    padding-left: 0.75rem;
+    border-left: 2px solid #667eea;
+    margin-top: 0.25rem;
+    margin-bottom: 0.25rem;
+}
+
+.n4-link {
+    display: flex;
+    align-items: center;
+    padding: 0.3rem 0.5rem;
+    color: #555;
+    text-decoration: none;
+    font-size: 0.8rem;
+    border-radius: 4px;
+    transition: all 0.2s;
+    margin-bottom: 0.15rem;
+}
+
+.n4-link:hover {
+    background: #f0f2ff;
+    color: #667eea;
+    padding-left: 0.75rem;
+}
+
+.n4-link i {
+    margin-right: 0.4rem;
+    font-size: 0.3rem;
+    vertical-align: middle;
+}
+
+.item-link {
+    display: flex;
+    align-items: center;
+    padding: 0.4rem 0.5rem;
+    color: #666;
+    text-decoration: none;
+    font-size: 0.85rem;
+    border-radius: 4px;
+    transition: all 0.2s;
+    margin-bottom: 0.25rem;
+}
+
+.item-link:hover {
+    background: #f8f9fa;
+    color: #667eea;
+    padding-left: 0.75rem;
+}
+
+.item-link i {
+    margin-right: 0.5rem;
+    font-size: 0.7rem;
+}
+
+.see-all-link {
+    display: flex;
+    align-items: center;
+    padding: 0.4rem 0.5rem;
+    color: #667eea;
+    text-decoration: none;
+    font-size: 0.85rem;
+    font-weight: 600;
+    border-radius: 4px;
+    transition: all 0.2s;
+    margin-top: 0.25rem;
+}
+
+.see-all-link:hover {
+    background: #f8f9fa;
+    padding-left: 0.75rem;
+}
+
+.see-all-link i {
+    margin-right: 0.5rem;
+    font-size: 0.7rem;
+}
+</style>
+{% endblock %}
+
+{% block content %}
+<!-- Page Header -->
+<div class="page-header">
+    <div class="container">
+        <h1 class="page-title">
+            <i class="fas fa-th"></i>
+            Tous nos Produits
+        </h1>
+        <p class="page-subtitle">Découvrez notre sélection complète</p>
+        
+        <!-- Breadcrumb -->
+        <nav aria-label="breadcrumb">
+            <ol class="breadcrumb-modern">
+                <li class="breadcrumb-item"><a href="{{ url_for('main.index') }}">Accueil</a></li>
+                <li class="breadcrumb-item active">Produits</li>
+            </ol>
+        </nav>
+    </div>
+</div>
+
+<!-- Main Content -->
+<div class="container-fluid page-container">
+    <div class="row">
+        <!-- Sidebar Filters -->
+        <div class="col-lg-3">
+            <div class="filters-sidebar">
+                <h5 class="filter-title">
+                    <i class="fas fa-filter"></i>
+                    Filtres
+                </h5>
+                
+                <!-- Category Filter Hiérarchique -->
+                <div class="filter-section">
+                    <h6 class="filter-title">
+                        <i class="fas fa-folder"></i>
+                        Catégories
+                    </h6>
+                    <div class="filter-options-hierarchical">
+                        <div class="filter-option">
+                            <a href="{{ url_for('products.list_products') }}" class="category-link-all">
+                                <i class="fas fa-th"></i>
+                                Toutes
+                                <span class="filter-count">({{ products.total if products else 0 }})</span>
+                            </a>
+                        </div>
+                        
+                        {% if main_categories %}
+                            {% for main_cat in main_categories %}
+                            <div class="category-group">
+                                <div class="category-main-filter">
+                                    <button class="category-toggle" onclick="toggleCategory({{ main_cat.id }})">
+                                        <i class="fas fa-chevron-right toggle-icon" id="icon-{{ main_cat.id }}"></i>
+                                    </button>
+                                    <a href="{{ url_for('products.by_category', category_id=main_cat.id) }}" class="category-link">
+                                        {% if main_cat.icon %}
+                                            <i class="fas {{ main_cat.icon }}"></i>
+                                        {% else %}
+                                            <i class="fas fa-folder"></i>
+                                        {% endif %}
+                                        {{ main_cat.name }}
+                                    </a>
+                                </div>
+                                
+                                {% set active_children = main_cat.children|selectattr('is_active')|selectattr('visible')|sort(attribute='name')|list %}
+                                {% if active_children|length > 0 %}
+                                <div class="category-children" id="cat-children-{{ main_cat.id }}" style="display: none;">
+                                    {% for sub_cat in active_children %}
+                                    <div class="category-sub-filter">
+                                        <div class="subcategory-header">
+                                            {% set sub_children = sub_cat.children|selectattr('is_active')|selectattr('visible')|sort(attribute='name')|list %}
+                                            {% if sub_children|length > 0 %}
+                                            <button class="subcategory-toggle" onclick="toggleSubCategory({{ sub_cat.id }})">
+                                                <i class="fas fa-chevron-right toggle-icon-sub" id="icon-sub-{{ sub_cat.id }}"></i>
+                                            </button>
+                                            {% else %}
+                                            <span class="subcategory-spacer"></span>
+                                            {% endif %}
+                                            <a href="{{ url_for('products.by_category', category_id=sub_cat.id) }}" class="subcategory-link">
+                                                <i class="fas fa-angle-right"></i>
+                                                {{ sub_cat.name }}
+                                                {% if sub_children|length > 0 %}
+                                                    <span class="sub-count">({{ sub_children|length }})</span>
+                                                {% endif %}
+                                            </a>
+                                        </div>
+                                        
+                                        {% if sub_children|length > 0 %}
+                                        <div class="category-level3" id="cat-level3-{{ sub_cat.id }}" style="display: none;">
+                                            {% for item_cat in sub_children[:15] %}
+                                            {% set n4_children = item_cat.children|selectattr('is_active')|selectattr('visible')|sort(attribute='name')|list %}
+                                            <div class="level3-item">
+                                                <div class="level3-header">
+                                                    {% if n4_children|length > 0 %}
+                                                    <button class="n4-toggle" onclick="toggleN4({{ item_cat.id }})">
+                                                        <i class="fas fa-chevron-right toggle-icon-n4" id="icon-n4-{{ item_cat.id }}"></i>
+                                                    </button>
+                                                    {% endif %}
+                                                    <a href="{{ url_for('products.by_category', category_id=item_cat.id) }}" class="item-link">
+                                                        <i class="fas fa-tag"></i>
+                                                        {{ item_cat.name }}
+                                                        {% if n4_children|length > 0 %}
+                                                            <span class="n4-count">({{ n4_children|length }})</span>
+                                                        {% endif %}
+                                                    </a>
+                                                </div>
+                                                {% if n4_children|length > 0 %}
+                                                <div class="category-level4" id="cat-level4-{{ item_cat.id }}" style="display: none;">
+                                                    {% for n4_cat in n4_children[:10] %}
+                                                    <a href="{{ url_for('products.by_category', category_id=n4_cat.id) }}" class="n4-link">
+                                                        <i class="fas fa-circle"></i>
+                                                        {{ n4_cat.name }}
+                                                    </a>
+                                                    {% endfor %}
+                                                    {% if n4_children|length > 10 %}
+                                                    <a href="{{ url_for('products.by_category', category_id=item_cat.id) }}" class="see-all-link">
+                                                        <i class="fas fa-plus-circle"></i>
+                                                        Voir tout ({{ n4_children|length }})
+                                                    </a>
+                                                    {% endif %}
+                                                </div>
+                                                {% endif %}
+                                            </div>
+                                            {% endfor %}
+                                            {% if sub_children|length > 15 %}
+                                            <a href="{{ url_for('products.by_category', category_id=sub_cat.id) }}" class="see-all-link">
+                                                <i class="fas fa-plus-circle"></i>
+                                                Voir tout ({{ sub_children|length }})
+                                            </a>
+                                            {% endif %}
+                                        </div>
+                                        {% endif %}
+                                    </div>
+                                    {% endfor %}
+                                </div>
+                                {% endif %}
+                            </div>
+                            {% endfor %}
+                        {% endif %}
+                    </div>
+                </div>
+                
+                <!-- Price Filter -->
+                <div class="filter-section">
+                    <h6 class="filter-title">
+                        <i class="fas fa-tag"></i>
+                        Prix
+                    </h6>
+                    <div class="filter-options">
+                        <div class="filter-option">
+                            <input type="radio" name="price" id="price-all" checked>
+                            <label for="price-all">Tous les prix</label>
+                        </div>
+                        <div class="filter-option">
+                            <input type="radio" name="price" id="price-1">
+                            <label for="price-1">Moins de 50€</label>
+                        </div>
+                        <div class="filter-option">
+                            <input type="radio" name="price" id="price-2">
+                            <label for="price-2">50€ - 100€</label>
+                        </div>
+                        <div class="filter-option">
+                            <input type="radio" name="price" id="price-3">
+                            <label for="price-3">100€ - 200€</label>
+                        </div>
+                        <div class="filter-option">
+                            <input type="radio" name="price" id="price-4">
+                            <label for="price-4">Plus de 200€</label>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Availability Filter -->
+                <div class="filter-section">
+                    <h6 class="filter-title">
+                        <i class="fas fa-check-circle"></i>
+                        Disponibilité
+                    </h6>
+                    <div class="filter-options">
+                        <div class="filter-option">
+                            <input type="checkbox" id="stock-available">
+                            <label for="stock-available">En stock</label>
+                        </div>
+                        <div class="filter-option">
+                            <input type="checkbox" id="stock-promo">
+                            <label for="stock-promo">En promotion</label>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Products Grid -->
+        <div class="col-lg-9">
+            <!-- Toolbar -->
+            <div class="d-flex justify-content-between align-items-center mb-4 flex-wrap gap-3">
+                <div>
+                    <strong>{{ products.total if products else 0 }}</strong> produits trouvés
+                </div>
+                <div class="d-flex gap-2 align-items-center">
+                    <label for="sort" class="mb-0">Trier par:</label>
+                    <select id="sort" class="form-control-modern form-select-modern" style="width: auto;">
+                        <option>Pertinence</option>
+                        <option>Prix croissant</option>
+                        <option>Prix décroissant</option>
+                        <option>Nouveautés</option>
+                        <option>Meilleures ventes</option>
+                    </select>
+                </div>
+            </div>
+            
+            <!-- Products -->
+            {% if products and products.items %}
+            <div class="products-grid">
+                {% for product in products.items %}
+                <div class="product-card-modern">
+                    <div class="product-image-wrapper">
+                        {% if product.image_url %}
+                        <img src="{{ product.image_url }}" alt="{{ product.name }}" loading="lazy" decoding="async">
+                        {% else %}
+                        <img src="https://via.placeholder.com/300x300?text={{ product.name[:1] }}" alt="{{ product.name }}" loading="lazy" decoding="async">
+                        {% endif %}
+                        
+                        {% if product.promotion %}
+                        <span class="product-badge promo">-{{ product.promotion.discount_percentage }}%</span>
+                        {% elif product.stock < 5 %}
+                        <span class="product-badge">Stock limité</span>
+                        {% endif %}
+                    </div>
+                    
+                    <div class="product-info">
+                        {% if product.category %}
+                        <div class="product-category">{{ product.category.name_fr or product.category.name }}</div>
+                        {% endif %}
+                        
+                        <h3 class="product-name-modern">
+                            <a href="{{ url_for('products.product_detail', product_id=product.id) }}" style="text-decoration: none; color: inherit;">
+                                {{ product.name }}
+                            </a>
+                        </h3>
+                        
+                        <div class="product-rating-modern">
+                            <span>
+                                <i class="fas fa-star"></i>
+                                <i class="fas fa-star"></i>
+                                <i class="fas fa-star"></i>
+                                <i class="fas fa-star"></i>
+                                <i class="fas fa-star-half-alt"></i>
+                            </span>
+                            <span class="rating-count">(4.5)</span>
+                        </div>
+                        
+                        <div class="product-price-modern">
+                            {% if product.promotion %}
+                            <span class="price-current">{{ "%.2f"|format(product.price * (1 - product.promotion.discount_percentage / 100)) }}€</span>
+                            <span class="price-old">{{ "%.2f"|format(product.price) }}€</span>
+                            {% else %}
+                            <span class="price-current">{{ "%.2f"|format(product.price) }}€</span>
+                            {% endif %}
+                        </div>
+                        
+                        <div class="product-actions">
+                            <button class="btn-add-cart-modern" onclick="addToCart({{ product.id }})">
+                                <i class="fas fa-shopping-cart"></i>
+                                Ajouter
+                            </button>
+                            <button class="btn-wishlist" onclick="addToWishlist({{ product.id }})">
+                                <i class="far fa-heart"></i>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+            
+            <!-- Pagination -->
+            {% if products.pages > 1 %}
+            <ul class="pagination-modern">
+                <li class="page-item-modern {% if not products.has_prev %}disabled{% endif %}">
+                    <a class="page-link-modern" href="{{ url_for('products.list_products', page=products.prev_num, category=current_category, sort=current_sort) if products.has_prev else '#' }}">
+                        <i class="fas fa-chevron-left"></i>
+                    </a>
+                </li>
+                
+                {% for page_num in products.iter_pages(left_edge=1, right_edge=1, left_current=1, right_current=2) %}
+                    {% if page_num %}
+                        <li class="page-item-modern {% if page_num == products.page %}active{% endif %}">
+                            <a class="page-link-modern" href="{{ url_for('products.list_products', page=page_num, category=current_category, sort=current_sort) }}">
+                                {{ page_num }}
+                            </a>
+                        </li>
+                    {% else %}
+                        <li class="page-item-modern disabled">
+                            <span class="page-link-modern">...</span>
+                        </li>
+                    {% endif %}
+                {% endfor %}
+                
+                <li class="page-item-modern {% if not products.has_next %}disabled{% endif %}">
+                    <a class="page-link-modern" href="{{ url_for('products.list_products', page=products.next_num, category=current_category, sort=current_sort) if products.has_next else '#' }}">
+                        <i class="fas fa-chevron-right"></i>
+                    </a>
+                </li>
+            </ul>
+            {% endif %}
+            
+            {% else %}
+            <!-- Empty State -->
+            <div class="text-center py-5">
+                <i class="fas fa-box-open" style="font-size: 5rem; color: var(--primary-color); opacity: 0.3;"></i>
+                <h3 class="mt-4">Aucun produit trouvé</h3>
+                <p class="text-muted">Essayez de modifier vos filtres ou revenez plus tard.</p>
+                <a href="{{ url_for('main.index') }}" class="btn-modern btn-modern-primary mt-3">
+                    <i class="fas fa-home"></i>
+                    Retour à l'accueil
+                </a>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+
+<!-- Features Section -->
+<div class="container mt-5">
+    <div class="row g-4">
+        <div class="col-md-3 col-sm-6">
+            <div class="card-modern text-center">
+                <div class="card-modern-body">
+                    <div class="feature-icon-wrapper">
+                        <i class="fas fa-shipping-fast"></i>
+                    </div>
+                    <h6 class="feature-title">Livraison Gratuite</h6>
+                    <p class="feature-description">Commandes de 50€</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3 col-sm-6">
+            <div class="card-modern text-center">
+                <div class="card-modern-body">
+                    <div class="feature-icon-wrapper">
+                        <i class="fas fa-undo"></i>
+                    </div>
+                    <h6 class="feature-title">Retour 90 jours</h6>
+                    <p class="feature-description">Service ou remplace</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3 col-sm-6">
+            <div class="card-modern text-center">
+                <div class="card-modern-body">
+                    <div class="feature-icon-wrapper">
+                        <i class="fas fa-lock"></i>
+                    </div>
+                    <h6 class="feature-title">Paiement Sécurisé</h6>
+                    <p class="feature-description">100% sécurisé</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3 col-sm-6">
+            <div class="card-modern text-center">
+                <div class="card-modern-body">
+                    <div class="feature-icon-wrapper">
+                        <i class="fas fa-gift"></i>
+                    </div>
+                    <h6 class="feature-title">Service Cadeau</h6>
+                    <p class="feature-description">Emballage offert</p>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+function toggleCategory(categoryId) {
+    const childrenDiv = document.getElementById('cat-children-' + categoryId);
+    const icon = document.getElementById('icon-' + categoryId);
+    
+    if (childrenDiv.style.display === 'none') {
+        childrenDiv.style.display = 'block';
+        icon.classList.add('rotated');
+    } else {
+        childrenDiv.style.display = 'none';
+        icon.classList.remove('rotated');
+    }
+}
+
+function toggleSubCategory(subCategoryId) {
+    const level3Div = document.getElementById('cat-level3-' + subCategoryId);
+    const icon = document.getElementById('icon-sub-' + subCategoryId);
+    
+    if (level3Div.style.display === 'none') {
+        level3Div.style.display = 'block';
+        icon.classList.add('rotated');
+    } else {
+        level3Div.style.display = 'none';
+        icon.classList.remove('rotated');
+    }
+}
+
+function toggleN4(categoryId) {
+    const level4Div = document.getElementById('cat-level4-' + categoryId);
+    const icon = document.getElementById('icon-n4-' + categoryId);
+    
+    if (level4Div.style.display === 'none') {
+        level4Div.style.display = 'block';
+        icon.classList.add('rotated');
+    } else {
+        level4Div.style.display = 'none';
+        icon.classList.remove('rotated');
+    }
+}
+
+// addToCart est maintenant dans cart.js
+
+function addToWishlist(productId) {
+    // TODO: Implémenter l'ajout aux favoris
+    console.log('Ajout aux favoris:', productId);
+    alert('Produit ajouté aux favoris !');
+}
+</script>
+{% endblock %}

@@ -16,6 +16,11 @@ class User(UserMixin, db.Model):
     
     def check_password(self, password):
         return check_password_hash(self.password_hash, password)
+    
+    @property
+    def is_admin(self):
+        """Vérifie si l'utilisateur a le rôle admin"""
+        return self.role and self.role.name == 'admin'
 
 @login_manager.user_loader
 def load_user(user_id):

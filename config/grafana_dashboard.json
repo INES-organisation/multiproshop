@@ -1,0 +1,138 @@
+{
+  "dashboard": {
+    "title": "MultiProShop - Dashboard Monitoring",
+    "tags": ["multiproshop", "e-commerce", "monitoring"],
+    "timezone": "browser",
+    "panels": [
+      {
+        "id": 1,
+        "title": "Requêtes HTTP Total",
+        "type": "graph",
+        "targets": [
+          {
+            "expr": "rate(http_requests_total[5m])",
+            "legendFormat": "{{method}} {{endpoint}} - {{status}}"
+          }
+        ],
+        "gridPos": {"x": 0, "y": 0, "w": 12, "h": 8}
+      },
+      {
+        "id": 2,
+        "title": "Durée Requêtes HTTP (p95)",
+        "type": "graph",
+        "targets": [
+          {
+            "expr": "histogram_quantile(0.95, rate(http_request_duration_seconds_bucket[5m]))",
+            "legendFormat": "{{method}} {{endpoint}}"
+          }
+        ],
+        "gridPos": {"x": 12, "y": 0, "w": 12, "h": 8}
+      },
+      {
+        "id": 3,
+        "title": "Produits - Statistiques",
+        "type": "stat",
+        "targets": [
+          {
+            "expr": "products_total",
+            "legendFormat": "Total"
+          },
+          {
+            "expr": "products_active",
+            "legendFormat": "Actifs"
+          },
+          {
+            "expr": "products_out_of_stock",
+            "legendFormat": "Rupture"
+          }
+        ],
+        "gridPos": {"x": 0, "y": 8, "w": 8, "h": 4}
+      },
+      {
+        "id": 4,
+        "title": "Commandes - Statistiques",
+        "type": "stat",
+        "targets": [
+          {
+            "expr": "orders_total",
+            "legendFormat": "Total"
+          },
+          {
+            "expr": "orders_pending",
+            "legendFormat": "En attente"
+          },
+          {
+            "expr": "orders_completed",
+            "legendFormat": "Complétées"
+          }
+        ],
+        "gridPos": {"x": 8, "y": 8, "w": 8, "h": 4}
+      },
+      {
+        "id": 5,
+        "title": "Utilisateurs Total",
+        "type": "stat",
+        "targets": [
+          {
+            "expr": "users_total",
+            "legendFormat": "Utilisateurs"
+          }
+        ],
+        "gridPos": {"x": 16, "y": 8, "w": 8, "h": 4}
+      },
+      {
+        "id": 6,
+        "title": "Cache Hit Rate",
+        "type": "graph",
+        "targets": [
+          {
+            "expr": "rate(cache_hits_total[5m]) / (rate(cache_hits_total[5m]) + rate(cache_misses_total[5m]))",
+            "legendFormat": "{{cache_type}}"
+          }
+        ],
+        "gridPos": {"x": 0, "y": 12, "w": 12, "h": 8}
+      },
+      {
+        "id": 7,
+        "title": "API CJ - Requêtes",
+        "type": "graph",
+        "targets": [
+          {
+            "expr": "rate(cj_api_requests_total[5m])",
+            "legendFormat": "{{endpoint}} - {{status}}"
+          }
+        ],
+        "gridPos": {"x": 12, "y": 12, "w": 12, "h": 8}
+      },
+      {
+        "id": 8,
+        "title": "Database Query Duration (p95)",
+        "type": "graph",
+        "targets": [
+          {
+            "expr": "histogram_quantile(0.95, rate(database_query_duration_seconds_bucket[5m]))",
+            "legendFormat": "{{query_type}}"
+          }
+        ],
+        "gridPos": {"x": 0, "y": 20, "w": 12, "h": 8}
+      },
+      {
+        "id": 9,
+        "title": "API CJ - Durée (p95)",
+        "type": "graph",
+        "targets": [
+          {
+            "expr": "histogram_quantile(0.95, rate(cj_api_request_duration_seconds_bucket[5m]))",
+            "legendFormat": "{{endpoint}}"
+          }
+        ],
+        "gridPos": {"x": 12, "y": 20, "w": 12, "h": 8}
+      }
+    ],
+    "refresh": "10s",
+    "time": {
+      "from": "now-1h",
+      "to": "now"
+    }
+  }
+}

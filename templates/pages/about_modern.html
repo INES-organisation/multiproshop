@@ -1,0 +1,444 @@
+{% extends 'layout.html' %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/pages_modern.css') }}">
+<style>
+.hero-about {
+    background: linear-gradient(135deg, var(--primary-color), var(--primary-dark));
+    padding: 5rem 0;
+    text-align: center;
+    color: var(--dark-color);
+}
+
+.hero-about h1 {
+    font-size: 3rem;
+    font-weight: 800;
+    margin-bottom: 1rem;
+}
+
+.hero-about p {
+    font-size: 1.3rem;
+    opacity: 0.9;
+    max-width: 700px;
+    margin: 0 auto;
+}
+
+.stats-section {
+    padding: 4rem 0;
+    background: var(--light-bg);
+}
+
+.stat-card {
+    text-align: center;
+    padding: 2rem;
+}
+
+.stat-number {
+    font-size: 3rem;
+    font-weight: 800;
+    color: var(--primary-color);
+    margin-bottom: 0.5rem;
+}
+
+.stat-label {
+    color: #666;
+    font-size: 1.1rem;
+}
+
+.team-member {
+    text-align: center;
+    margin-bottom: 2rem;
+}
+
+.team-avatar {
+    width: 150px;
+    height: 150px;
+    border-radius: 50%;
+    margin: 0 auto 1rem;
+    background: linear-gradient(135deg, var(--primary-color), var(--primary-dark));
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 4rem;
+    color: var(--white);
+}
+
+.team-name {
+    font-weight: 700;
+    font-size: 1.2rem;
+    margin-bottom: 0.3rem;
+}
+
+.team-role {
+    color: var(--primary-color);
+    font-weight: 600;
+    margin-bottom: 0.5rem;
+}
+
+.team-social {
+    display: flex;
+    justify-content: center;
+    gap: 1rem;
+    margin-top: 1rem;
+}
+
+.team-social a {
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    background: var(--light-bg);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--dark-color);
+    transition: var(--transition);
+}
+
+.team-social a:hover {
+    background: var(--primary-color);
+    color: var(--white);
+}
+
+.timeline {
+    position: relative;
+    padding: 2rem 0;
+}
+
+.timeline::before {
+    content: '';
+    position: absolute;
+    left: 50%;
+    top: 0;
+    bottom: 0;
+    width: 3px;
+    background: var(--primary-color);
+    transform: translateX(-50%);
+}
+
+.timeline-item {
+    margin-bottom: 3rem;
+    position: relative;
+}
+
+.timeline-item:nth-child(odd) .timeline-content {
+    margin-right: 50%;
+    padding-right: 3rem;
+    text-align: right;
+}
+
+.timeline-item:nth-child(even) .timeline-content {
+    margin-left: 50%;
+    padding-left: 3rem;
+}
+
+.timeline-dot {
+    position: absolute;
+    left: 50%;
+    top: 0;
+    width: 20px;
+    height: 20px;
+    background: var(--primary-color);
+    border-radius: 50%;
+    transform: translateX(-50%);
+    border: 4px solid var(--white);
+    box-shadow: 0 0 0 4px var(--primary-light);
+}
+
+.timeline-year {
+    font-size: 2rem;
+    font-weight: 800;
+    color: var(--primary-color);
+    margin-bottom: 0.5rem;
+}
+
+@media (max-width: 768px) {
+    .timeline::before {
+        left: 20px;
+    }
+    
+    .timeline-dot {
+        left: 20px;
+    }
+    
+    .timeline-item:nth-child(odd) .timeline-content,
+    .timeline-item:nth-child(even) .timeline-content {
+        margin: 0;
+        padding-left: 3rem;
+        text-align: left;
+    }
+}
+</style>
+{% endblock %}
+
+{% block content %}
+<!-- Hero Section -->
+<div class="hero-about">
+    <div class="container">
+        <h1>À Propos de MultiProShop</h1>
+        <p>Votre partenaire de confiance pour tous vos achats en ligne depuis 2015</p>
+    </div>
+</div>
+
+<!-- Stats Section -->
+<div class="stats-section">
+    <div class="container">
+        <div class="row g-4">
+            <div class="col-md-3 col-sm-6">
+                <div class="stat-card">
+                    <div class="stat-number">10K+</div>
+                    <div class="stat-label">Clients Satisfaits</div>
+                </div>
+            </div>
+            <div class="col-md-3 col-sm-6">
+                <div class="stat-card">
+                    <div class="stat-number">5000+</div>
+                    <div class="stat-label">Produits</div>
+                </div>
+            </div>
+            <div class="col-md-3 col-sm-6">
+                <div class="stat-card">
+                    <div class="stat-number">50+</div>
+                    <div class="stat-label">Marques Partenaires</div>
+                </div>
+            </div>
+            <div class="col-md-3 col-sm-6">
+                <div class="stat-card">
+                    <div class="stat-number">24/7</div>
+                    <div class="stat-label">Support Client</div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- About Content -->
+<div class="container page-container">
+    <!-- Mission & Vision -->
+    <div class="row g-4 mb-5">
+        <div class="col-lg-6">
+            <div class="card-modern h-100">
+                <div class="card-modern-header">
+                    <i class="fas fa-bullseye"></i> Notre Mission
+                </div>
+                <div class="card-modern-body">
+                    <p style="line-height: 1.8; color: #666;">
+                        Offrir à nos clients une expérience d'achat en ligne exceptionnelle en proposant des produits de qualité à des prix compétitifs, avec un service client irréprochable et une livraison rapide.
+                    </p>
+                    <p style="line-height: 1.8; color: #666;">
+                        Nous nous engageons à faciliter vos achats quotidiens en vous proposant une large gamme de produits soigneusement sélectionnés.
+                    </p>
+                </div>
+            </div>
+        </div>
+        <div class="col-lg-6">
+            <div class="card-modern h-100">
+                <div class="card-modern-header">
+                    <i class="fas fa-eye"></i> Notre Vision
+                </div>
+                <div class="card-modern-body">
+                    <p style="line-height: 1.8; color: #666;">
+                        Devenir la référence du e-commerce en France en proposant une plateforme innovante, sécurisée et accessible à tous, tout en maintenant notre engagement envers la satisfaction client.
+                    </p>
+                    <p style="line-height: 1.8; color: #666;">
+                        Nous visons l'excellence dans chaque aspect de notre service pour créer une relation de confiance durable avec nos clients.
+                    </p>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Timeline -->
+    <h2 style="text-align: center; font-weight: 800; margin-bottom: 3rem;">
+        <i class="fas fa-history"></i> Notre Histoire
+    </h2>
+    <div class="timeline">
+        <div class="timeline-item">
+            <div class="timeline-dot"></div>
+            <div class="timeline-content">
+                <div class="timeline-year">2015</div>
+                <h4>Création de MultiProShop</h4>
+                <p style="color: #666;">Lancement de notre boutique en ligne avec 100 produits</p>
+            </div>
+        </div>
+        <div class="timeline-item">
+            <div class="timeline-dot"></div>
+            <div class="timeline-content">
+                <div class="timeline-year">2017</div>
+                <h4>Expansion du Catalogue</h4>
+                <p style="color: #666;">Plus de 1000 produits et 10 catégories disponibles</p>
+            </div>
+        </div>
+        <div class="timeline-item">
+            <div class="timeline-dot"></div>
+            <div class="timeline-content">
+                <div class="timeline-year">2020</div>
+                <h4>Nouveau Site Web</h4>
+                <p style="color: #666;">Refonte complète de la plateforme pour une meilleure expérience</p>
+            </div>
+        </div>
+        <div class="timeline-item">
+            <div class="timeline-dot"></div>
+            <div class="timeline-content">
+                <div class="timeline-year">2025</div>
+                <h4>Leader du Marché</h4>
+                <p style="color: #666;">Plus de 10 000 clients satisfaits et 5000+ produits</p>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Team -->
+    <h2 style="text-align: center; font-weight: 800; margin: 4rem 0 3rem 0;">
+        <i class="fas fa-users"></i> Notre Équipe
+    </h2>
+    <div class="row g-4 mb-5">
+        <div class="col-lg-3 col-md-6">
+            <div class="team-member">
+                <div class="team-avatar">
+                    <i class="fas fa-user"></i>
+                </div>
+                <div class="team-name">Jean Dupont</div>
+                <div class="team-role">CEO & Fondateur</div>
+                <p style="color: #666; font-size: 0.9rem;">Passionné par l'e-commerce et l'innovation</p>
+                <div class="team-social">
+                    <a href="#"><i class="fab fa-linkedin"></i></a>
+                    <a href="#"><i class="fab fa-twitter"></i></a>
+                    <a href="#"><i class="fas fa-envelope"></i></a>
+                </div>
+            </div>
+        </div>
+        <div class="col-lg-3 col-md-6">
+            <div class="team-member">
+                <div class="team-avatar">
+                    <i class="fas fa-user"></i>
+                </div>
+                <div class="team-name">Marie Martin</div>
+                <div class="team-role">Directrice Marketing</div>
+                <p style="color: #666; font-size: 0.9rem;">Experte en stratégie digitale</p>
+                <div class="team-social">
+                    <a href="#"><i class="fab fa-linkedin"></i></a>
+                    <a href="#"><i class="fab fa-twitter"></i></a>
+                    <a href="#"><i class="fas fa-envelope"></i></a>
+                </div>
+            </div>
+        </div>
+        <div class="col-lg-3 col-md-6">
+            <div class="team-member">
+                <div class="team-avatar">
+                    <i class="fas fa-user"></i>
+                </div>
+                <div class="team-name">Pierre Bernard</div>
+                <div class="team-role">Responsable Logistique</div>
+                <p style="color: #666; font-size: 0.9rem;">Garantit des livraisons rapides</p>
+                <div class="team-social">
+                    <a href="#"><i class="fab fa-linkedin"></i></a>
+                    <a href="#"><i class="fab fa-twitter"></i></a>
+                    <a href="#"><i class="fas fa-envelope"></i></a>
+                </div>
+            </div>
+        </div>
+        <div class="col-lg-3 col-md-6">
+            <div class="team-member">
+                <div class="team-avatar">
+                    <i class="fas fa-user"></i>
+                </div>
+                <div class="team-name">Sophie Dubois</div>
+                <div class="team-role">Service Client</div>
+                <p style="color: #666; font-size: 0.9rem;">Toujours à votre écoute</p>
+                <div class="team-social">
+                    <a href="#"><i class="fab fa-linkedin"></i></a>
+                    <a href="#"><i class="fab fa-twitter"></i></a>
+                    <a href="#"><i class="fas fa-envelope"></i></a>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Values -->
+    <h2 style="text-align: center; font-weight: 800; margin-bottom: 3rem;">
+        <i class="fas fa-heart"></i> Nos Valeurs
+    </h2>
+    <div class="row g-4 mb-5">
+        <div class="col-md-4">
+            <div class="card-modern text-center h-100">
+                <div class="card-modern-body">
+                    <div class="feature-icon-wrapper" style="width: 80px; height: 80px; font-size: 2rem;">
+                        <i class="fas fa-shield-alt"></i>
+                    </div>
+                    <h4 style="font-weight: 700; margin-bottom: 1rem;">Confiance</h4>
+                    <p style="color: #666;">Nous construisons une relation de confiance avec nos clients basée sur la transparence et la qualité.</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="card-modern text-center h-100">
+                <div class="card-modern-body">
+                    <div class="feature-icon-wrapper" style="width: 80px; height: 80px; font-size: 2rem;">
+                        <i class="fas fa-rocket"></i>
+                    </div>
+                    <h4 style="font-weight: 700; margin-bottom: 1rem;">Innovation</h4>
+                    <p style="color: #666;">Nous innovons constamment pour améliorer votre expérience d'achat en ligne.</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="card-modern text-center h-100">
+                <div class="card-modern-body">
+                    <div class="feature-icon-wrapper" style="width: 80px; height: 80px; font-size: 2rem;">
+                        <i class="fas fa-smile"></i>
+                    </div>
+                    <h4 style="font-weight: 700; margin-bottom: 1rem;">Satisfaction</h4>
+                    <p style="color: #666;">Votre satisfaction est notre priorité absolue, nous nous engageons à vous satisfaire.</p>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Features -->
+    <div class="row g-4">
+        <div class="col-md-3 col-sm-6">
+            <div class="card-modern text-center">
+                <div class="card-modern-body">
+                    <div class="feature-icon-wrapper">
+                        <i class="fas fa-shipping-fast"></i>
+                    </div>
+                    <h6 class="feature-title">Livraison Gratuite</h6>
+                    <p class="feature-description">Commandes > 50€</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3 col-sm-6">
+            <div class="card-modern text-center">
+                <div class="card-modern-body">
+                    <div class="feature-icon-wrapper">
+                        <i class="fas fa-undo"></i>
+                    </div>
+                    <h6 class="feature-title">Retour 90 jours</h6>
+                    <p class="feature-description">Satisfait ou remboursé</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3 col-sm-6">
+            <div class="card-modern text-center">
+                <div class="card-modern-body">
+                    <div class="feature-icon-wrapper">
+                        <i class="fas fa-lock"></i>
+                    </div>
+                    <h6 class="feature-title">Paiement Sécurisé</h6>
+                    <p class="feature-description">100% sécurisé</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3 col-sm-6">
+            <div class="card-modern text-center">
+                <div class="card-modern-body">
+                    <div class="feature-icon-wrapper">
+                        <i class="fas fa-headset"></i>
+                    </div>
+                    <h6 class="feature-title">Support 24/7</h6>
+                    <p class="feature-description">Assistance dédiée</p>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

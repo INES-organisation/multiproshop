@@ -1,0 +1,563 @@
+{% extends 'layout.html' %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/pages_modern.css') }}">
+<style>
+.profile-header {
+    background: linear-gradient(135deg, var(--primary-color), var(--primary-dark));
+    padding: 3rem 0;
+    margin-bottom: 3rem;
+}
+
+.profile-avatar {
+    width: 120px;
+    height: 120px;
+    border-radius: 50%;
+    background: var(--white);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 4rem;
+    color: var(--primary-color);
+    margin: 0 auto 1rem;
+    border: 5px solid var(--white);
+    box-shadow: var(--shadow-lg);
+}
+
+.profile-name {
+    font-size: 2rem;
+    font-weight: 800;
+    color: var(--dark-color);
+    margin-bottom: 0.5rem;
+}
+
+.profile-email {
+    color: var(--dark-color);
+    opacity: 0.8;
+}
+
+.profile-nav {
+    display: flex;
+    gap: 1rem;
+    margin-bottom: 2rem;
+    border-bottom: 2px solid var(--border-color);
+    overflow-x: auto;
+}
+
+.profile-nav-item {
+    padding: 1rem 1.5rem;
+    border-bottom: 3px solid transparent;
+    cursor: pointer;
+    font-weight: 600;
+    color: #666;
+    transition: var(--transition);
+    white-space: nowrap;
+}
+
+.profile-nav-item:hover,
+.profile-nav-item.active {
+    color: var(--primary-color);
+    border-bottom-color: var(--primary-color);
+}
+
+.profile-content {
+    display: none;
+}
+
+.profile-content.active {
+    display: block;
+}
+
+.order-card {
+    border: 2px solid var(--border-color);
+    border-radius: var(--border-radius);
+    padding: 1.5rem;
+    margin-bottom: 1rem;
+    transition: var(--transition);
+}
+
+.order-card:hover {
+    border-color: var(--primary-color);
+    box-shadow: var(--shadow-md);
+}
+
+.order-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 1rem;
+    padding-bottom: 1rem;
+    border-bottom: 1px solid var(--border-color);
+}
+
+.order-number {
+    font-weight: 700;
+    color: var(--dark-color);
+}
+
+.order-status {
+    padding: 0.4rem 1rem;
+    border-radius: 50px;
+    font-weight: 600;
+    font-size: 0.85rem;
+}
+
+.order-status.delivered {
+    background: rgba(40,167,69,0.1);
+    color: var(--success-color);
+}
+
+.order-status.processing {
+    background: rgba(255,193,7,0.1);
+    color: var(--warning-color);
+}
+
+.order-status.shipped {
+    background: rgba(23,162,184,0.1);
+    color: var(--info-color);
+}
+
+.address-card {
+    border: 2px solid var(--border-color);
+    border-radius: var(--border-radius);
+    padding: 1.5rem;
+    position: relative;
+    transition: var(--transition);
+}
+
+.address-card:hover {
+    border-color: var(--primary-color);
+}
+
+.address-card.default {
+    border-color: var(--primary-color);
+    background: linear-gradient(135deg, rgba(255,179,0,0.05), rgba(255,152,0,0.05));
+}
+
+.address-badge {
+    position: absolute;
+    top: 1rem;
+    right: 1rem;
+    background: var(--primary-color);
+    color: var(--dark-color);
+    padding: 0.3rem 0.8rem;
+    border-radius: 50px;
+    font-size: 0.75rem;
+    font-weight: 700;
+}
+</style>
+{% endblock %}
+
+{% block content %}
+<!-- Profile Header -->
+<div class="profile-header">
+    <div class="container text-center">
+        <div class="profile-avatar">
+            <i class="fas fa-user"></i>
+        </div>
+        <h1 class="profile-name">Jean Dupont</h1>
+        <p class="profile-email">jean.dupont@email.com</p>
+        <div style="margin-top: 1.5rem;">
+            <span class="badge-modern badge-success">
+                <i class="fas fa-check-circle"></i> Compte Vérifié
+            </span>
+            <span class="badge-modern badge-primary ms-2">
+                <i class="fas fa-star"></i> Membre Premium
+            </span>
+        </div>
+    </div>
+</div>
+
+<!-- Profile Content -->
+<div class="container page-container">
+    <!-- Navigation Tabs -->
+    <div class="profile-nav">
+        <div class="profile-nav-item active" onclick="switchProfileTab(0)">
+            <i class="fas fa-user"></i> Informations
+        </div>
+        <div class="profile-nav-item" onclick="switchProfileTab(1)">
+            <i class="fas fa-shopping-bag"></i> Commandes
+        </div>
+        <div class="profile-nav-item" onclick="switchProfileTab(2)">
+            <i class="fas fa-map-marker-alt"></i> Adresses
+        </div>
+        <div class="profile-nav-item" onclick="switchProfileTab(3)">
+            <i class="fas fa-heart"></i> Favoris
+        </div>
+        <div class="profile-nav-item" onclick="switchProfileTab(4)">
+            <i class="fas fa-cog"></i> Paramètres
+        </div>
+    </div>
+    
+    <!-- Tab 0: Personal Info -->
+    <div class="profile-content active" id="profile-tab-0">
+        <div class="row g-4">
+            <div class="col-lg-8">
+                <div class="card-modern">
+                    <div class="card-modern-header">
+                        <i class="fas fa-user-edit"></i> Informations Personnelles
+                    </div>
+                    <div class="card-modern-body">
+                        <form>
+                            <div class="row g-3">
+                                <div class="col-md-6">
+                                    <div class="form-group-modern">
+                                        <label class="form-label-modern">
+                                            <i class="fas fa-user"></i>
+                                            Prénom
+                                        </label>
+                                        <input type="text" class="form-control-modern" value="Jean">
+                                    </div>
+                                </div>
+                                <div class="col-md-6">
+                                    <div class="form-group-modern">
+                                        <label class="form-label-modern">
+                                            <i class="fas fa-user"></i>
+                                            Nom
+                                        </label>
+                                        <input type="text" class="form-control-modern" value="Dupont">
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <div class="form-group-modern">
+                                <label class="form-label-modern">
+                                    <i class="fas fa-envelope"></i>
+                                    Email
+                                </label>
+                                <input type="email" class="form-control-modern" value="jean.dupont@email.com">
+                            </div>
+                            
+                            <div class="form-group-modern">
+                                <label class="form-label-modern">
+                                    <i class="fas fa-phone"></i>
+                                    Téléphone
+                                </label>
+                                <input type="tel" class="form-control-modern" value="+33 1 23 45 67 89">
+                            </div>
+                            
+                            <div class="form-group-modern">
+                                <label class="form-label-modern">
+                                    <i class="fas fa-calendar"></i>
+                                    Date de Naissance
+                                </label>
+                                <input type="date" class="form-control-modern" value="1990-01-15">
+                            </div>
+                            
+                            <button type="submit" class="btn-modern btn-modern-primary">
+                                <i class="fas fa-save"></i>
+                                Enregistrer les Modifications
+                            </button>
+                        </form>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="col-lg-4">
+                <div class="card-modern">
+                    <div class="card-modern-header">
+                        <i class="fas fa-chart-line"></i> Statistiques
+                    </div>
+                    <div class="card-modern-body">
+                        <div style="text-align: center; margin-bottom: 1.5rem;">
+                            <div style="font-size: 2.5rem; font-weight: 800; color: var(--primary-color);">24</div>
+                            <div style="color: #666;">Commandes Totales</div>
+                        </div>
+                        <div style="text-align: center; margin-bottom: 1.5rem;">
+                            <div style="font-size: 2.5rem; font-weight: 800; color: var(--success-color);">1,245€</div>
+                            <div style="color: #666;">Total Dépensé</div>
+                        </div>
+                        <div style="text-align: center;">
+                            <div style="font-size: 2.5rem; font-weight: 800; color: var(--info-color);">12</div>
+                            <div style="color: #666;">Produits Favoris</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Tab 1: Orders -->
+    <div class="profile-content" id="profile-tab-1">
+        <div class="card-modern mb-4">
+            <div class="card-modern-header">
+                <i class="fas fa-shopping-bag"></i> Mes Commandes
+            </div>
+            <div class="card-modern-body">
+                <div class="order-card">
+                    <div class="order-header">
+                        <div>
+                            <div class="order-number">#CMD-2025-001</div>
+                            <small class="text-muted">Passée le 25 Oct 2025</small>
+                        </div>
+                        <span class="order-status delivered">
+                            <i class="fas fa-check-circle"></i> Livrée
+                        </span>
+                    </div>
+                    <div style="display: flex; gap: 1rem; align-items: center;">
+                        <img src="https://via.placeholder.com/80x80" alt="Produit" style="border-radius: 8px;" loading="lazy" decoding="async">
+                        <div style="flex: 1;">
+                            <strong>Produit Example</strong>
+                            <p class="mb-0 text-muted" style="font-size: 0.9rem;">Quantité: 2</p>
+                        </div>
+                        <div>
+                            <div style="font-weight: 700; font-size: 1.2rem;">99.98€</div>
+                            <a href="#" class="btn-modern btn-modern-outline btn-modern-sm mt-2">Voir Détails</a>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="order-card">
+                    <div class="order-header">
+                        <div>
+                            <div class="order-number">#CMD-2025-002</div>
+                            <small class="text-muted">Passée le 28 Oct 2025</small>
+                        </div>
+                        <span class="order-status shipped">
+                            <i class="fas fa-shipping-fast"></i> En Transit
+                        </span>
+                    </div>
+                    <div style="display: flex; gap: 1rem; align-items: center;">
+                        <img src="https://via.placeholder.com/80x80" alt="Produit" style="border-radius: 8px;" loading="lazy" decoding="async">
+                        <div style="flex: 1;">
+                            <strong>Autre Produit</strong>
+                            <p class="mb-0 text-muted" style="font-size: 0.9rem;">Quantité: 1</p>
+                        </div>
+                        <div>
+                            <div style="font-weight: 700; font-size: 1.2rem;">49.99€</div>
+                            <a href="#" class="btn-modern btn-modern-outline btn-modern-sm mt-2">Suivre</a>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="order-card">
+                    <div class="order-header">
+                        <div>
+                            <div class="order-number">#CMD-2025-003</div>
+                            <small class="text-muted">Passée le 1 Nov 2025</small>
+                        </div>
+                        <span class="order-status processing">
+                            <i class="fas fa-clock"></i> En Préparation
+                        </span>
+                    </div>
+                    <div style="display: flex; gap: 1rem; align-items: center;">
+                        <img src="https://via.placeholder.com/80x80" alt="Produit" style="border-radius: 8px;" loading="lazy" decoding="async">
+                        <div style="flex: 1;">
+                            <strong>Nouveau Produit</strong>
+                            <p class="mb-0 text-muted" style="font-size: 0.9rem;">Quantité: 3</p>
+                        </div>
+                        <div>
+                            <div style="font-weight: 700; font-size: 1.2rem;">149.97€</div>
+                            <a href="#" class="btn-modern btn-modern-outline btn-modern-sm mt-2">Voir Détails</a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Tab 2: Addresses -->
+    <div class="profile-content" id="profile-tab-2">
+        <div class="row g-4">
+            <div class="col-md-6">
+                <div class="address-card default">
+                    <span class="address-badge">Par Défaut</span>
+                    <h5 style="font-weight: 700; margin-bottom: 1rem;">
+                        <i class="fas fa-home"></i> Domicile
+                    </h5>
+                    <p style="color: #666; line-height: 1.8; margin-bottom: 1rem;">
+                        Jean Dupont<br>
+                        123 Rue du Commerce<br>
+                        75000 Paris<br>
+                        France<br>
+                        +33 1 23 45 67 89
+                    </p>
+                    <div style="display: flex; gap: 0.5rem;">
+                        <button class="btn-modern btn-modern-outline btn-modern-sm">
+                            <i class="fas fa-edit"></i> Modifier
+                        </button>
+                        <button class="btn-modern btn-modern-outline btn-modern-sm">
+                            <i class="fas fa-trash"></i> Supprimer
+                        </button>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="col-md-6">
+                <div class="address-card">
+                    <h5 style="font-weight: 700; margin-bottom: 1rem;">
+                        <i class="fas fa-briefcase"></i> Bureau
+                    </h5>
+                    <p style="color: #666; line-height: 1.8; margin-bottom: 1rem;">
+                        Jean Dupont<br>
+                        456 Avenue des Affaires<br>
+                        92000 Nanterre<br>
+                        France<br>
+                        +33 1 98 76 54 32
+                    </p>
+                    <div style="display: flex; gap: 0.5rem;">
+                        <button class="btn-modern btn-modern-outline btn-modern-sm">
+                            <i class="fas fa-edit"></i> Modifier
+                        </button>
+                        <button class="btn-modern btn-modern-outline btn-modern-sm">
+                            <i class="fas fa-trash"></i> Supprimer
+                        </button>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="col-md-6">
+                <div class="address-card" style="display: flex; align-items: center; justify-content: center; min-height: 250px; border-style: dashed; cursor: pointer;" onclick="alert('Ajouter une nouvelle adresse')">
+                    <div style="text-align: center;">
+                        <i class="fas fa-plus-circle" style="font-size: 3rem; color: var(--primary-color); margin-bottom: 1rem;"></i>
+                        <h5 style="font-weight: 700; color: var(--primary-color);">Ajouter une Adresse</h5>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Tab 3: Wishlist -->
+    <div class="profile-content" id="profile-tab-3">
+        <div class="card-modern">
+            <div class="card-modern-header">
+                <i class="fas fa-heart"></i> Mes Favoris (12)
+            </div>
+            <div class="card-modern-body">
+                <div class="products-grid">
+                    <div class="product-card-modern">
+                        <div class="product-image-wrapper">
+                            <img src="https://via.placeholder.com/300x300?text=Produit+1" alt="Produit 1" loading="lazy" decoding="async">
+                            <span class="badge-modern badge-danger product-badge">-20%</span>
+                        </div>
+                        <div class="product-info">
+                            <div class="product-category">Électronique</div>
+                            <h3 class="product-name-modern">Produit Favori 1</h3>
+                            <div class="product-rating-modern">
+                                <span><i class="fas fa-star"></i><i class="fas fa-star"></i><i class="fas fa-star"></i><i class="fas fa-star"></i><i class="far fa-star"></i></span>
+                                <span class="rating-count">(4.0)</span>
+                            </div>
+                            <div class="product-price-modern">
+                                <span class="price-current">79.99€</span>
+                                <span class="price-old">99.99€</span>
+                            </div>
+                            <div class="product-actions">
+                                <button class="btn-add-cart-modern">
+                                    <i class="fas fa-shopping-cart"></i> Ajouter
+                                </button>
+                                <button class="btn-wishlist active">
+                                    <i class="fas fa-heart"></i>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Tab 4: Settings -->
+    <div class="profile-content" id="profile-tab-4">
+        <div class="row g-4">
+            <div class="col-lg-6">
+                <div class="card-modern">
+                    <div class="card-modern-header">
+                        <i class="fas fa-lock"></i> Changer le Mot de Passe
+                    </div>
+                    <div class="card-modern-body">
+                        <form>
+                            <div class="form-group-modern">
+                                <label class="form-label-modern">
+                                    <i class="fas fa-lock"></i>
+                                    Mot de Passe Actuel
+                                </label>
+                                <input type="password" class="form-control-modern">
+                            </div>
+                            
+                            <div class="form-group-modern">
+                                <label class="form-label-modern">
+                                    <i class="fas fa-lock"></i>
+                                    Nouveau Mot de Passe
+                                </label>
+                                <input type="password" class="form-control-modern">
+                            </div>
+                            
+                            <div class="form-group-modern">
+                                <label class="form-label-modern">
+                                    <i class="fas fa-lock"></i>
+                                    Confirmer le Mot de Passe
+                                </label>
+                                <input type="password" class="form-control-modern">
+                            </div>
+                            
+                            <button type="submit" class="btn-modern btn-modern-primary">
+                                <i class="fas fa-save"></i>
+                                Mettre à Jour
+                            </button>
+                        </form>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="col-lg-6">
+                <div class="card-modern">
+                    <div class="card-modern-header">
+                        <i class="fas fa-bell"></i> Notifications
+                    </div>
+                    <div class="card-modern-body">
+                        <div class="form-check-modern">
+                            <input type="checkbox" id="notif1" checked>
+                            <label for="notif1">Recevoir les offres promotionnelles</label>
+                        </div>
+                        <div class="form-check-modern">
+                            <input type="checkbox" id="notif2" checked>
+                            <label for="notif2">Nouveaux produits</label>
+                        </div>
+                        <div class="form-check-modern">
+                            <input type="checkbox" id="notif3">
+                            <label for="notif3">Alertes de prix</label>
+                        </div>
+                        <div class="form-check-modern">
+                            <input type="checkbox" id="notif4" checked>
+                            <label for="notif4">Mises à jour de commande</label>
+                        </div>
+                        <button class="btn-modern btn-modern-primary mt-3">
+                            <i class="fas fa-save"></i>
+                            Enregistrer
+                        </button>
+                    </div>
+                </div>
+                
+                <div class="card-modern mt-4">
+                    <div class="card-modern-header">
+                        <i class="fas fa-trash"></i> Zone Dangereuse
+                    </div>
+                    <div class="card-modern-body">
+                        <p style="color: #666; margin-bottom: 1rem;">
+                            La suppression de votre compte est irréversible. Toutes vos données seront perdues.
+                        </p>
+                        <button class="btn-modern btn-modern-danger">
+                            <i class="fas fa-exclamation-triangle"></i>
+                            Supprimer mon Compte
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+function switchProfileTab(index) {
+    // Remove active class from all nav items and contents
+    document.querySelectorAll('.profile-nav-item').forEach(item => item.classList.remove('active'));
+    document.querySelectorAll('.profile-content').forEach(content => content.classList.remove('active'));
+    
+    // Add active class to selected nav item and content
+    document.querySelectorAll('.profile-nav-item')[index].classList.add('active');
+    document.getElementById(`profile-tab-${index}`).classList.add('active');
+}
+</script>
+{% endblock %}

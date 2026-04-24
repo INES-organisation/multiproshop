@@ -1,0 +1,892 @@
+{% extends 'layout.html' %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/pages_modern.css') }}">
+<style>
+.checkout-steps {
+    display: flex;
+    justify-content: space-between;
+    margin-bottom: 3rem;
+    position: relative;
+}
+
+.checkout-steps::before {
+    content: '';
+    position: absolute;
+    top: 25px;
+    left: 0;
+    right: 0;
+    height: 3px;
+    background: var(--border-color);
+    z-index: 0;
+}
+
+.step {
+    flex: 1;
+    text-align: center;
+    position: relative;
+    z-index: 1;
+}
+
+.step-circle {
+    width: 50px;
+    height: 50px;
+    border-radius: 50%;
+    background: var(--white);
+    border: 3px solid var(--border-color);
+    margin: 0 auto 0.5rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 700;
+    transition: var(--transition);
+}
+
+.step.active .step-circle {
+    background: linear-gradient(135deg, var(--primary-color), var(--primary-dark));
+    border-color: var(--primary-color);
+    color: var(--dark-color);
+}
+
+.step.completed .step-circle {
+    background: var(--success-color);
+    border-color: var(--success-color);
+    color: var(--white);
+}
+
+.step-label {
+    font-weight: 600;
+    color: #999;
+}
+
+.step.active .step-label,
+.step.completed .step-label {
+    color: var(--dark-color);
+}
+
+.payment-method {
+    border: 2px solid var(--border-color);
+    border-radius: var(--border-radius);
+    padding: 1.5rem;
+    margin-bottom: 1rem;
+    cursor: pointer;
+    transition: var(--transition);
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+}
+
+.payment-method:hover {
+    border-color: var(--primary-color);
+    background: var(--light-bg);
+}
+
+.payment-method.active {
+    border-color: var(--primary-color);
+    background: linear-gradient(135deg, rgba(255,179,0,0.1), rgba(255,152,0,0.1));
+}
+
+.payment-icon {
+    width: 60px;
+    height: 60px;
+    background: var(--light-bg);
+    border-radius: 8px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 2rem;
+}
+
+.payment-method.active .payment-icon {
+    background: var(--primary-color);
+    color: var(--white);
+}
+
+.order-summary-item {
+    display: flex;
+    justify-content: space-between;
+    padding: 1rem 0;
+    border-bottom: 1px solid var(--border-color);
+}
+
+.order-summary-item:last-child {
+    border-bottom: none;
+}
+
+.order-total {
+    font-size: 1.5rem;
+    font-weight: 800;
+    color: var(--primary-color);
+}
+</style>
+{% endblock %}
+
+{% block content %}
+<!-- Page Header -->
+<div class="page-header">
+    <div class="container">
+        <h1 class="page-title">
+            <i class="fas fa-credit-card"></i>
+            Finaliser la Commande
+        </h1>
+        <p class="page-subtitle">Paiement sécurisé et crypté</p>
+    </div>
+</div>
+
+<!-- Checkout Content -->
+<div class="container page-container">
+    <!-- Steps -->
+    <div class="checkout-steps">
+        <div class="step completed">
+            <div class="step-circle">
+                <i class="fas fa-check"></i>
+            </div>
+            <div class="step-label">Panier</div>
+        </div>
+        <div class="step active">
+            <div class="step-circle">2</div>
+            <div class="step-label">Informations</div>
+        </div>
+        <div class="step">
+            <div class="step-circle">3</div>
+            <div class="step-label">Paiement</div>
+        </div>
+        <div class="step">
+            <div class="step-circle">4</div>
+            <div class="step-label">Confirmation</div>
+        </div>
+    </div>
+    
+    <div class="row g-4">
+        <!-- Checkout Form -->
+        <div class="col-lg-8">
+            <form method="POST" action="{{ url_for('cart.checkout') }}" id="checkoutForm">
+            <!-- Shipping Address -->
+            <div class="card-modern mb-4">
+                <div class="card-modern-header">
+                    <i class="fas fa-map-marker-alt"></i> Adresse de Livraison
+                </div>
+                <div class="card-modern-body">
+                        <div class="row g-3">
+                            <div class="col-md-6">
+                                <div class="form-group-modern">
+                                    <label class="form-label-modern">
+                                        <i class="fas fa-user"></i>
+                                        Prénom
+                                    </label>
+                                    <input type="text" class="form-control-modern" name="first_name" required>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="form-group-modern">
+                                    <label class="form-label-modern">
+                                        <i class="fas fa-user"></i>
+                                        Nom
+                                    </label>
+                                    <input type="text" class="form-control-modern" name="last_name" required>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="form-group-modern">
+                            <label class="form-label-modern">
+                                <i class="fas fa-envelope"></i>
+                                Email
+                            </label>
+                            <input type="email" class="form-control-modern" name="email" required>
+                        </div>
+                        
+                        <div class="form-group-modern">
+                            <label class="form-label-modern">
+                                <i class="fas fa-phone"></i>
+                                Téléphone
+                            </label>
+                            <input type="tel" class="form-control-modern" name="phone" required>
+                        </div>
+                        
+                        <div class="form-group-modern">
+                            <label class="form-label-modern">
+                                <i class="fas fa-home"></i>
+                                Adresse
+                            </label>
+                            <input type="text" class="form-control-modern" name="address" placeholder="Numéro et nom de rue" required>
+                        </div>
+                        
+                        <div class="row g-3">
+                            <div class="col-md-4">
+                                <div class="form-group-modern">
+                                    <label class="form-label-modern">
+                                        <i class="fas fa-map-pin"></i>
+                                        Code Postal
+                                    </label>
+                                    <input type="text" class="form-control-modern" name="postal_code" required>
+                                </div>
+                            </div>
+                            <div class="col-md-8">
+                                <div class="form-group-modern">
+                                    <label class="form-label-modern">
+                                        <i class="fas fa-city"></i>
+                                        Ville
+                                    </label>
+                                    <input type="text" class="form-control-modern" name="city" required>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="form-group-modern">
+                            <label class="form-label-modern">
+                                <i class="fas fa-flag"></i>
+                                Pays
+                            </label>
+                            <select class="form-control-modern form-select-modern" name="country" required>
+                                <optgroup label="Europe de l'Ouest">
+                                    <option value="FR" selected>France</option>
+                                    <option value="BE">Belgique</option>
+                                    <option value="LU">Luxembourg</option>
+                                    <option value="CH">Suisse</option>
+                                    <option value="DE">Allemagne</option>
+                                    <option value="AT">Autriche</option>
+                                    <option value="NL">Pays-Bas</option>
+                                    <option value="GB">Royaume-Uni</option>
+                                    <option value="IE">Irlande</option>
+                                    <option value="MC">Monaco</option>
+                                    <option value="AD">Andorre</option>
+                                    <option value="LI">Liechtenstein</option>
+                                    <option value="GI">Gibraltar</option>
+                                    <option value="GG">Guernesey</option>
+                                    <option value="JE">Jersey</option>
+                                    <option value="IM">Île de Man</option>
+                                </optgroup>
+                                <optgroup label="Europe du Sud">
+                                    <option value="ES">Espagne</option>
+                                    <option value="PT">Portugal</option>
+                                    <option value="IT">Italie</option>
+                                    <option value="GR">Grèce</option>
+                                    <option value="MT">Malte</option>
+                                    <option value="CY">Chypre</option>
+                                    <option value="HR">Croatie</option>
+                                    <option value="SI">Slovénie</option>
+                                    <option value="SM">Saint-Marin</option>
+                                    <option value="VA">Saint-Siège</option>
+                                </optgroup>
+                                <optgroup label="Europe du Nord">
+                                    <option value="DK">Danemark</option>
+                                    <option value="SE">Suède</option>
+                                    <option value="NO">Norvège</option>
+                                    <option value="FI">Finlande</option>
+                                    <option value="IS">Islande</option>
+                                    <option value="EE">Estonie</option>
+                                    <option value="LV">Lettonie</option>
+                                    <option value="LT">Lituanie</option>
+                                    <option value="FO">Îles Féroé</option>
+                                    <option value="GL">Groenland</option>
+                                </optgroup>
+                                <optgroup label="Europe de l'Est">
+                                    <option value="PL">Pologne</option>
+                                    <option value="CZ">République tchèque</option>
+                                    <option value="SK">Slovaquie</option>
+                                    <option value="HU">Hongrie</option>
+                                    <option value="RO">Roumanie</option>
+                                    <option value="BG">Bulgarie</option>
+                                    <option value="UA">Ukraine</option>
+                                    <option value="RS">Serbie</option>
+                                    <option value="BA">Bosnie-Herzégovine</option>
+                                    <option value="ME">Monténégro</option>
+                                    <option value="MK">Macédoine du Nord</option>
+                                    <option value="AL">Albanie</option>
+                                    <option value="MD">Moldavie</option>
+                                    <option value="XK">Kosovo</option>
+                                    <option value="BY">Biélorussie</option>
+                                    <option value="RU">Russie</option>
+                                </optgroup>
+                                <optgroup label="Amérique du Nord">
+                                    <option value="US">États-Unis</option>
+                                    <option value="CA">Canada</option>
+                                    <option value="MX">Mexique</option>
+                                    <option value="BM">Bermudes</option>
+                                    <option value="PM">Saint-Pierre-et-Miquelon</option>
+                                </optgroup>
+                                <optgroup label="Amérique centrale et Caraïbes">
+                                    <option value="GT">Guatemala</option>
+                                    <option value="BZ">Belize</option>
+                                    <option value="HN">Honduras</option>
+                                    <option value="SV">El Salvador</option>
+                                    <option value="NI">Nicaragua</option>
+                                    <option value="CR">Costa Rica</option>
+                                    <option value="PA">Panama</option>
+                                    <option value="CU">Cuba</option>
+                                    <option value="HT">Haïti</option>
+                                    <option value="DO">République dominicaine</option>
+                                    <option value="JM">Jamaïque</option>
+                                    <option value="TT">Trinité-et-Tobago</option>
+                                    <option value="BB">Barbade</option>
+                                    <option value="BS">Bahamas</option>
+                                    <option value="AG">Antigua-et-Barbuda</option>
+                                    <option value="DM">Dominique</option>
+                                    <option value="GD">Grenade</option>
+                                    <option value="KN">Saint-Kitts-et-Nevis</option>
+                                    <option value="LC">Sainte-Lucie</option>
+                                    <option value="VC">Saint-Vincent-et-les-Grenadines</option>
+                                    <option value="AI">Anguilla</option>
+                                    <option value="AW">Aruba</option>
+                                    <option value="KY">Îles Caïmans</option>
+                                    <option value="CW">Curaçao</option>
+                                    <option value="GP">Guadeloupe</option>
+                                    <option value="MQ">Martinique</option>
+                                    <option value="MS">Montserrat</option>
+                                    <option value="PR">Porto Rico</option>
+                                    <option value="BQ">Bonaire, Saint-Eustache et Saba</option>
+                                    <option value="SX">Sint Maarten</option>
+                                    <option value="MF">Saint-Martin</option>
+                                    <option value="TC">Îles Turques-et-Caïques</option>
+                                    <option value="VG">Îles Vierges britanniques</option>
+                                    <option value="VI">Îles Vierges américaines</option>
+                                    <option value="AS">Samoa américaines</option>
+                                </optgroup>
+                                <optgroup label="Amérique du Sud">
+                                    <option value="BR">Brésil</option>
+                                    <option value="AR">Argentine</option>
+                                    <option value="CL">Chili</option>
+                                    <option value="CO">Colombie</option>
+                                    <option value="PE">Pérou</option>
+                                    <option value="EC">Équateur</option>
+                                    <option value="UY">Uruguay</option>
+                                    <option value="PY">Paraguay</option>
+                                    <option value="BO">Bolivie</option>
+                                    <option value="VE">Venezuela</option>
+                                    <option value="GY">Guyane</option>
+                                    <option value="SR">Suriname</option>
+                                    <option value="GF">Guyane française</option>
+                                    <option value="FK">Îles Falkland</option>
+                                </optgroup>
+                                <optgroup label="Asie de l'Est">
+                                    <option value="CN">Chine</option>
+                                    <option value="JP">Japon</option>
+                                    <option value="KR">Corée du Sud</option>
+                                    <option value="KP">Corée du Nord</option>
+                                    <option value="TW">Taïwan</option>
+                                    <option value="HK">Hong Kong</option>
+                                    <option value="MO">Macao</option>
+                                    <option value="MN">Mongolie</option>
+                                </optgroup>
+                                <optgroup label="Asie du Sud-Est">
+                                    <option value="SG">Singapour</option>
+                                    <option value="MY">Malaisie</option>
+                                    <option value="TH">Thaïlande</option>
+                                    <option value="ID">Indonésie</option>
+                                    <option value="PH">Philippines</option>
+                                    <option value="VN">Vietnam</option>
+                                    <option value="KH">Cambodge</option>
+                                    <option value="MM">Myanmar</option>
+                                    <option value="LA">Laos</option>
+                                    <option value="BN">Brunei</option>
+                                    <option value="TL">Timor-Leste</option>
+                                </optgroup>
+                                <optgroup label="Asie du Sud">
+                                    <option value="IN">Inde</option>
+                                    <option value="PK">Pakistan</option>
+                                    <option value="BD">Bangladesh</option>
+                                    <option value="LK">Sri Lanka</option>
+                                    <option value="NP">Népal</option>
+                                    <option value="BT">Bhoutan</option>
+                                    <option value="MV">Maldives</option>
+                                    <option value="AF">Afghanistan</option>
+                                </optgroup>
+                                <optgroup label="Asie centrale et Caucase">
+                                    <option value="KZ">Kazakhstan</option>
+                                    <option value="UZ">Ouzbékistan</option>
+                                    <option value="KG">Kirghizistan</option>
+                                    <option value="TJ">Tadjikistan</option>
+                                    <option value="GE">Géorgie</option>
+                                    <option value="AZ">Azerbaïdjan</option>
+                                    <option value="AM">Arménie</option>
+                                </optgroup>
+                                <optgroup label="Moyen-Orient">
+                                    <option value="AE">Émirats arabes unis</option>
+                                    <option value="SA">Arabie saoudite</option>
+                                    <option value="IL">Israël</option>
+                                    <option value="TR">Turquie</option>
+                                    <option value="QA">Qatar</option>
+                                    <option value="KW">Koweït</option>
+                                    <option value="BH">Bahreïn</option>
+                                    <option value="OM">Oman</option>
+                                    <option value="JO">Jordanie</option>
+                                    <option value="LB">Liban</option>
+                                    <option value="IQ">Irak</option>
+                                    <option value="IR">Iran</option>
+                                    <option value="SY">Syrie</option>
+                                    <option value="YE">Yémen</option>
+                                    <option value="PS">Palestine</option>
+                                </optgroup>
+                                <optgroup label="Afrique du Nord">
+                                    <option value="MA">Maroc</option>
+                                    <option value="DZ">Algérie</option>
+                                    <option value="TN">Tunisie</option>
+                                    <option value="EG">Égypte</option>
+                                    <option value="LY">Libye</option>
+                                    <option value="SD">Soudan</option>
+                                    <option value="SS">Soudan du Sud</option>
+                                    <option value="EH">Sahara occidental</option>
+                                </optgroup>
+                                <optgroup label="Afrique de l'Ouest">
+                                    <option value="NG">Nigeria</option>
+                                    <option value="GH">Ghana</option>
+                                    <option value="SN">Sénégal</option>
+                                    <option value="CI">Côte d'Ivoire</option>
+                                    <option value="CM">Cameroun</option>
+                                    <option value="ML">Mali</option>
+                                    <option value="BF">Burkina Faso</option>
+                                    <option value="NE">Niger</option>
+                                    <option value="GN">Guinée</option>
+                                    <option value="BJ">Bénin</option>
+                                    <option value="TG">Togo</option>
+                                    <option value="SL">Sierra Leone</option>
+                                    <option value="LR">Liberia</option>
+                                    <option value="MR">Mauritanie</option>
+                                    <option value="GW">Guinée-Bissau</option>
+                                    <option value="GM">Gambie</option>
+                                    <option value="CV">Cap-Vert</option>
+                                    <option value="GQ">Guinée équatoriale</option>
+                                </optgroup>
+                                <optgroup label="Afrique de l'Est">
+                                    <option value="KE">Kenya</option>
+                                    <option value="TZ">Tanzanie</option>
+                                    <option value="ET">Éthiopie</option>
+                                    <option value="UG">Ouganda</option>
+                                    <option value="RW">Rwanda</option>
+                                    <option value="BI">Burundi</option>
+                                    <option value="SO">Somalie</option>
+                                    <option value="DJ">Djibouti</option>
+                                    <option value="ER">Érythrée</option>
+                                    <option value="MG">Madagascar</option>
+                                    <option value="MU">Maurice</option>
+                                    <option value="SC">Seychelles</option>
+                                    <option value="KM">Comores</option>
+                                    <option value="RE">Réunion</option>
+                                    <option value="YT">Mayotte</option>
+                                </optgroup>
+                                <optgroup label="Afrique australe et centrale">
+                                    <option value="ZA">Afrique du Sud</option>
+                                    <option value="AO">Angola</option>
+                                    <option value="CD">RD Congo</option>
+                                    <option value="CG">Congo</option>
+                                    <option value="CF">Centrafrique</option>
+                                    <option value="TD">Tchad</option>
+                                    <option value="GA">Gabon</option>
+                                    <option value="ST">São Tomé-et-Príncipe</option>
+                                    <option value="NA">Namibie</option>
+                                    <option value="BW">Botswana</option>
+                                    <option value="ZM">Zambie</option>
+                                    <option value="ZW">Zimbabwe</option>
+                                    <option value="MW">Malawi</option>
+                                    <option value="MZ">Mozambique</option>
+                                    <option value="LS">Lesotho</option>
+                                    <option value="SZ">Eswatini</option>
+                                    <option value="SH">Sainte-Hélène</option>
+                                </optgroup>
+                                <optgroup label="Océanie">
+                                    <option value="AU">Australie</option>
+                                    <option value="NZ">Nouvelle-Zélande</option>
+                                    <option value="PG">Papouasie-Nouvelle-Guinée</option>
+                                    <option value="FJ">Fidji</option>
+                                    <option value="WS">Samoa</option>
+                                    <option value="TO">Tonga</option>
+                                    <option value="VU">Vanuatu</option>
+                                    <option value="SB">Îles Salomon</option>
+                                    <option value="NC">Nouvelle-Calédonie</option>
+                                    <option value="PF">Polynésie française</option>
+                                    <option value="GU">Guam</option>
+                                    <option value="MP">Îles Mariannes du Nord</option>
+                                    <option value="KI">Kiribati</option>
+                                    <option value="FM">Micronésie</option>
+                                    <option value="MH">Îles Marshall</option>
+                                    <option value="PW">Palaos</option>
+                                    <option value="NR">Nauru</option>
+                                    <option value="TV">Tuvalu</option>
+                                    <option value="CK">Îles Cook</option>
+                                    <option value="NU">Niue</option>
+                                    <option value="TK">Tokelau</option>
+                                    <option value="WF">Wallis-et-Futuna</option>
+                                    <option value="NF">Île Norfolk</option>
+                                    <option value="PN">Pitcairn</option>
+                                    <option value="CX">Île Christmas</option>
+                                    <option value="CC">Îles Cocos</option>
+                                    <option value="HM">Île Heard et îles McDonald</option>
+                                </optgroup>
+                                <optgroup label="Territoires et autres">
+                                    <option value="IO">Territoire britannique de l'océan Indien</option>
+                                    <option value="BV">Île Bouvet</option>
+                                    <option value="TF">Terres australes françaises</option>
+                                    <option value="GS">Géorgie du Sud</option>
+                                </optgroup>
+                            </select>
+                        </div>
+                </div>
+            </div>
+            
+            <!-- Shipping Method -->
+            <div class="card-modern mb-4">
+                <div class="card-modern-header">
+                    <i class="fas fa-truck"></i> Mode de Livraison
+                </div>
+                <div class="card-modern-body" id="shipping-methods-container">
+                    <div id="shipping-loading" class="text-center py-3">
+                        <i class="fas fa-spinner fa-spin fa-2x" style="color: var(--primary-color);"></i>
+                        <p class="mt-2 text-muted">Calcul des frais de livraison...</p>
+                    </div>
+                    <div id="shipping-methods-list"></div>
+                    <input type="hidden" name="shipping_method" id="shipping-method-input" value="">
+                    <input type="hidden" name="shipping_cost" id="shipping-cost-input" value="0">
+                </div>
+            </div>
+            
+            <!-- Payment Method -->
+            <div class="card-modern mb-4">
+                <div class="card-modern-header">
+                    <i class="fas fa-credit-card"></i> Méthode de Paiement
+                </div>
+                <div class="card-modern-body" id="payment-methods-section">
+                    <div class="payment-method active" onclick="selectPayment(this)">
+                        <div class="payment-icon">
+                            <i class="fas fa-credit-card"></i>
+                        </div>
+                        <div style="flex: 1;">
+                            <strong>Carte Bancaire</strong>
+                            <p class="mb-0 text-muted" style="font-size: 0.9rem;">Visa, Mastercard, Amex</p>
+                        </div>
+                    </div>
+                    
+                    <div class="payment-method" onclick="selectPayment(this)">
+                        <div class="payment-icon">
+                            <i class="fab fa-paypal"></i>
+                        </div>
+                        <div style="flex: 1;">
+                            <strong>PayPal</strong>
+                            <p class="mb-0 text-muted" style="font-size: 0.9rem;">Paiement sécurisé via PayPal</p>
+                        </div>
+                    </div>
+                    
+                    <div class="payment-method" onclick="selectPayment(this)">
+                        <div class="payment-icon">
+                            <i class="fas fa-university"></i>
+                        </div>
+                        <div style="flex: 1;">
+                            <strong>Virement Bancaire</strong>
+                            <p class="mb-0 text-muted" style="font-size: 0.9rem;">Paiement par virement</p>
+                        </div>
+                    </div>
+                    
+                    <!-- Card Details (shown when card is selected) -->
+                    <div id="cardDetails" style="margin-top: 2rem;">
+                        <div class="form-group-modern">
+                            <label class="form-label-modern">
+                                <i class="fas fa-credit-card"></i>
+                                Numéro de Carte
+                            </label>
+                            <input type="text" class="form-control-modern" placeholder="1234 5678 9012 3456" maxlength="19">
+                        </div>
+                        
+                        <div class="row g-3">
+                            <div class="col-md-6">
+                                <div class="form-group-modern">
+                                    <label class="form-label-modern">
+                                        <i class="fas fa-calendar"></i>
+                                        Date d'Expiration
+                                    </label>
+                                    <input type="text" class="form-control-modern" placeholder="MM/AA" maxlength="5">
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="form-group-modern">
+                                    <label class="form-label-modern">
+                                        <i class="fas fa-lock"></i>
+                                        CVV
+                                    </label>
+                                    <input type="text" class="form-control-modern" placeholder="123" maxlength="3">
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Additional Notes -->
+            <div class="card-modern">
+                <div class="card-modern-header">
+                    <i class="fas fa-comment"></i> Notes de Commande (Optionnel)
+                </div>
+                <div class="card-modern-body">
+                    <textarea class="form-control-modern" name="notes" rows="3" placeholder="Instructions de livraison, commentaires..."></textarea>
+                </div>
+            </div>
+            </form>
+        </div>
+        
+        <!-- Order Summary -->
+        <div class="col-lg-4">
+            <div class="card-modern" style="position: sticky; top: 100px;">
+                <div class="card-modern-header">
+                    <i class="fas fa-shopping-bag"></i> Récapitulatif
+                </div>
+                <div class="card-modern-body">
+                    <!-- Products -->
+                    <div style="margin-bottom: 1.5rem;">
+                        {% for item in cart_items %}
+                        <div style="display: flex; gap: 1rem; margin-bottom: 1rem; padding-bottom: 1rem; border-bottom: 1px solid var(--border-color);">
+                            {% if item.product.image_url %}
+                            <img src="{{ item.product.image_url }}" alt="{{ item.product.name }}" style="width: 60px; height: 60px; object-fit: cover; border-radius: 8px;" loading="lazy" decoding="async">
+                            {% else %}
+                            <img src="https://via.placeholder.com/60x60?text={{ item.product.name[:1] }}" alt="{{ item.product.name }}" style="border-radius: 8px;" loading="lazy" decoding="async">
+                            {% endif %}
+                            <div style="flex: 1;">
+                                <strong style="font-size: 0.9rem;">{{ item.product.name }}</strong>
+                                <p class="mb-0 text-muted" style="font-size: 0.85rem;">Quantité: {{ item.quantity }}</p>
+                            </div>
+                            <div style="font-weight: 700;">{{ "%.2f"|format(item.product.price * item.quantity) }}€</div>
+                        </div>
+                        {% endfor %}
+                    </div>
+                    
+                    <!-- Totals -->
+                    <div class="order-summary-item">
+                        <span>Sous-total</span>
+                        <strong>{{ "%.2f"|format(total) }}€</strong>
+                    </div>
+                    
+                    <div class="order-summary-item">
+                        <span>Livraison</span>
+                        <strong id="summary-shipping">
+                            <i class="fas fa-spinner fa-spin fa-sm"></i>
+                        </strong>
+                    </div>
+                    
+                    <div class="order-summary-item">
+                        <span>TVA (20%)</span>
+                        <strong id="summary-tax">{{ "%.2f"|format(total * 0.2) }}€</strong>
+                    </div>
+                    
+                    <div class="order-summary-item" style="padding-top: 1.5rem; margin-top: 1rem; border-top: 2px solid var(--border-color);">
+                        <span style="font-size: 1.2rem; font-weight: 700;">Total</span>
+                        <span class="order-total" id="summary-total">
+                            <i class="fas fa-spinner fa-spin"></i>
+                        </span>
+                    </div>
+                    
+                    <!-- Promo Code -->
+                    <div style="margin-top: 1.5rem;">
+                        <div class="form-group-modern">
+                            <label class="form-label-modern">
+                                <i class="fas fa-tag"></i>
+                                Code Promo
+                            </label>
+                            <div style="display: flex; gap: 0.5rem;">
+                                <input type="text" class="form-control-modern" placeholder="Code">
+                                <button class="btn-modern btn-modern-outline" style="white-space: nowrap;">Appliquer</button>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Place Order -->
+                    <button type="submit" form="checkoutForm" class="btn-modern btn-modern-primary w-100 btn-modern-lg mt-3">
+                        <i class="fas fa-lock"></i>
+                        Passer la Commande
+                    </button>
+                    
+                    <!-- Security Info -->
+                    <div class="alert-modern alert-info mt-3">
+                        <i class="fas fa-shield-alt"></i>
+                        <div>
+                            <small>Paiement 100% sécurisé et crypté SSL</small>
+                        </div>
+                    </div>
+                    
+                    <!-- Payment Icons -->
+                    <div style="display: flex; justify-content: center; gap: 1rem; margin-top: 1.5rem; padding-top: 1.5rem; border-top: 1px solid var(--border-color);">
+                        <i class="fab fa-cc-visa" style="font-size: 2rem; color: #1A1F71;"></i>
+                        <i class="fab fa-cc-mastercard" style="font-size: 2rem; color: #EB001B;"></i>
+                        <i class="fab fa-cc-paypal" style="font-size: 2rem; color: #003087;"></i>
+                        <i class="fas fa-lock" style="font-size: 2rem; color: var(--success-color);"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Trust Badges -->
+    <div class="row g-4 mt-4">
+        <div class="col-md-3 col-sm-6">
+            <div class="card-modern text-center">
+                <div class="card-modern-body">
+                    <div class="feature-icon-wrapper">
+                        <i class="fas fa-shield-alt"></i>
+                    </div>
+                    <h6 class="feature-title">Paiement Sécurisé</h6>
+                    <p class="feature-description">SSL & Cryptage</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3 col-sm-6">
+            <div class="card-modern text-center">
+                <div class="card-modern-body">
+                    <div class="feature-icon-wrapper">
+                        <i class="fas fa-undo"></i>
+                    </div>
+                    <h6 class="feature-title">Retour Gratuit</h6>
+                    <p class="feature-description">90 jours</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3 col-sm-6">
+            <div class="card-modern text-center">
+                <div class="card-modern-body">
+                    <div class="feature-icon-wrapper">
+                        <i class="fas fa-truck"></i>
+                    </div>
+                    <h6 class="feature-title">Livraison Rapide</h6>
+                    <p class="feature-description">3-5 jours</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3 col-sm-6">
+            <div class="card-modern text-center">
+                <div class="card-modern-body">
+                    <div class="feature-icon-wrapper">
+                        <i class="fas fa-headset"></i>
+                    </div>
+                    <h6 class="feature-title">Support 24/7</h6>
+                    <p class="feature-description">Assistance</p>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+const SUBTOTAL = {{ total }};
+
+function selectPayment(element) {
+    document.querySelectorAll('#payment-methods-section .payment-method').forEach(m => m.classList.remove('active'));
+    element.classList.add('active');
+}
+
+function selectShippingMethod(element, code, price) {
+    document.querySelectorAll('#shipping-methods-list .shipping-option').forEach(m => m.classList.remove('active'));
+    element.classList.add('active');
+    document.getElementById('shipping-method-input').value = code;
+    document.getElementById('shipping-cost-input').value = price;
+    updateSummary(price);
+}
+
+function updateSummary(shippingCost) {
+    const shipping = parseFloat(shippingCost) || 0;
+    const tax = SUBTOTAL * 0.2;
+    const total = SUBTOTAL + shipping + tax;
+    
+    const shippingEl = document.getElementById('summary-shipping');
+    if (shipping === 0) {
+        shippingEl.innerHTML = '<span class="text-success">Gratuit</span>';
+    } else {
+        shippingEl.textContent = shipping.toFixed(2) + '€';
+    }
+    
+    document.getElementById('summary-tax').textContent = tax.toFixed(2) + '€';
+    document.getElementById('summary-total').textContent = total.toFixed(2) + '€';
+}
+
+function loadShippingMethods() {
+    const country = document.querySelector('select[name="country"]').value;
+    const loading = document.getElementById('shipping-loading');
+    const list = document.getElementById('shipping-methods-list');
+    
+    loading.style.display = 'block';
+    list.innerHTML = '';
+    
+    fetch('/cart/shipping-methods', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({country: country})
+    })
+    .then(r => r.json())
+    .then(data => {
+        loading.style.display = 'none';
+        
+        if (!data.methods || data.methods.length === 0) {
+            list.innerHTML = '<div class="alert-modern alert-warning"><i class="fas fa-exclamation-triangle"></i> Aucune méthode de livraison disponible</div>';
+            updateSummary(0);
+            return;
+        }
+        
+        const source = data.source || 'fallback';
+        let html = '';
+        const maxMethods = 6;
+        
+        data.methods.slice(0, maxMethods).forEach((method, index) => {
+            const isFirst = index === 0;
+            const priceLabel = method.price === 0 
+                ? '<span class="text-success" style="font-weight:700;font-size:1.2rem;">Gratuit</span>'
+                : '<span style="font-weight:700;font-size:1.2rem;">' + method.price.toFixed(2) + '€</span>';
+            
+            const deliveryText = method.delivery_time + (source === 'cj' ? ' jours' : '');
+            const icon = method.code === 'PREMIUM' ? 'fa-rocket' 
+                       : method.code === 'EXPRESS' ? 'fa-shipping-fast' 
+                       : 'fa-truck';
+            
+            const sourceTag = source === 'cj' 
+                ? '<span class="badge bg-success" style="font-size:0.7rem;margin-left:0.5rem;">CJ</span>' 
+                : '';
+            
+            html += '<div class="shipping-option payment-method' + (isFirst ? ' active' : '') + '" '
+                  + 'onclick="selectShippingMethod(this, \'' + method.code.replace(/'/g, "\\'") + '\', ' + method.price + ')">'
+                  + '<div class="payment-icon"><i class="fas ' + icon + '"></i></div>'
+                  + '<div style="flex:1;">'
+                  + '<strong>' + method.name + sourceTag + '</strong>'
+                  + '<p class="mb-0 text-muted" style="font-size:0.9rem;">'
+                  + '<i class="far fa-clock"></i> ' + deliveryText
+                  + '</p>'
+                  + (method.description ? '<p class="mb-0 text-muted" style="font-size:0.8rem;">' + method.description + '</p>' : '')
+                  + '</div>'
+                  + '<div>' + priceLabel + '</div>'
+                  + '</div>';
+        });
+        
+        list.innerHTML = html;
+        
+        // Sélectionner la première méthode par défaut
+        const first = data.methods[0];
+        document.getElementById('shipping-method-input').value = first.code;
+        document.getElementById('shipping-cost-input').value = first.price;
+        updateSummary(first.price);
+    })
+    .catch(err => {
+        loading.style.display = 'none';
+        list.innerHTML = '<div class="alert-modern alert-danger"><i class="fas fa-exclamation-circle"></i> Erreur lors du calcul des frais de livraison</div>';
+        console.error('Erreur shipping:', err);
+        updateSummary(0);
+    });
+}
+
+document.addEventListener('DOMContentLoaded', function() {
+    loadShippingMethods();
+    
+    const countrySelect = document.querySelector('select[name="country"]');
+    if (countrySelect) {
+        countrySelect.addEventListener('change', loadShippingMethods);
+    }
+    
+    // Validation avant soumission
+    const form = document.getElementById('checkoutForm');
+    if (form) {
+        form.addEventListener('submit', function(e) {
+            const shippingMethod = document.getElementById('shipping-method-input').value;
+            if (!shippingMethod) {
+                e.preventDefault();
+                alert('Veuillez sélectionner une méthode de livraison.');
+                document.getElementById('shipping-methods-container').scrollIntoView({behavior: 'smooth'});
+            }
+        });
+    }
+});
+</script>
+{% endblock %}

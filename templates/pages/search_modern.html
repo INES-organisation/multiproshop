@@ -1,0 +1,318 @@
+{% extends 'layout.html' %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/pages_modern.css') }}">
+{% endblock %}
+
+{% block content %}
+<!-- Page Header -->
+<div class="page-header">
+    <div class="container">
+        <h1 class="page-title">
+            <i class="fas fa-search"></i>
+            Résultats de Recherche
+        </h1>
+        <p class="page-subtitle">
+            {% if query %}
+            Recherche pour : <strong>"{{ query }}"</strong>
+            {% else %}
+            Effectuez une recherche
+            {% endif %}
+        </p>
+    </div>
+</div>
+
+<!-- Search Content -->
+<div class="container page-container">
+    <!-- Search Bar -->
+    <div class="card-modern mb-4">
+        <div class="card-modern-body">
+            <form method="get" action="{{ url_for('main.search') }}">
+                <div class="form-group-modern">
+                    <div style="position: relative;">
+                        <input type="text" class="form-control-modern" name="q" placeholder="Rechercher des produits..." value="{{ query if query else '' }}" style="padding-left: 3rem;">
+                        <i class="fas fa-search" style="position: absolute; left: 1rem; top: 50%; transform: translateY(-50%); color: #999;"></i>
+                    </div>
+                </div>
+                <div class="d-flex gap-2 flex-wrap">
+                    <button type="submit" class="btn-modern btn-modern-primary">
+                        <i class="fas fa-search"></i>
+                        Rechercher
+                    </button>
+                    <a href="{{ url_for('products.list_products') }}" class="btn-modern btn-modern-outline">
+                        <i class="fas fa-th"></i>
+                        Tous les Produits
+                    </a>
+                </div>
+            </form>
+        </div>
+    </div>
+    
+    {% if query %}
+    <!-- Results Header -->
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <strong>{{ results|length if results else 0 }}</strong> résultat(s) trouvé(s)
+        </div>
+        <div class="d-flex gap-2">
+            <select class="form-control-modern form-select-modern" style="width: auto;" onchange="sortResults(this.value)">
+                <option value="relevance">Pertinence</option>
+                <option value="name_asc">Nom A-Z</option>
+                <option value="name_desc">Nom Z-A</option>
+                <option value="price_asc">Prix croissant</option>
+                <option value="price_desc">Prix décroissant</option>
+            </select>
+        </div>
+    </div>
+    
+    {% if results and results|length > 0 %}
+    <!-- Results Grid -->
+    <div class="products-grid">
+        {% for product in results %}
+        <div class="product-card-modern">
+            <div class="product-image-wrapper">
+                {% if product.image_url %}
+                <img src="{{ product.image_url }}" alt="{{ product.name }}" loading="lazy" decoding="async">
+                {% else %}
+                <img src="https://via.placeholder.com/300x300?text={{ product.name[:1] }}" alt="{{ product.name }}" loading="lazy" decoding="async">
+                {% endif %}
+                
+                {% if product.promotion %}
+                <span class="badge-modern badge-danger product-badge">-{{ product.promotion.discount_percentage }}%</span>
+                {% endif %}
+                
+                {% if product.stock == 0 %}
+                <span class="badge-modern badge-secondary product-badge" style="top: auto; bottom: 1rem;">Rupture</span>
+                {% elif product.stock < 5 %}
+                <span class="badge-modern badge-warning product-badge" style="top: auto; bottom: 1rem;">Stock limité</span>
+                {% endif %}
+            </div>
+            
+            <div class="product-info">
+                {% if product.category %}
+                <div class="product-category">{{ product.category.name }}</div>
+                {% endif %}
+                
+                <h3 class="product-name-modern">
+                    <a href="{{ url_for('products.product_detail', product_id=product.id) }}">{{ product.name }}</a>
+                </h3>
+                
+                <div class="product-rating-modern">
+                    <span>
+                        <i class="fas fa-star"></i>
+                        <i class="fas fa-star"></i>
+                        <i class="fas fa-star"></i>
+                        <i class="fas fa-star"></i>
+                        <i class="far fa-star"></i>
+                    </span>
+                    <span class="rating-count">(4.0)</span>
+                </div>
+                
+                <div class="product-price-modern">
+                    {% if product.promotion %}
+                    <span class="price-current">{{ "%.2f"|format(product.price * (1 - product.promotion.discount_percentage / 100)) }}€</span>
+                    <span class="price-old">{{ "%.2f"|format(product.price) }}€</span>
+                    {% else %}
+                    <span class="price-current">{{ "%.2f"|format(product.price) }}€</span>
+                    {% endif %}
+                </div>
+                
+                <div class="product-actions">
+                    <button class="btn-add-cart-modern" onclick="addToCart({{ product.id }})">
+                        <i class="fas fa-shopping-cart"></i> Ajouter
+                    </button>
+                    <button class="btn-wishlist" onclick="addToWishlist({{ product.id }})">
+                        <i class="far fa-heart"></i>
+                    </button>
+                </div>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+    
+    {% else %}
+    <!-- No Results -->
+    <div class="text-center py-5">
+        <i class="fas fa-search" style="font-size: 5rem; color: var(--primary-color); opacity: 0.3;"></i>
+        <h3 class="mt-4">Aucun résultat trouvé</h3>
+        <p class="text-muted mb-4">Essayez avec d'autres mots-clés ou parcourez nos catégories</p>
+        <a href="{{ url_for('products.list_products') }}" class="btn-modern btn-modern-primary">
+            <i class="fas fa-th"></i>
+            Voir Tous les Produits
+        </a>
+    </div>
+    
+    <!-- Search Suggestions -->
+    <div class="row g-4 mt-4">
+        <div class="col-md-6">
+            <div class="card-modern">
+                <div class="card-modern-header">
+                    <i class="fas fa-lightbulb"></i> Suggestions
+                </div>
+                <div class="card-modern-body">
+                    <ul style="list-style: none; padding: 0; margin: 0;">
+                        <li style="padding: 0.5rem 0;">
+                            <i class="fas fa-check" style="color: var(--primary-color);"></i>
+                            Vérifiez l'orthographe
+                        </li>
+                        <li style="padding: 0.5rem 0;">
+                            <i class="fas fa-check" style="color: var(--primary-color);"></i>
+                            Utilisez des mots-clés plus généraux
+                        </li>
+                        <li style="padding: 0.5rem 0;">
+                            <i class="fas fa-check" style="color: var(--primary-color);"></i>
+                            Essayez des synonymes
+                        </li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-6">
+            <div class="card-modern">
+                <div class="card-modern-header">
+                    <i class="fas fa-fire"></i> Recherches Populaires
+                </div>
+                <div class="card-modern-body">
+                    <div style="display: flex; flex-wrap: wrap; gap: 0.5rem;">
+                        <a href="?q=électronique" class="badge-modern badge-primary" style="text-decoration: none;">électronique</a>
+                        <a href="?q=ordinateur" class="badge-modern badge-primary" style="text-decoration: none;">ordinateur</a>
+                        <a href="?q=smartphone" class="badge-modern badge-primary" style="text-decoration: none;">smartphone</a>
+                        <a href="?q=accessoires" class="badge-modern badge-primary" style="text-decoration: none;">accessoires</a>
+                        <a href="?q=gaming" class="badge-modern badge-primary" style="text-decoration: none;">gaming</a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+    
+    {% else %}
+    <!-- Initial State -->
+    <div class="text-center py-5">
+        <i class="fas fa-search" style="font-size: 5rem; color: var(--primary-color); opacity: 0.3;"></i>
+        <h3 class="mt-4">Que recherchez-vous ?</h3>
+        <p class="text-muted mb-4">Utilisez la barre de recherche ci-dessus pour trouver vos produits</p>
+    </div>
+    
+    <!-- Popular Categories -->
+    <h3 style="font-weight: 800; margin-bottom: 2rem; text-align: center;">
+        <i class="fas fa-fire"></i> Catégories Populaires
+    </h3>
+    <div class="row g-4">
+        <div class="col-md-3 col-sm-6">
+            <a href="{{ url_for('products.list_products', category=1) }}" style="text-decoration: none;">
+                <div class="card-modern text-center h-100" style="transition: var(--transition); cursor: pointer;">
+                    <div class="card-modern-body">
+                        <div class="feature-icon-wrapper">
+                            <i class="fas fa-laptop"></i>
+                        </div>
+                        <h6 class="feature-title">Électronique</h6>
+                    </div>
+                </div>
+            </a>
+        </div>
+        <div class="col-md-3 col-sm-6">
+            <a href="{{ url_for('products.list_products', category=2) }}" style="text-decoration: none;">
+                <div class="card-modern text-center h-100" style="transition: var(--transition); cursor: pointer;">
+                    <div class="card-modern-body">
+                        <div class="feature-icon-wrapper">
+                            <i class="fas fa-tshirt"></i>
+                        </div>
+                        <h6 class="feature-title">Mode</h6>
+                    </div>
+                </div>
+            </a>
+        </div>
+        <div class="col-md-3 col-sm-6">
+            <a href="{{ url_for('products.list_products', category=3) }}" style="text-decoration: none;">
+                <div class="card-modern text-center h-100" style="transition: var(--transition); cursor: pointer;">
+                    <div class="card-modern-body">
+                        <div class="feature-icon-wrapper">
+                            <i class="fas fa-home"></i>
+                        </div>
+                        <h6 class="feature-title">Maison</h6>
+                    </div>
+                </div>
+            </a>
+        </div>
+        <div class="col-md-3 col-sm-6">
+            <a href="{{ url_for('products.list_products', category=4) }}" style="text-decoration: none;">
+                <div class="card-modern text-center h-100" style="transition: var(--transition); cursor: pointer;">
+                    <div class="card-modern-body">
+                        <div class="feature-icon-wrapper">
+                            <i class="fas fa-dumbbell"></i>
+                        </div>
+                        <h6 class="feature-title">Sport</h6>
+                    </div>
+                </div>
+            </a>
+        </div>
+    </div>
+    {% endif %}
+    
+    <!-- Features -->
+    <div class="row g-4 mt-5">
+        <div class="col-md-3 col-sm-6">
+            <div class="card-modern text-center">
+                <div class="card-modern-body">
+                    <div class="feature-icon-wrapper">
+                        <i class="fas fa-shipping-fast"></i>
+                    </div>
+                    <h6 class="feature-title">Livraison Gratuite</h6>
+                    <p class="feature-description">Commandes > 50€</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3 col-sm-6">
+            <div class="card-modern text-center">
+                <div class="card-modern-body">
+                    <div class="feature-icon-wrapper">
+                        <i class="fas fa-undo"></i>
+                    </div>
+                    <h6 class="feature-title">Retour 90 jours</h6>
+                    <p class="feature-description">Satisfait ou remboursé</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3 col-sm-6">
+            <div class="card-modern text-center">
+                <div class="card-modern-body">
+                    <div class="feature-icon-wrapper">
+                        <i class="fas fa-lock"></i>
+                    </div>
+                    <h6 class="feature-title">Paiement Sécurisé</h6>
+                    <p class="feature-description">100% sécurisé</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3 col-sm-6">
+            <div class="card-modern text-center">
+                <div class="card-modern-body">
+                    <div class="feature-icon-wrapper">
+                        <i class="fas fa-headset"></i>
+                    </div>
+                    <h6 class="feature-title">Support 24/7</h6>
+                    <p class="feature-description">Assistance dédiée</p>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+function sortResults(sortBy) {
+    const url = new URL(window.location);
+    url.searchParams.set('sort', sortBy);
+    window.location = url;
+}
+
+// addToCart est dans cart.js (global AJAX)
+
+function addToWishlist(productId) {
+    console.log('Ajout aux favoris:', productId);
+    alert('Produit ajouté aux favoris !');
+}
+</script>
+{% endblock %}

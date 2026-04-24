@@ -1,0 +1,403 @@
+{% extends 'admin/layout_admin_modern.html' %}
+
+{% block title %}Commandes CJ Dropshipping{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/admin_modern.css') }}">
+<style>
+.stats-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 1rem;
+    margin-bottom: 2rem;
+}
+
+.stat-card {
+    background: white;
+    padding: 1.5rem;
+    border-radius: 8px;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+
+.stat-value {
+    font-size: 2rem;
+    font-weight: bold;
+    color: var(--primary-color, #007bff);
+}
+
+.stat-label {
+    color: #666;
+    font-size: 0.9rem;
+    margin-top: 0.5rem;
+}
+
+.order-table {
+    width: 100%;
+    background: white;
+    border-radius: 8px;
+    overflow: hidden;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+
+.order-table th {
+    background: #f8f9fa;
+    padding: 1rem;
+    text-align: left;
+    font-weight: 600;
+}
+
+.order-table td {
+    padding: 1rem;
+    border-top: 1px solid #dee2e6;
+}
+
+.badge {
+    padding: 0.25rem 0.75rem;
+    border-radius: 4px;
+    font-size: 0.85rem;
+    font-weight: 500;
+}
+
+.badge-success { background: #d4edda; color: #155724; }
+.badge-warning { background: #fff3cd; color: #856404; }
+.badge-info { background: #d1ecf1; color: #0c5460; }
+.badge-danger { background: #f8d7da; color: #721c24; }
+.badge-primary { background: #cce5ff; color: #004085; }
+
+.btn-group {
+    display: flex;
+    gap: 0.5rem;
+}
+
+.btn-sm {
+    padding: 0.25rem 0.75rem;
+    font-size: 0.875rem;
+    border-radius: 4px;
+    border: none;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.btn-primary { background: #007bff; color: white; }
+.btn-primary:hover { background: #0056b3; }
+.btn-success { background: #28a745; color: white; }
+.btn-success:hover { background: #218838; }
+.btn-info { background: #17a2b8; color: white; }
+.btn-info:hover { background: #138496; }
+.btn-danger { background: #dc3545; color: white; }
+.btn-danger:hover { background: #c82333; }
+
+.filters {
+    background: white;
+    padding: 1rem;
+    border-radius: 8px;
+    margin-bottom: 1rem;
+    display: flex;
+    gap: 1rem;
+    align-items: center;
+}
+
+.pagination {
+    display: flex;
+    justify-content: center;
+    gap: 0.5rem;
+    margin-top: 2rem;
+}
+
+.cj-badge {
+    background: #28a745;
+    color: white;
+    padding: 0.25rem 0.5rem;
+    border-radius: 4px;
+    font-size: 0.75rem;
+}
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h1><i class="fas fa-shopping-cart"></i> Commandes CJ Dropshipping</h1>
+        <div>
+            <button class="btn btn-primary" onclick="syncAllOrders()">
+                <i class="fas fa-sync"></i> Synchroniser Tout
+            </button>
+        </div>
+    </div>
+
+    <!-- Statistiques -->
+    <div class="stats-grid">
+        <div class="stat-card">
+            <div class="stat-value">{{ stats.total or 0 }}</div>
+            <div class="stat-label">Total Commandes</div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-value">{{ stats.pending or 0 }}</div>
+            <div class="stat-label">En Attente</div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-value">{{ stats.processing or 0 }}</div>
+            <div class="stat-label">En Traitement</div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-value">{{ stats.shipped or 0 }}</div>
+            <div class="stat-label">Expédiées</div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-value">{{ stats.delivered or 0 }}</div>
+            <div class="stat-label">Livrées</div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-value">{{ stats.with_cj_id or 0 }}</div>
+            <div class="stat-label">Sur CJ</div>
+        </div>
+    </div>
+
+    <!-- Filtres -->
+    <div class="filters">
+        <label>Filtrer par statut:</label>
+        <select id="statusFilter" onchange="filterByStatus(this.value)">
+            <option value="">Tous</option>
+            <option value="pending" {% if status_filter == 'pending' %}selected{% endif %}>En Attente</option>
+            <option value="paid" {% if status_filter == 'paid' %}selected{% endif %}>Payée</option>
+            <option value="processing" {% if status_filter == 'processing' %}selected{% endif %}>En Traitement</option>
+            <option value="shipped" {% if status_filter == 'shipped' %}selected{% endif %}>Expédiée</option>
+            <option value="delivered" {% if status_filter == 'delivered' %}selected{% endif %}>Livrée</option>
+            <option value="cancelled" {% if status_filter == 'cancelled' %}selected{% endif %}>Annulée</option>
+        </select>
+    </div>
+
+    <!-- Table des commandes -->
+    <table class="order-table">
+        <thead>
+            <tr>
+                <th><input type="checkbox" id="selectAll" onchange="toggleSelectAll(this)"></th>
+                <th>N° Commande</th>
+                <th>Client</th>
+                <th>Date</th>
+                <th>Montant</th>
+                <th>Statut</th>
+                <th>CJ</th>
+                <th>Actions</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% if orders %}
+                {% for order in orders %}
+                <tr>
+                    <td><input type="checkbox" class="order-checkbox" value="{{ order.id }}"></td>
+                    <td>
+                        <strong>{{ order.order_number }}</strong>
+                    </td>
+                    <td>
+                        {{ order.customer_email }}<br>
+                        <small class="text-muted">{{ order.shipping_first_name }} {{ order.shipping_last_name }}</small>
+                    </td>
+                    <td>{{ order.created_at.strftime('%d/%m/%Y %H:%M') }}</td>
+                    <td><strong>${{ "%.2f"|format(order.total_price) }}</strong></td>
+                    <td>
+                        {% if order.status == 'pending' %}
+                            <span class="badge badge-warning">En Attente</span>
+                        {% elif order.status == 'paid' %}
+                            <span class="badge badge-info">Payée</span>
+                        {% elif order.status == 'processing' %}
+                            <span class="badge badge-primary">En Traitement</span>
+                        {% elif order.status == 'shipped' %}
+                            <span class="badge badge-info">Expédiée</span>
+                        {% elif order.status == 'delivered' %}
+                            <span class="badge badge-success">Livrée</span>
+                        {% elif order.status == 'cancelled' %}
+                            <span class="badge badge-danger">Annulée</span>
+                        {% endif %}
+                    </td>
+                    <td>
+                        {% if order.cj_order_id %}
+                            <span class="cj-badge" title="ID CJ: {{ order.cj_order_id }}">
+                                <i class="fas fa-check"></i> CJ
+                            </span>
+                            {% if order.cj_tracking_number %}
+                                <br><small>{{ order.cj_tracking_number }}</small>
+                            {% endif %}
+                        {% else %}
+                            <span class="text-muted">-</span>
+                        {% endif %}
+                    </td>
+                    <td>
+                        <div class="btn-group">
+                            <a href="{{ url_for('admin_cj_orders.order_detail', order_id=order.id) }}" 
+                               class="btn-sm btn-info" title="Détails">
+                                <i class="fas fa-eye"></i>
+                            </a>
+                            
+                            {% if not order.cj_order_id %}
+                                <button onclick="createCjOrder({{ order.id }})" 
+                                        class="btn-sm btn-success" title="Créer sur CJ">
+                                    <i class="fas fa-plus"></i>
+                                </button>
+                            {% else %}
+                                <button onclick="syncOrder({{ order.id }})" 
+                                        class="btn-sm btn-primary" title="Synchroniser">
+                                    <i class="fas fa-sync"></i>
+                                </button>
+                            {% endif %}
+                        </div>
+                    </td>
+                </tr>
+                {% endfor %}
+            {% else %}
+                <tr>
+                    <td colspan="8" class="text-center py-4">
+                        <i class="fas fa-inbox fa-3x text-muted mb-3"></i>
+                        <p>Aucune commande trouvée</p>
+                    </td>
+                </tr>
+            {% endif %}
+        </tbody>
+    </table>
+
+    <!-- Pagination -->
+    {% if pagination and pagination.pages > 1 %}
+    <div class="pagination">
+        {% if pagination.has_prev %}
+            <a href="?page={{ pagination.prev_num }}{% if status_filter %}&status={{ status_filter }}{% endif %}" 
+               class="btn-sm btn-primary">Précédent</a>
+        {% endif %}
+        
+        <span class="px-3">Page {{ pagination.page }} sur {{ pagination.pages }}</span>
+        
+        {% if pagination.has_next %}
+            <a href="?page={{ pagination.next_num }}{% if status_filter %}&status={{ status_filter }}{% endif %}" 
+               class="btn-sm btn-primary">Suivant</a>
+        {% endif %}
+    </div>
+    {% endif %}
+
+    <!-- Actions en masse -->
+    <div class="mt-4" id="bulkActions" style="display: none;">
+        <button class="btn btn-success" onclick="bulkAction('create')">
+            <i class="fas fa-plus"></i> Créer sur CJ
+        </button>
+        <button class="btn btn-primary" onclick="bulkAction('sync')">
+            <i class="fas fa-sync"></i> Synchroniser
+        </button>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+function filterByStatus(status) {
+    window.location.href = '{{ url_for("admin_cj_orders.list_orders") }}' + (status ? '?status=' + status : '');
+}
+
+function toggleSelectAll(checkbox) {
+    const checkboxes = document.querySelectorAll('.order-checkbox');
+    checkboxes.forEach(cb => cb.checked = checkbox.checked);
+    updateBulkActions();
+}
+
+function updateBulkActions() {
+    const selected = document.querySelectorAll('.order-checkbox:checked').length;
+    document.getElementById('bulkActions').style.display = selected > 0 ? 'block' : 'none';
+}
+
+document.querySelectorAll('.order-checkbox').forEach(cb => {
+    cb.addEventListener('change', updateBulkActions);
+});
+
+async function createCjOrder(orderId) {
+    if (!confirm('Créer cette commande sur CJ Dropshipping ?')) return;
+    
+    try {
+        const response = await fetch(`/admin/cj/orders/api/create/${orderId}`, {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'}
+        });
+        
+        const result = await response.json();
+        
+        if (result.success) {
+            alert('Commande créée sur CJ avec succès !');
+            location.reload();
+        } else {
+            alert('Erreur: ' + result.message);
+        }
+    } catch (error) {
+        alert('Erreur: ' + error.message);
+    }
+}
+
+async function syncOrder(orderId) {
+    try {
+        const response = await fetch(`/admin/cj/orders/api/sync/${orderId}`, {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'}
+        });
+        
+        const result = await response.json();
+        
+        if (result.success) {
+            alert('Statut synchronisé !');
+            location.reload();
+        } else {
+            alert('Erreur: ' + result.message);
+        }
+    } catch (error) {
+        alert('Erreur: ' + error.message);
+    }
+}
+
+async function syncAllOrders() {
+    if (!confirm('Synchroniser toutes les commandes en attente ?')) return;
+    
+    try {
+        const response = await fetch('/admin/cj/orders/api/sync-all', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'}
+        });
+        
+        const result = await response.json();
+        
+        if (result.success) {
+            alert(result.message);
+            location.reload();
+        } else {
+            alert('Erreur: ' + result.message);
+        }
+    } catch (error) {
+        alert('Erreur: ' + error.message);
+    }
+}
+
+async function bulkAction(action) {
+    const checkboxes = document.querySelectorAll('.order-checkbox:checked');
+    const orderIds = Array.from(checkboxes).map(cb => parseInt(cb.value));
+    
+    if (orderIds.length === 0) {
+        alert('Aucune commande sélectionnée');
+        return;
+    }
+    
+    if (!confirm(`${action === 'create' ? 'Créer' : 'Synchroniser'} ${orderIds.length} commande(s) ?`)) return;
+    
+    try {
+        const response = await fetch('/admin/cj/orders/api/bulk-action', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({action, order_ids: orderIds})
+        });
+        
+        const result = await response.json();
+        
+        if (result.success) {
+            alert(result.message);
+            location.reload();
+        } else {
+            alert('Erreur: ' + result.message);
+        }
+    } catch (error) {
+        alert('Erreur: ' + error.message);
+    }
+}
+</script>
+{% endblock %}

@@ -1,0 +1,413 @@
+{% extends 'layout.html' %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/pages_modern.css') }}">
+<style>
+.legal-toc {
+    position: sticky;
+    top: 100px;
+}
+
+.legal-toc-item {
+    padding: 0.8rem 1rem;
+    border-left: 3px solid var(--border-color);
+    margin-bottom: 0.5rem;
+    cursor: pointer;
+    transition: var(--transition);
+    color: #666;
+}
+
+.legal-toc-item:hover,
+.legal-toc-item.active {
+    border-left-color: var(--primary-color);
+    background: var(--light-bg);
+    color: var(--primary-color);
+    font-weight: 600;
+}
+
+.legal-section {
+    margin-bottom: 3rem;
+    scroll-margin-top: 100px;
+}
+
+.legal-section h2 {
+    font-weight: 800;
+    margin-bottom: 1.5rem;
+    color: var(--dark-color);
+    padding-bottom: 0.5rem;
+    border-bottom: 3px solid var(--primary-color);
+}
+
+.legal-section h3 {
+    font-weight: 700;
+    margin: 2rem 0 1rem 0;
+    color: var(--dark-color);
+}
+
+.legal-section p {
+    line-height: 1.8;
+    color: #666;
+    margin-bottom: 1rem;
+}
+
+.legal-section ul,
+.legal-section ol {
+    line-height: 1.8;
+    color: #666;
+    margin-bottom: 1rem;
+}
+
+.legal-highlight {
+    background: linear-gradient(135deg, rgba(255,179,0,0.1), rgba(255,152,0,0.1));
+    padding: 1.5rem;
+    border-left: 4px solid var(--primary-color);
+    border-radius: var(--border-radius);
+    margin: 1.5rem 0;
+}
+
+.legal-date {
+    color: #999;
+    font-size: 0.9rem;
+    font-style: italic;
+}
+</style>
+{% endblock %}
+
+{% block content %}
+<!-- Page Header -->
+<div class="page-header">
+    <div class="container">
+        <h1 class="page-title">
+            <i class="fas fa-shield-alt"></i>
+            Politique de Confidentialité
+        </h1>
+        <p class="page-subtitle">Protection de vos données personnelles</p>
+        <p class="legal-date">Dernière mise à jour : 2 Novembre 2025</p>
+    </div>
+</div>
+
+<!-- Privacy Content -->
+<div class="container page-container">
+    <div class="row g-4">
+        <!-- Table of Contents -->
+        <div class="col-lg-3">
+            <div class="legal-toc">
+                <div class="card-modern">
+                    <div class="card-modern-header">
+                        <i class="fas fa-list"></i> Sommaire
+                    </div>
+                    <div class="card-modern-body" style="padding: 0.5rem;">
+                        <div class="legal-toc-item active" onclick="scrollToSection('intro')">
+                            1. Introduction
+                        </div>
+                        <div class="legal-toc-item" onclick="scrollToSection('collecte')">
+                            2. Données Collectées
+                        </div>
+                        <div class="legal-toc-item" onclick="scrollToSection('utilisation')">
+                            3. Utilisation
+                        </div>
+                        <div class="legal-toc-item" onclick="scrollToSection('partage')">
+                            4. Partage
+                        </div>
+                        <div class="legal-toc-item" onclick="scrollToSection('droits')">
+                            5. Vos Droits
+                        </div>
+                        <div class="legal-toc-item" onclick="scrollToSection('securite')">
+                            6. Sécurité
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Content -->
+        <div class="col-lg-9">
+            <!-- Section 1 -->
+            <div class="legal-section" id="intro">
+                <h2>1. Introduction</h2>
+                <p>
+                    Chez <strong>MultiProShop</strong>, nous accordons une grande importance à la protection de vos données personnelles. Cette politique de confidentialité explique comment nous collectons, utilisons, partageons et protégeons vos informations.
+                </p>
+                <div class="legal-highlight">
+                    <p style="margin: 0;"><strong>Responsable du traitement :</strong></p>
+                    <p style="margin: 0;">MultiProShop SAS</p>
+                    <p style="margin: 0;">123 Rue du Commerce, 75000 Paris, France</p>
+                    <p style="margin: 0;">Email : dpo@multiproshop.com</p>
+                </div>
+                <p>
+                    Nous nous engageons à respecter le Règlement Général sur la Protection des Données (RGPD) et la loi Informatique et Libertés.
+                </p>
+            </div>
+            
+            <!-- Section 2 -->
+            <div class="legal-section" id="collecte">
+                <h2>2. Données Collectées</h2>
+                <h3>2.1 Données que vous nous fournissez</h3>
+                <p>
+                    Nous collectons les informations que vous nous fournissez directement :
+                </p>
+                <ul>
+                    <li><strong>Informations de compte :</strong> Nom, prénom, email, mot de passe</li>
+                    <li><strong>Informations de livraison :</strong> Adresse, téléphone</li>
+                    <li><strong>Informations de paiement :</strong> Détails de carte bancaire (cryptés)</li>
+                    <li><strong>Communications :</strong> Messages, avis, commentaires</li>
+                </ul>
+                
+                <h3>2.2 Données collectées automatiquement</h3>
+                <p>
+                    Lorsque vous utilisez notre site, nous collectons automatiquement :
+                </p>
+                <ul>
+                    <li><strong>Données de navigation :</strong> Pages visitées, durée, clics</li>
+                    <li><strong>Données techniques :</strong> Adresse IP, navigateur, système d'exploitation</li>
+                    <li><strong>Cookies :</strong> Préférences, panier, session</li>
+                </ul>
+            </div>
+            
+            <!-- Section 3 -->
+            <div class="legal-section" id="utilisation">
+                <h2>3. Utilisation des Données</h2>
+                <p>
+                    Nous utilisons vos données personnelles pour :
+                </p>
+                <h3>3.1 Gestion des commandes</h3>
+                <ul>
+                    <li>Traiter et livrer vos commandes</li>
+                    <li>Gérer les paiements et la facturation</li>
+                    <li>Communiquer sur l'état de vos commandes</li>
+                    <li>Gérer les retours et remboursements</li>
+                </ul>
+                
+                <h3>3.2 Amélioration du service</h3>
+                <ul>
+                    <li>Personnaliser votre expérience</li>
+                    <li>Analyser l'utilisation du site</li>
+                    <li>Améliorer nos produits et services</li>
+                    <li>Développer de nouvelles fonctionnalités</li>
+                </ul>
+                
+                <h3>3.3 Communication marketing</h3>
+                <ul>
+                    <li>Envoyer des newsletters (avec votre consentement)</li>
+                    <li>Informer des offres et promotions</li>
+                    <li>Recommander des produits</li>
+                </ul>
+                <div class="alert-modern alert-info">
+                    <i class="fas fa-info-circle"></i>
+                    <div>
+                        Vous pouvez vous désabonner à tout moment en cliquant sur le lien de désinscription dans nos emails.
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Section 4 -->
+            <div class="legal-section" id="partage">
+                <h2>4. Partage des Données</h2>
+                <p>
+                    Nous ne vendons jamais vos données personnelles. Nous pouvons les partager avec :
+                </p>
+                <h3>4.1 Prestataires de services</h3>
+                <ul>
+                    <li><strong>Transporteurs :</strong> Pour la livraison de vos commandes</li>
+                    <li><strong>Processeurs de paiement :</strong> Pour traiter les transactions</li>
+                    <li><strong>Services d'hébergement :</strong> Pour stocker les données</li>
+                    <li><strong>Services d'analyse :</strong> Pour améliorer le site</li>
+                </ul>
+                
+                <h3>4.2 Obligations légales</h3>
+                <p>
+                    Nous pouvons divulguer vos données si la loi l'exige ou pour :
+                </p>
+                <ul>
+                    <li>Répondre à une demande légale</li>
+                    <li>Protéger nos droits et notre sécurité</li>
+                    <li>Prévenir la fraude</li>
+                </ul>
+            </div>
+            
+            <!-- Section 5 -->
+            <div class="legal-section" id="droits">
+                <h2>5. Vos Droits</h2>
+                <p>
+                    Conformément au RGPD, vous disposez des droits suivants :
+                </p>
+                <div class="row g-3 mb-3">
+                    <div class="col-md-6">
+                        <div class="card-modern h-100">
+                            <div class="card-modern-body">
+                                <h6 style="font-weight: 700; margin-bottom: 0.5rem;">
+                                    <i class="fas fa-eye" style="color: var(--primary-color);"></i>
+                                    Droit d'Accès
+                                </h6>
+                                <p style="color: #666; margin: 0; font-size: 0.9rem;">
+                                    Obtenir une copie de vos données personnelles
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="card-modern h-100">
+                            <div class="card-modern-body">
+                                <h6 style="font-weight: 700; margin-bottom: 0.5rem;">
+                                    <i class="fas fa-edit" style="color: var(--primary-color);"></i>
+                                    Droit de Rectification
+                                </h6>
+                                <p style="color: #666; margin: 0; font-size: 0.9rem;">
+                                    Corriger vos données inexactes
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="card-modern h-100">
+                            <div class="card-modern-body">
+                                <h6 style="font-weight: 700; margin-bottom: 0.5rem;">
+                                    <i class="fas fa-trash" style="color: var(--primary-color);"></i>
+                                    Droit à l'Effacement
+                                </h6>
+                                <p style="color: #666; margin: 0; font-size: 0.9rem;">
+                                    Supprimer vos données personnelles
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="card-modern h-100">
+                            <div class="card-modern-body">
+                                <h6 style="font-weight: 700; margin-bottom: 0.5rem;">
+                                    <i class="fas fa-ban" style="color: var(--primary-color);"></i>
+                                    Droit d'Opposition
+                                </h6>
+                                <p style="color: #666; margin: 0; font-size: 0.9rem;">
+                                    Vous opposer au traitement de vos données
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <h3>Comment exercer vos droits ?</h3>
+                <p>
+                    Pour exercer vos droits, contactez-nous :
+                </p>
+                <ul>
+                    <li><strong>Email :</strong> dpo@multiproshop.com</li>
+                    <li><strong>Courrier :</strong> MultiProShop SAS - DPO, 123 Rue du Commerce, 75000 Paris</li>
+                    <li><strong>Formulaire :</strong> <a href="{{ url_for('main.contact') }}" style="color: var(--primary-color); font-weight: 600;">Page de contact</a></li>
+                </ul>
+                <p>
+                    Nous répondrons à votre demande dans un délai d'un mois.
+                </p>
+            </div>
+            
+            <!-- Section 6 -->
+            <div class="legal-section" id="securite">
+                <h2>6. Sécurité des Données</h2>
+                <p>
+                    Nous mettons en œuvre des mesures techniques et organisationnelles pour protéger vos données :
+                </p>
+                <div class="row g-3">
+                    <div class="col-md-4">
+                        <div class="card-modern text-center h-100">
+                            <div class="card-modern-body">
+                                <div class="feature-icon-wrapper">
+                                    <i class="fas fa-lock"></i>
+                                </div>
+                                <h6 class="feature-title">Cryptage SSL</h6>
+                                <p class="feature-description">Toutes les données sont cryptées</p>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="card-modern text-center h-100">
+                            <div class="card-modern-body">
+                                <div class="feature-icon-wrapper">
+                                    <i class="fas fa-server"></i>
+                                </div>
+                                <h6 class="feature-title">Serveurs Sécurisés</h6>
+                                <p class="feature-description">Hébergement certifié</p>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="card-modern text-center h-100">
+                            <div class="card-modern-body">
+                                <div class="feature-icon-wrapper">
+                                    <i class="fas fa-shield-alt"></i>
+                                </div>
+                                <h6 class="feature-title">Protection Active</h6>
+                                <p class="feature-description">Surveillance 24/7</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <h3>Conservation des données</h3>
+                <p>
+                    Nous conservons vos données personnelles :
+                </p>
+                <ul>
+                    <li><strong>Données de compte :</strong> Tant que votre compte est actif</li>
+                    <li><strong>Données de commande :</strong> 10 ans (obligations légales)</li>
+                    <li><strong>Données marketing :</strong> 3 ans après votre dernier contact</li>
+                </ul>
+            </div>
+            
+            <!-- Contact -->
+            <div class="card-modern">
+                <div class="card-modern-header">
+                    <i class="fas fa-envelope"></i> Questions sur la Confidentialité ?
+                </div>
+                <div class="card-modern-body">
+                    <p style="color: #666; margin-bottom: 1rem;">
+                        Notre Délégué à la Protection des Données est à votre disposition pour répondre à toutes vos questions.
+                    </p>
+                    <div class="d-flex gap-2">
+                        <a href="mailto:dpo@multiproshop.com" class="btn-modern btn-modern-primary">
+                            <i class="fas fa-envelope"></i>
+                            Contacter le DPO
+                        </a>
+                        <a href="{{ url_for('main.contact') }}" class="btn-modern btn-modern-outline">
+                            <i class="fas fa-paper-plane"></i>
+                            Formulaire
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+function scrollToSection(id) {
+    const element = document.getElementById(id);
+    if (element) {
+        element.scrollIntoView({ behavior: 'smooth' });
+        document.querySelectorAll('.legal-toc-item').forEach(item => item.classList.remove('active'));
+        event.target.classList.add('active');
+    }
+}
+
+window.addEventListener('scroll', () => {
+    const sections = document.querySelectorAll('.legal-section');
+    const tocItems = document.querySelectorAll('.legal-toc-item');
+    
+    let current = '';
+    sections.forEach(section => {
+        const sectionTop = section.offsetTop;
+        if (scrollY >= sectionTop - 150) {
+            current = section.getAttribute('id');
+        }
+    });
+    
+    tocItems.forEach((item, index) => {
+        item.classList.remove('active');
+        if (item.getAttribute('onclick').includes(current)) {
+            item.classList.add('active');
+        }
+    });
+});
+</script>
+{% endblock %}

@@ -1,19 +1,80 @@
-{% extends "base.html" %}
+{% extends 'admin/layout_admin_modern.html' %}
 {% block title %}{{ 'Créer' if not category else 'Modifier' }} une catégorie{% endblock %}
 {% block content %}
-<div class="container mt-5">
-    <h2>{{ 'Créer' if not category else 'Modifier' }} une catégorie</h2>
-    <form method="post">
-        <div class="mb-3">
-            <label for="name" class="form-label">Nom de la catégorie</label>
-            <input type="text" class="form-control" id="name" name="name" value="{{ category.name if category else '' }}" required>
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <div>
+        <h1 style="font-weight: 800; margin-bottom: 0.5rem;">
+            <i class="fas fa-folder-plus"></i> {{ 'Créer' if not category else 'Modifier' }} une catégorie
+        </h1>
+        <p style="color: #999; margin: 0;">Gestion des catégories de produits</p>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-lg-8">
+        <div class="admin-card">
+            <div class="admin-card-header">
+                <i class="fas fa-info-circle"></i> Informations catégorie
+            </div>
+            <div class="admin-card-body">
+                <form method="post">
+                    <div class="admin-form-group">
+                        <label class="admin-form-label">
+                            <i class="fas fa-tag"></i> Nom de la catégorie
+                        </label>
+                        <input type="text" class="admin-form-control" id="name" name="name" value="{{ category.name if category else '' }}" required>
+                    </div>
+                    
+                    <div class="admin-form-group">
+                        <label class="admin-form-label">
+                            <i class="fas fa-align-left"></i> Description
+                        </label>
+                        <textarea class="admin-form-control" id="description" name="description" rows="4">{{ category.description if category else '' }}</textarea>
+                    </div>
+                    
+                    <div class="admin-form-group">
+                        <label class="admin-form-label">
+                            <i class="fas fa-sitemap"></i> Catégorie parente (optionnel)
+                        </label>
+                        <select class="admin-form-control" id="parent_id" name="parent_id">
+                            <option value="">-- Aucune (Catégorie principale) --</option>
+                            {% if all_categories %}
+                                {% for cat in all_categories %}
+                                    {% if cat.level < 3 %}
+                                        <option value="{{ cat.id }}" 
+                                                {% if category and category.parent_id == cat.id %}selected{% endif %}>
+                                            {{ ('&nbsp;&nbsp;&nbsp;' * (cat.level - 1))|safe }}{{ cat.name }} (Niveau {{ cat.level }})
+                                        </option>
+                                    {% endif %}
+                                {% endfor %}
+                            {% endif %}
+                        </select>
+                        <small class="text-muted">Si vous sélectionnez un parent, cette catégorie sera une sous-catégorie</small>
+                    </div>
+                    
+                    <div class="admin-form-group">
+                        <label class="admin-form-label">
+                            <i class="fas fa-icons"></i> Icône FontAwesome
+                        </label>
+                        <input type="text" class="admin-form-control" id="icon" name="icon" 
+                               value="{{ category.icon if category else 'fa-folder' }}" 
+                               placeholder="fa-folder">
+                        <small class="text-muted">Exemple: fa-laptop, fa-mobile, fa-home, fa-car, etc.</small>
+                    </div>
+                    
+                    <div style="display: flex; gap: 1rem; margin-top: 2rem;">
+                        <button type="submit" class="admin-btn admin-btn-primary">
+                            <i class="fas fa-save"></i>
+                            {{ 'Créer' if not category else 'Mettre à jour' }}
+                        </button>
+                        <a href="{{ url_for('admin.categories') }}" class="admin-btn admin-btn-sm" style="background: #6c757d; color: white;">
+                            <i class="fas fa-times"></i>
+                            Annuler
+                        </a>
+                    </div>
+                </form>
+            </div>
         </div>
-        <div class="mb-3">
-            <label for="description" class="form-label">Description</label>
-            <textarea class="form-control" id="description" name="description" rows="3">{{ category.description if category else '' }}</textarea>
-        </div>
-        <button type="submit" class="btn btn-primary">{{ 'Créer' if not category else 'Mettre à jour' }}</button>
-        <a href="{{ url_for('admin.categories') }}" class="btn btn-secondary">Annuler</a>
-    </form>
+    </div>
 </div>
 {% endblock %}

@@ -1,0 +1,77 @@
+{% extends 'layout.html' %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/pages_modern.css') }}">
+<link rel="stylesheet" href="{{ url_for('static', filename='css/new_pages.css') }}">
+{% endblock %}
+
+{% block content %}
+<div class="hero-encheres">
+    <div class="container">
+        <h1><i class="fas fa-gavel"></i> Enchères</h1>
+        <p class="lead">Participez à nos enchères et remportez des produits à prix réduits</p>
+    </div>
+</div>
+
+<div class="container my-5">
+    <div class="row mb-4">
+        <div class="col-md-8">
+            <h2>Enchères en cours</h2>
+        </div>
+        <div class="col-md-4 text-end">
+            <select class="form-select">
+                <option>Se termine bientôt</option>
+                <option>Nouveautés</option>
+                <option>Prix le plus élevé</option>
+                <option>Prix le plus bas</option>
+            </select>
+        </div>
+    </div>
+
+    <div class="row">
+        {% for i in range(6) %}
+        <div class="col-md-4">
+            <div class="auction-card">
+                <div class="auction-image">
+                    <span class="auction-status {% if i % 2 == 0 %}ending-soon{% endif %}">
+                        {% if i % 2 == 0 %}Se termine bientôt{% else %}En cours{% endif %}
+                    </span>
+                    <img src="{{ url_for('static', filename='images/default-product.jpg') }}" alt="Enchère">
+                </div>
+                <div class="auction-info">
+                    <h5>Produit en Enchère {{ i + 1 }}</h5>
+                    <p class="text-muted small">Description du produit mis aux enchères</p>
+                    
+                    <div class="current-bid">
+                        {{ 50 + (i * 10) }},00€
+                    </div>
+                    <div class="bid-count">
+                        <i class="fas fa-users"></i> {{ 5 + i }} enchères
+                    </div>
+
+                    <div class="time-remaining">
+                        <div class="time-number">{{ 2 + i }}h {{ 30 - (i * 5) }}m</div>
+                        <small class="text-muted">Temps restant</small>
+                    </div>
+
+                    <div class="bid-form">
+                        <input type="number" class="form-control" placeholder="Votre enchère" min="{{ 50 + (i * 10) + 5 }}">
+                        <button class="btn btn-primary">Enchérir</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+
+    <div class="alert alert-info mt-4">
+        <h5><i class="fas fa-info-circle"></i> Comment ça marche ?</h5>
+        <ol class="mb-0">
+            <li>Parcourez les enchères en cours</li>
+            <li>Placez votre enchère (minimum 5€ au-dessus de l'enchère actuelle)</li>
+            <li>Vous serez notifié si vous êtes surenchéri</li>
+            <li>Si vous remportez l'enchère, vous recevrez un email de confirmation</li>
+        </ol>
+    </div>
+</div>
+{% endblock %}

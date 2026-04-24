@@ -1,0 +1,1277 @@
+{% extends "admin/layout_admin_modern.html" %}
+
+{% block title %}Produits CJ Dropshipping - Admin{% endblock %}
+
+{% block extra_css %}
+<style>
+    .product-card {
+        transition: all 0.3s;
+        cursor: pointer;
+    }
+    .product-card:hover {
+        box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+        transform: translateY(-5px);
+    }
+    .product-image {
+        width: 100%;
+        height: 200px;
+        object-fit: cover;
+        border-radius: 8px 8px 0 0;
+    }
+    .product-badge {
+        position: absolute;
+        top: 10px;
+        right: 10px;
+        z-index: 10;
+    }
+    .price-comparison {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+    }
+    .price-current {
+        font-size: 1.5rem;
+        font-weight: bold;
+        color: #28a745;
+    }
+    .price-suggested {
+        font-size: 1rem;
+        text-decoration: line-through;
+        color: #6c757d;
+    }
+    .discount-badge {
+        background: #dc3545;
+        color: white;
+        padding: 2px 8px;
+        border-radius: 4px;
+        font-size: 0.85rem;
+    }
+    .variant-chip {
+        display: inline-block;
+        padding: 4px 8px;
+        margin: 2px;
+        background: #e9ecef;
+        border-radius: 4px;
+        font-size: 0.85rem;
+    }
+    .sidebar-categories {
+        max-height: calc(100vh - 200px);
+        overflow-y: auto;
+    }
+    .category-item {
+        cursor: pointer;
+        padding: 8px 12px;
+        border-radius: 4px;
+        transition: all 0.2s;
+        border-left: 3px solid transparent;
+    }
+    .category-item:hover {
+        background: #f8f9fa;
+    }
+    .category-item.active {
+        background: #007bff;
+        color: white;
+    }
+    .category-level-1 {
+        border-left-color: #007bff !important;
+        font-weight: 600;
+    }
+    .category-level-2 {
+        border-left-color: #28a745 !important;
+        padding-left: 20px;
+    }
+    .category-level-3 {
+        border-left-color: #ffc107 !important;
+        padding-left: 35px;
+        font-size: 0.9rem;
+    }
+    .accordion-button {
+        padding: 0.5rem 0.75rem;
+        font-size: 0.9rem;
+    }
+    .accordion-button:not(.collapsed) {
+        background-color: #e7f3ff;
+        color: #0d6efd;
+    }
+    .accordion-body {
+        padding: 0;
+    }
+    .product-count-badge {
+        font-size: 0.75rem;
+    }
+    .empty-state-icon {
+        font-size: 3rem;
+        color: #dee2e6;
+    }
+    .pagination-hidden {
+        display: none;
+    }
+    .loading-spinner {
+        width: 3rem;
+        height: 3rem;
+    }
+    #loading-overlay {
+        display: none;
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background: rgba(0,0,0,0.5);
+        z-index: 9999;
+        justify-content: center;
+        align-items: center;
+    }
+    #loading-overlay.show {
+        display: flex;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4">
+    <div class="row">
+        <!-- Sidebar Catégories -->
+        <div class="col-md-3">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0">
+                        <i class="bi bi-folder-fill"></i>
+                        Catégories CJ
+                    </h5>
+                </div>
+                <div class="card-body p-2">
+                    <!-- Recherche catégories -->
+                    <div class="input-group input-group-sm mb-2">
+                        <span class="input-group-text">
+                            <i class="bi bi-search"></i>
+                        </span>
+                        <input type="text" id="categorySearchInput" class="form-control form-control-sm" 
+                               placeholder="Rechercher...">
+                        <button class="btn btn-outline-secondary" id="clearCategorySearchBtn" type="button">
+                            <i class="bi bi-x-lg"></i>
+                        </button>
+                    </div>
+                    <!-- Liste catégories -->
+                    <div class="sidebar-categories" id="categoriesSidebar">
+                        <div class="text-center py-3">
+                            <div class="spinner-border spinner-border-sm" role="status"></div>
+                            <p class="mb-0 mt-2 small text-muted">Chargement...</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Contenu principal -->
+        <div class="col-md-9">
+            <!-- En-tête -->
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <div>
+                    <h1 class="h3 mb-0">
+                        <i class="bi bi-box-seam text-primary"></i>
+                        Produits CJ Dropshipping
+                    </h1>
+                    <p class="text-muted mb-0" id="categoryPath">Sélectionnez une catégorie</p>
+                </div>
+                <div class="d-flex gap-2">
+                    <button id="syncAllStocksBtn" class="btn btn-success" onclick="syncAllStocks()">
+                        <i class="bi bi-box-seam"></i>
+                        Sync Masse Stocks
+                    </button>
+                    <button id="syncProductsBtn" class="btn btn-primary" disabled>
+                        <i class="bi bi-arrow-repeat"></i>
+                        Synchroniser
+                    </button>
+                </div>
+            </div>
+
+            <!-- Statistiques -->
+            <div class="row mb-4">
+                <div class="col-md-3">
+                    <div class="card border-primary">
+                        <div class="card-body py-2">
+                            <h6 class="text-muted mb-1 small">Total</h6>
+                            <h4 class="mb-0" id="stat-total">0</h4>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <div class="card border-success">
+                        <div class="card-body py-2">
+                            <h6 class="text-muted mb-1 small">Publiés</h6>
+                            <h4 class="mb-0" id="stat-published">0</h4>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <div class="card border-info">
+                        <div class="card-body py-2">
+                            <h6 class="text-muted mb-1 small">En stock</h6>
+                            <h4 class="mb-0" id="stat-stock">0</h4>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <div class="card border-warning">
+                        <div class="card-body py-2">
+                            <h6 class="text-muted mb-1 small">Variantes</h6>
+                            <h4 class="mb-0" id="stat-variants">0</h4>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Filtres -->
+            <div class="row mb-4">
+                <div class="col-md-6">
+                    <div class="input-group">
+                        <span class="input-group-text">
+                            <i class="bi bi-search"></i>
+                        </span>
+                        <input type="text" id="searchInput" class="form-control" 
+                               placeholder="Rechercher par nom, PID ou SKU...">
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <select id="statusFilter" class="form-select">
+                        <option value="">Tous les statuts</option>
+                        <option value="published">Publiés</option>
+                        <option value="draft">Brouillons</option>
+                        <option value="in_stock">En stock</option>
+                    </select>
+                </div>
+                <div class="col-md-3">
+                    <select id="sortFilter" class="form-select">
+                        <option value="name">Nom A-Z</option>
+                        <option value="price_asc">Prix croissant</option>
+                        <option value="price_desc">Prix décroissant</option>
+                        <option value="stock">Stock</option>
+                    </select>
+                </div>
+            </div>
+
+            <!-- Grille produits -->
+            <div id="productsContainer">
+                <div class="text-center py-5">
+                    <i class="bi bi-box-seam empty-state-icon"></i>
+                    <p class="text-muted mt-3">Sélectionnez une catégorie pour voir les produits</p>
+                </div>
+            </div>
+
+            <!-- Pagination -->
+            <nav id="paginationContainer" class="mt-4 pagination-hidden">
+                <ul class="pagination justify-content-center" id="paginationList">
+                </ul>
+            </nav>
+        </div>
+    </div>
+</div>
+
+<!-- Loading Overlay -->
+<div id="loading-overlay">
+    <div class="text-center">
+        <div class="spinner-border text-light loading-spinner" role="status"></div>
+        <p class="text-light mt-3" id="loading-text">Chargement...</p>
+    </div>
+</div>
+
+<!-- Modal détails produit -->
+<div class="modal fade" id="productModal" tabindex="-1">
+    <div class="modal-dialog modal-xl">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Détails du produit</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body" id="productModalBody">
+                <!-- Contenu dynamique -->
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Fermer</button>
+                <button type="button" class="btn btn-warning" id="enrichProductBtn">
+                    <i class="bi bi-stars"></i> Enrichir
+                </button>
+                <button type="button" class="btn btn-success" id="publishProductBtn">
+                    <i class="bi bi-check-circle"></i> Publier
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+let currentCategory = null;
+let currentPage = 1;
+let allProducts = [];
+let currentProduct = null;
+let allCategories = [];
+
+document.addEventListener('DOMContentLoaded', function() {
+    loadCategories();
+    loadGlobalStats();
+    initEventListeners();
+});
+
+function initEventListeners() {
+    document.getElementById('syncProductsBtn').addEventListener('click', syncProducts);
+    document.getElementById('searchInput').addEventListener('input', filterProducts);
+    document.getElementById('statusFilter').addEventListener('change', filterProducts);
+    document.getElementById('sortFilter').addEventListener('change', filterProducts);
+    document.getElementById('enrichProductBtn').addEventListener('click', enrichProduct);
+    document.getElementById('publishProductBtn').addEventListener('click', publishProduct);
+    
+    // Recherche catégories
+    document.getElementById('categorySearchInput').addEventListener('input', filterCategoriesSidebar);
+    document.getElementById('clearCategorySearchBtn').addEventListener('click', function() {
+        document.getElementById('categorySearchInput').value = '';
+        filterCategoriesSidebar();
+    });
+}
+
+function loadCategories() {
+    fetch('/admin/api/cj/categories/visible', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'}
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            allCategories = data.categories;
+            renderCategoriesSidebar(allCategories);
+        }
+    })
+    .catch(error => console.error('Erreur:', error));
+}
+
+function filterCategoriesSidebar() {
+    const searchTerm = document.getElementById('categorySearchInput').value.toLowerCase();
+    
+    if (!searchTerm) {
+        renderCategoriesSidebar(allCategories);
+        return;
+    }
+    
+    // Filtrer les catégories par nom
+    const filtered = allCategories.filter(cat => 
+        cat.name.toLowerCase().includes(searchTerm) ||
+        (cat.name_fr && cat.name_fr.toLowerCase().includes(searchTerm))
+    );
+    
+    // Inclure aussi les parents des catégories trouvées
+    const withParents = new Set();
+    filtered.forEach(cat => {
+        withParents.add(cat);
+        
+        // Ajouter les parents
+        if (cat.level === 3) {
+            const parent2 = allCategories.find(c => c.id === cat.parent_id);
+            if (parent2) {
+                withParents.add(parent2);
+                if (parent2.level === 2) {
+                    const parent1 = allCategories.find(c => c.id === parent2.parent_id);
+                    if (parent1) withParents.add(parent1);
+                }
+            }
+        } else if (cat.level === 2) {
+            const parent1 = allCategories.find(c => c.id === cat.parent_id);
+            if (parent1) withParents.add(parent1);
+        }
+    });
+    
+    renderCategoriesSidebar(Array.from(withParents));
+}
+
+function renderCategoriesSidebar(categories) {
+    const sidebar = document.getElementById('categoriesSidebar');
+    
+    if (categories.length === 0) {
+        sidebar.innerHTML = '<div class="text-center py-3"><p class="text-muted mb-0">Aucune catégorie</p></div>';
+        return;
+    }
+    
+    // Organiser par hiérarchie
+    const level1Categories = categories.filter(c => c.level === 1);
+    
+    let html = '<div class="accordion accordion-flush" id="categoriesAccordion">';
+    
+    level1Categories.forEach((cat1, idx1) => {
+        const level2Children = categories.filter(c => c.level === 2 && c.parent_id === cat1.id);
+        const hasChildren = level2Children.length > 0;
+        const accordionId1 = `accordion-l1-${idx1}`;
+        
+        html += `
+            <div class="accordion-item">
+                <h2 class="accordion-header">
+                    <button class="accordion-button collapsed category-level-1" type="button" 
+                            data-bs-toggle="collapse" data-bs-target="#${accordionId1}">
+                        <span class="flex-grow-1">${cat1.name_fr || cat1.name}</span>
+                        <span class="badge bg-primary product-count-badge ms-2">${cat1.product_count || 0}</span>
+                    </button>
+                </h2>
+                <div id="${accordionId1}" class="accordion-collapse collapse" data-bs-parent="#categoriesAccordion">
+                    <div class="accordion-body">
+        `;
+        
+        if (level2Children.length > 0) {
+            html += `<div class="accordion" id="accordion-l1-${idx1}-children">`;
+            
+            level2Children.forEach((cat2, idx2) => {
+                const level3Children = categories.filter(c => c.level === 3 && c.parent_id === cat2.id);
+                const accordionId2 = `accordion-l2-${idx1}-${idx2}`;
+                
+                html += `
+                    <div class="accordion-item">
+                        <h2 class="accordion-header">
+                            <button class="accordion-button collapsed category-level-2" type="button" 
+                                    data-bs-toggle="collapse" data-bs-target="#${accordionId2}">
+                                <span class="flex-grow-1">${cat2.name_fr || cat2.name}</span>
+                                <span class="badge bg-success product-count-badge ms-2">${cat2.product_count || 0}</span>
+                            </button>
+                        </h2>
+                        <div id="${accordionId2}" class="accordion-collapse collapse" data-bs-parent="#accordion-l1-${idx1}-children">
+                            <div class="accordion-body p-0">
+                                <div class="list-group list-group-flush">
+                `;
+                
+                level3Children.forEach(cat3 => {
+                    html += `
+                        <a href="#" class="list-group-item list-group-item-action category-item category-level-3" 
+                           data-category-id="${cat3.id}"
+                           data-category-name="${cat3.name}"
+                           data-category-path="${cat3.path || cat3.name}">
+                            <div class="d-flex justify-content-between align-items-center">
+                                <span class="text-truncate">${cat3.name_fr || cat3.name}</span>
+                                <span class="badge bg-warning text-dark product-count-badge">${cat3.product_count || 0}</span>
+                            </div>
+                        </a>
+                    `;
+                });
+                
+                html += `
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                `;
+            });
+            
+            html += '</div>';
+        }
+        
+        html += `
+                    </div>
+                </div>
+            </div>
+        `;
+    });
+    
+    html += '</div>';
+    sidebar.innerHTML = html;
+    
+    // Événements pour les catégories niveau 3
+    document.querySelectorAll('.category-item').forEach(item => {
+        item.addEventListener('click', function(e) {
+            e.preventDefault();
+            
+            document.querySelectorAll('.category-item').forEach(i => i.classList.remove('active'));
+            this.classList.add('active');
+            
+            currentCategory = this.dataset.categoryId;
+            document.getElementById('categoryPath').textContent = this.dataset.categoryPath;
+            document.getElementById('syncProductsBtn').disabled = false;
+            
+            loadProducts();
+        });
+    });
+}
+
+function loadProducts(page = 1) {
+    if (!currentCategory) return;
+    
+    const overlay = document.getElementById('loading-overlay');
+    overlay.classList.add('show');
+    
+    const formData = new FormData();
+    formData.append('category_id', currentCategory);
+    formData.append('page', page);
+    formData.append('per_page', 20);
+    
+    // Ajouter le terme de recherche s'il existe
+    const searchTerm = document.getElementById('searchInput').value.trim();
+    if (searchTerm) {
+        formData.append('search', searchTerm);
+    }
+    
+    fetch('/admin/api/cj/products/by-category', {
+        method: 'POST',
+        body: formData
+    })
+    .then(response => response.json())
+    .then(data => {
+        overlay.classList.remove('show');
+        
+        if (data.success) {
+            allProducts = data.products;
+            currentPage = page;
+            renderProducts(data.products);
+            renderPagination(data.pagination);
+            updateStats(data.products);
+        } else {
+            showError('Erreur: ' + data.message);
+        }
+    })
+    .catch(error => {
+        overlay.classList.remove('show');
+        showError('Erreur réseau: ' + error);
+    });
+}
+
+function renderProducts(products) {
+    const container = document.getElementById('productsContainer');
+    
+    if (products.length === 0) {
+        container.innerHTML = `
+            <div class="alert alert-info">
+                <i class="bi bi-info-circle"></i>
+                Aucun produit dans cette catégorie. Cliquez sur "Synchroniser" pour importer.
+            </div>
+        `;
+        return;
+    }
+    
+    let html = '<div class="row g-3">';
+    
+    products.forEach(product => {
+        const discount = product.suggested_price && product.price < product.suggested_price
+            ? Math.round((1 - product.price / product.suggested_price) * 100)
+            : 0;
+        
+        html += `
+            <div class="col-md-4">
+                <div class="card product-card h-100" data-product-id="${product.cj_pid}">
+                    <div class="position-relative">
+                        <img src="${product.image_url || '/static/images/default-product.jpg'}" 
+                             class="product-image" alt="${product.name}" loading="lazy" decoding="async">
+                        <div class="product-badge">
+                            ${product.published ? '<span class="badge bg-success">Publié</span>' : '<span class="badge bg-secondary">Brouillon</span>'}
+                            ${product.stock > 0 ? '<span class="badge bg-info ms-1">En stock</span>' : '<span class="badge bg-danger ms-1">Rupture</span>'}
+                        </div>
+                    </div>
+                    <div class="card-body">
+                        <h6 class="card-title text-truncate" title="${product.name}">
+                            ${product.name}
+                        </h6>
+                        <p class="text-muted small mb-2">SKU: ${product.sku || 'N/A'}</p>
+                        
+                        <div class="price-comparison mb-2">
+                            <span class="price-current">$${product.price}</span>
+                            ${product.suggested_price ? `<span class="price-suggested">$${product.suggested_price}</span>` : ''}
+                            ${discount > 0 ? `<span class="discount-badge">-${discount}%</span>` : ''}
+                        </div>
+                        
+                        <div class="d-flex justify-content-between align-items-center">
+                            <small class="text-muted">
+                                <i class="bi bi-box"></i> Stock: ${product.stock}
+                            </small>
+                            <button class="btn btn-sm btn-outline-primary" onclick="showProductDetails('${product.cj_pid}')">
+                                <i class="bi bi-eye"></i> Détails
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        `;
+    });
+    
+    html += '</div>';
+    container.innerHTML = html;
+}
+
+function renderPagination(pagination) {
+    const container = document.getElementById('paginationContainer');
+    const list = document.getElementById('paginationList');
+    
+    if (pagination.pages <= 1) {
+        container.style.display = 'none';
+        return;
+    }
+    
+    container.style.display = 'block';
+    
+    let html = '';
+    
+    // Précédent
+    html += `
+        <li class="page-item ${!pagination.has_prev ? 'disabled' : ''}">
+            <a class="page-link" href="#" onclick="loadProducts(${pagination.current_page - 1}); return false;">
+                Précédent
+            </a>
+        </li>
+    `;
+    
+    // Pages
+    for (let i = 1; i <= pagination.pages; i++) {
+        if (i === 1 || i === pagination.pages || (i >= pagination.current_page - 2 && i <= pagination.current_page + 2)) {
+            html += `
+                <li class="page-item ${i === pagination.current_page ? 'active' : ''}">
+                    <a class="page-link" href="#" onclick="loadProducts(${i}); return false;">${i}</a>
+                </li>
+            `;
+        } else if (i === pagination.current_page - 3 || i === pagination.current_page + 3) {
+            html += '<li class="page-item disabled"><span class="page-link">...</span></li>';
+        }
+    }
+    
+    // Suivant
+    html += `
+        <li class="page-item ${!pagination.has_next ? 'disabled' : ''}">
+            <a class="page-link" href="#" onclick="loadProducts(${pagination.current_page + 1}); return false;">
+                Suivant
+            </a>
+        </li>
+    `;
+    
+    list.innerHTML = html;
+}
+
+function loadGlobalStats() {
+    fetch('/admin/api/cj/stats')
+    .then(response => response.json())
+    .then(data => {
+        if (data.success && data.stats) {
+            // Mettre à jour les statistiques globales (qui ne changent pas)
+            document.getElementById('stat-total').textContent = data.stats.products.total;
+            document.getElementById('stat-published').textContent = data.stats.products.published;
+            document.getElementById('stat-stock').textContent = data.stats.products.in_stock;
+            document.getElementById('stat-variants').textContent = data.stats.variants.total;
+        }
+    })
+    .catch(error => console.error('Erreur chargement stats:', error));
+}
+
+function updateStats(products) {
+    // Ne rien faire - les stats globales sont chargées une seule fois au démarrage
+    // Cette fonction est conservée pour compatibilité mais ne fait plus rien
+}
+
+function showProductDetails(pid) {
+    currentProduct = allProducts.find(p => p.cj_pid === pid);
+    if (!currentProduct) return;
+    
+    const modalBody = document.getElementById('productModalBody');
+    modalBody.innerHTML = `
+        <div class="text-center py-5">
+            <div class="spinner-border text-primary" role="status"></div>
+            <p class="text-muted mt-2">Chargement des détails...</p>
+        </div>
+    `;
+    
+    const modal = new bootstrap.Modal(document.getElementById('productModal'));
+    modal.show();
+    
+    // Charger les détails complets depuis la BDD
+    fetch(`/admin/api/cj/product/${currentProduct.id}/details`)
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                renderProductModal(data.product);
+            } else {
+                modalBody.innerHTML = `<div class="alert alert-danger">Erreur: ${data.message}</div>`;
+            }
+        })
+        .catch(error => {
+            modalBody.innerHTML = `<div class="alert alert-danger">Erreur réseau: ${error}</div>`;
+        });
+}
+
+function renderProductModal(p) {
+    const modalBody = document.getElementById('productModalBody');
+    const profit = p.cost_price && p.price ? (p.price - p.cost_price).toFixed(2) : null;
+    const margin = p.cost_price && p.price && p.cost_price > 0 ? (((p.price - p.cost_price) / p.cost_price) * 100).toFixed(1) : null;
+    const discount = p.compare_price && p.price < p.compare_price ? Math.round((1 - p.price / p.compare_price) * 100) : 0;
+    
+    let html = `
+        <div class="row">
+            <div class="col-md-5">
+                <img src="${p.image_url || '/static/images/default-product.jpg'}" 
+                     class="img-fluid rounded mb-3" alt="${p.name}" loading="lazy" decoding="async">
+                ${p.images && p.images.length > 0 ? `
+                <div class="row g-1">
+                    ${p.images.slice(0, 6).map(img => `
+                        <div class="col-4">
+                            <img src="${img}" class="img-fluid rounded border" style="height:60px;object-fit:cover;width:100%;" loading="lazy" decoding="async">
+                        </div>
+                    `).join('')}
+                </div>
+                ` : ''}
+            </div>
+            <div class="col-md-7">
+                <h4>${p.name}</h4>
+                <p class="text-muted mb-1">PID: ${p.cj_pid} | SKU: ${p.sku || 'N/A'}</p>
+                ${p.material ? `<p class="text-muted mb-1"><i class="bi bi-gem"></i> Matériau: ${p.material}</p>` : ''}
+                
+                <!-- Avis -->
+                ${p.rating_count > 0 ? `
+                <div class="mb-2">
+                    <span class="text-warning">${'★'.repeat(Math.round(p.rating_average))}${'☆'.repeat(5 - Math.round(p.rating_average))}</span>
+                    <span class="text-muted ms-1">${p.rating_average.toFixed(1)} (${p.rating_count} avis)</span>
+                </div>
+                ` : '<p class="text-muted small mb-2"><i class="bi bi-chat-dots"></i> Aucun avis</p>'}
+                
+                <!-- Tarification -->
+                <h6 class="mt-3 mb-2"><i class="bi bi-currency-dollar"></i> Tarification</h6>
+                <table class="table table-sm table-bordered">
+                    <tr>
+                        <td><strong>Prix CJ (Coût)</strong></td>
+                        <td><span class="text-danger fw-bold">$${(p.cost_price || p.price || 0).toFixed(2)}</span></td>
+                    </tr>
+                    <tr>
+                        <td><strong>Prix de Vente</strong></td>
+                        <td><span class="text-success fw-bold">$${(p.price || 0).toFixed(2)}</span></td>
+                    </tr>
+                    ${p.suggested_price ? `<tr><td><strong>Prix Suggéré CJ</strong></td><td><span class="text-info">$${p.suggested_price.toFixed(2)}</span></td></tr>` : ''}
+                    ${p.compare_price ? `<tr><td><strong>Prix Barré</strong></td><td><del class="text-muted">$${p.compare_price.toFixed(2)}</del></td></tr>` : ''}
+                    ${profit ? `<tr class="table-success"><td><strong>Profit</strong></td><td><span class="text-success fw-bold">$${profit}</span> (${margin}%)</td></tr>` : ''}
+                    ${discount > 0 ? `<tr class="table-warning"><td><strong>Réduction</strong></td><td><span class="text-warning fw-bold">-${discount}%</span></td></tr>` : ''}
+                </table>
+                
+                <!-- Stock & Statut -->
+                <div class="d-flex justify-content-between align-items-center mt-3 mb-2">
+                    <h6 class="mb-0"><i class="bi bi-box"></i> Stock & Statut</h6>
+                    <button class="btn btn-sm btn-outline-primary" onclick="syncProductStock(${p.id})" title="Synchroniser le stock depuis CJ">
+                        <i class="bi bi-arrow-repeat"></i> Sync Stock
+                    </button>
+                </div>
+                <table class="table table-sm">
+                    <tr>
+                        <th>Stock produit</th>
+                        <td id="product-stock-${p.id}">
+                            ${p.stock > 0 ? `<span class="badge bg-success">${p.stock}</span>` : '<span class="badge bg-danger">0</span>'}
+                        </td>
+                    </tr>
+                    ${p.total_variant_stock > 0 ? `<tr><th>Stock variantes</th><td><span class="badge bg-info">${p.total_variant_stock}</span></td></tr>` : ''}
+                    <tr>
+                        <th>Statut</th>
+                        <td>
+                            ${p.published ? '<span class="badge bg-success">Publié</span>' : '<span class="badge bg-secondary">Brouillon</span>'}
+                            ${p.is_active ? '<span class="badge bg-info ms-1">Actif</span>' : '<span class="badge bg-warning ms-1">Inactif</span>'}
+                        </td>
+                    </tr>
+                    ${p.weight ? `<tr><th>Poids</th><td>${p.weight}g</td></tr>` : ''}
+                    ${p.length || p.width || p.height ? `<tr><th>Dimensions</th><td>${p.length || 0} × ${p.width || 0} × ${p.height || 0} cm</td></tr>` : ''}
+                    <tr><th>Dernière sync</th><td>${p.synced_at || p.cj_last_sync || 'Jamais'}</td></tr>
+                </table>
+                
+                <!-- Description -->
+                ${p.description ? `
+                <div class="mt-3">
+                    <h6><i class="bi bi-text-paragraph"></i> Description</h6>
+                    <div style="max-height:200px;overflow-y:auto;font-size:0.9rem;border:1px solid #dee2e6;border-radius:4px;padding:10px;">
+                        ${p.description}
+                    </div>
+                </div>
+                ` : '<div class="alert alert-secondary mt-3 mb-0 py-1"><small><i class="bi bi-info-circle"></i> Aucune description. Cliquez "Enrichir" pour récupérer.</small></div>'}
+    `;
+    
+    // Variantes
+    if (p.variants && p.variants.length > 0) {
+        const colors = [...new Set(p.variants.map(v => v.color).filter(c => c))];
+        const sizes = [...new Set(p.variants.map(v => v.size).filter(s => s))];
+        
+        html += `
+                <div class="mt-3">
+                    <h6><i class="bi bi-palette"></i> Variantes <span class="badge bg-primary">${p.variants.length}</span></h6>
+                    <small class="text-muted d-block mb-2">
+                        ${colors.length > 0 ? `<strong>Couleurs:</strong> ${colors.join(', ')}` : ''}
+                        ${sizes.length > 0 ? ` | <strong>Tailles:</strong> ${sizes.join(', ')}` : ''}
+                    </small>
+                    <div class="table-responsive" style="max-height:300px;overflow-y:auto;">
+                        <table class="table table-sm table-hover">
+                            <thead class="table-light sticky-top">
+                                <tr><th>Image</th><th>Variante</th><th>SKU</th><th>Prix</th><th>Stock</th><th>Poids</th></tr>
+                            </thead>
+                            <tbody>
+        `;
+        
+        p.variants.forEach(v => {
+            const name = v.display_name || `${v.color || 'N/A'} - ${v.size || 'N/A'}`;
+            const imgHtml = v.image_url 
+                ? `<img src="${v.image_url}" style="width:40px;height:40px;object-fit:cover;border-radius:4px;" loading="lazy">`
+                : '<div style="width:40px;height:40px;background:#e9ecef;border-radius:4px;display:flex;align-items:center;justify-content:center;"><i class="bi bi-image text-muted"></i></div>';
+            
+            html += `
+                <tr>
+                    <td>${imgHtml}</td>
+                    <td><strong>${name}</strong></td>
+                    <td><small class="font-monospace">${v.sku || 'N/A'}</small></td>
+                    <td><strong>$${(v.price || 0).toFixed(2)}</strong></td>
+                    <td>${v.stock > 0 ? `<span class="badge bg-success">${v.stock}</span>` : '<span class="badge bg-danger">0</span>'}</td>
+                    <td><small>${v.weight ? v.weight + 'g' : 'N/A'}</small></td>
+                </tr>
+            `;
+        });
+        
+        html += `</tbody></table></div></div>`;
+    } else {
+        html += `<div class="alert alert-secondary mt-3 mb-0 py-1"><small><i class="bi bi-info-circle"></i> Aucune variante. Cliquez "Synchroniser Variantes" pour récupérer.</small></div>`;
+    }
+    
+    // Actions
+    html += `
+                <div class="mt-3 d-flex gap-2 flex-wrap">
+                    <button class="btn btn-sm btn-primary" onclick="syncProductVariants(${p.id})">
+                        <i class="bi bi-arrow-repeat"></i> Sync Variantes
+                    </button>
+                    <button class="btn btn-sm btn-success" onclick="syncProductStock(${p.id})">
+                        <i class="bi bi-box-seam"></i> Sync Stock
+                    </button>
+                    <button class="btn btn-sm btn-outline-secondary" onclick="toggleCjRawData(${p.id})">
+                        <i class="bi bi-code-square"></i> Données Brutes CJ
+                    </button>
+                </div>
+                
+                <div id="cj-raw-data-${p.id}" style="display:none;" class="mt-3">
+                    <div class="text-center py-3">
+                        <div class="spinner-border spinner-border-sm text-primary" role="status"></div>
+                        <small class="text-muted ms-2">Chargement...</small>
+                    </div>
+                </div>
+            </div>
+        </div>
+    `;
+    
+    modalBody.innerHTML = html;
+}
+
+// loadCjCompleteData n'est plus nécessaire - les données sont chargées depuis la BDD dans renderProductModal
+function loadCjCompleteData(productId) {
+    // Fonction conservée pour compatibilité - ne fait plus rien
+}
+
+function toggleCjRawData(productId) {
+    const container = document.getElementById(`cj-raw-data-${productId}`);
+    
+    if (container.style.display === 'none') {
+        container.style.display = 'block';
+        
+        // Charger les données si pas encore chargées
+        if (container.dataset.loaded !== 'true') {
+            loadCjRawData(productId);
+        }
+    } else {
+        container.style.display = 'none';
+    }
+}
+
+function loadCjRawData(productId) {
+    const container = document.getElementById(`cj-raw-data-${productId}`);
+    
+    fetch(`/admin/api/cj/product/${productId}/cj-raw-data`)
+        .then(response => response.json())
+        .then(data => {
+            if (data.success && data.raw_data) {
+                // Afficher UNIQUEMENT le JSON brut
+                const rawHtml = `
+                    <div class="alert alert-info mb-2">
+                        <small>
+                            <i class="bi bi-info-circle"></i> 
+                            <strong>CJ PID:</strong> ${data.cj_pid}
+                        </small>
+                    </div>
+                    <div style="max-height: 600px; overflow-y: auto; background: #f8f9fa; border: 1px solid #dee2e6; border-radius: 4px; padding: 15px;">
+                        <pre style="margin: 0; font-size: 11px; white-space: pre-wrap; word-wrap: break-word; font-family: 'Courier New', monospace;">${JSON.stringify(data.raw_data, null, 2)}</pre>
+                    </div>
+                    <div class="mt-2">
+                        <button class="btn btn-sm btn-outline-primary" onclick="copyCjRawData(${productId})">
+                            <i class="bi bi-clipboard"></i> Copier JSON
+                        </button>
+                        <button class="btn btn-sm btn-outline-success" onclick="downloadCjRawData(${productId}, '${data.cj_pid}')">
+                            <i class="bi bi-download"></i> Télécharger JSON
+                        </button>
+                    </div>
+                `;
+                
+                container.innerHTML = rawHtml;
+                container.dataset.loaded = 'true';
+                container.dataset.rawData = JSON.stringify(data.raw_data);
+            } else {
+                container.innerHTML = `
+                    <div class="alert alert-warning">
+                        <i class="bi bi-exclamation-triangle"></i> 
+                        ${data.message || 'Impossible de charger les données CJ'}
+                    </div>
+                `;
+            }
+        })
+        .catch(error => {
+            console.error('Erreur chargement données CJ:', error);
+            container.innerHTML = `
+                <div class="alert alert-danger">
+                    <i class="bi bi-x-circle"></i> Erreur lors du chargement des données CJ
+                </div>
+            `;
+        });
+}
+
+function copyCjRawData(productId) {
+    const container = document.getElementById(`cj-raw-data-${productId}`);
+    const rawData = container.dataset.rawData;
+    
+    if (rawData) {
+        navigator.clipboard.writeText(rawData).then(() => {
+            alert('✓ JSON copié dans le presse-papier');
+        }).catch(err => {
+            console.error('Erreur copie:', err);
+            alert('❌ Erreur lors de la copie');
+        });
+    }
+}
+
+function downloadCjRawData(productId, cjPid) {
+    const container = document.getElementById(`cj-raw-data-${productId}`);
+    const rawData = container.dataset.rawData;
+    
+    if (rawData) {
+        const blob = new Blob([rawData], { type: 'application/json' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `cj_product_${cjPid}_raw_data.json`;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+    }
+}
+
+function syncProducts() {
+    if (!currentCategory) return;
+    
+    const overlay = document.getElementById('loading-overlay');
+    document.getElementById('loading-text').textContent = 'Synchronisation des produits...';
+    overlay.classList.add('show');
+    
+    fetch('/admin/api/cj/sync/products', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({
+            category_id: currentCategory,
+            limit: 100
+        })
+    })
+    .then(response => response.json())
+    .then(data => {
+        overlay.classList.remove('show');
+        
+        if (data.success) {
+            alert(`✓ ${data.synced} produits synchronisés`);
+            loadProducts();
+        } else {
+            showError('Erreur: ' + data.message);
+        }
+    })
+    .catch(error => {
+        overlay.classList.remove('show');
+        showError('Erreur réseau: ' + error);
+    });
+}
+
+function enrichProduct() {
+    if (!currentProduct) return;
+    
+    const overlay = document.getElementById('loading-overlay');
+    document.getElementById('loading-text').textContent = 'Enrichissement du produit...';
+    overlay.classList.add('show');
+    
+    fetch(`/admin/api/cj/enrich/${currentProduct.cj_pid}`, {
+        method: 'POST'
+    })
+    .then(response => response.json())
+    .then(data => {
+        overlay.classList.remove('show');
+        
+        if (data.success) {
+            const fields = data.enriched_fields || [];
+            const message = `✅ PRODUIT ENRICHI\n\n` +
+                `${data.message || ''}\n` +
+                (fields.length > 0 ? `\n• Champs mis à jour: ${fields.join(', ')}` : '') +
+                (data.review_count > 0 ? `\n• Avis: ${data.review_count} (note: ${data.rating ? data.rating.toFixed(1) : 'N/A'})` : '');
+            
+            alert(message);
+            
+            // Recharger la liste
+            loadProducts(currentPage);
+            
+            // Fermer et rouvrir le modal pour voir les changements
+            const modal = bootstrap.Modal.getInstance(document.getElementById('productModal'));
+            if (modal) {
+                modal.hide();
+                setTimeout(() => {
+                    showProductDetails(currentProduct.cj_pid);
+                }, 500);
+            }
+        } else {
+            showError('Erreur: ' + (data.message || data.error));
+        }
+    })
+    .catch(error => {
+        overlay.classList.remove('show');
+        showError('Erreur réseau: ' + error);
+    });
+}
+
+function publishProduct() {
+    if (!currentProduct) return;
+    alert('Fonctionnalité de publication à implémenter');
+}
+
+function syncProductVariants(productId) {
+    if (!confirm('Synchroniser les variantes depuis CJ API ? Cela peut prendre quelques secondes.')) {
+        return;
+    }
+    
+    const overlay = document.getElementById('loading-overlay');
+    document.getElementById('loading-text').textContent = 'Synchronisation variantes CJ...';
+    overlay.classList.add('show');
+    
+    fetch(`/admin/api/cj/product/${productId}/sync-variants`, {
+        method: 'POST'
+    })
+    .then(response => response.json())
+    .then(data => {
+        overlay.classList.remove('show');
+        
+        if (data.success) {
+            const message = `✅ SYNCHRONISATION RÉUSSIE\n\n` +
+                `• Variantes créées: ${data.variants_created}\n` +
+                `• Variantes mises à jour: ${data.variants_updated}\n` +
+                `• Total variantes: ${data.total_variants}\n` +
+                (data.stock_updated ? `• Stock principal: ${data.total_stock}` : '');
+            
+            alert(message);
+            
+            // Recharger le modal complet depuis la BDD
+            if (currentProduct) {
+                showProductDetails(currentProduct.cj_pid);
+            }
+        } else {
+            alert('❌ Erreur: ' + data.message);
+        }
+    })
+    .catch(error => {
+        overlay.classList.remove('show');
+        alert('❌ Erreur réseau: ' + error);
+    });
+}
+
+function syncAllVariantsStock(productId) {
+    if (!confirm('Mettre à jour le stock de toutes les variantes depuis CJ API ?')) {
+        return;
+    }
+    
+    const overlay = document.getElementById('loading-overlay');
+    document.getElementById('loading-text').textContent = 'Synchronisation stock variantes...';
+    overlay.classList.add('show');
+    
+    fetch(`/admin/api/cj/product/${productId}/sync-all-variants-stock`, {
+        method: 'POST'
+    })
+    .then(response => response.json())
+    .then(data => {
+        overlay.classList.remove('show');
+        
+        if (data.success) {
+            alert(`✓ ${data.message}\n\nVariantes mises à jour: ${data.updated}/${data.total}`);
+            // Recharger le modal complet
+            if (currentProduct) {
+                showProductDetails(currentProduct.cj_pid);
+            }
+        } else {
+            alert('❌ Erreur: ' + data.message);
+        }
+    })
+    .catch(error => {
+        overlay.classList.remove('show');
+        alert('❌ Erreur réseau: ' + error);
+    });
+}
+
+function syncSingleVariantStock(variantId, productId) {
+    const overlay = document.getElementById('loading-overlay');
+    document.getElementById('loading-text').textContent = 'Synchronisation stock...';
+    overlay.classList.add('show');
+    
+    fetch(`/admin/api/cj/variant/${variantId}/sync-stock`, {
+        method: 'POST'
+    })
+    .then(response => response.json())
+    .then(data => {
+        overlay.classList.remove('show');
+        
+        if (data.success) {
+            alert(`✓ ${data.message}`);
+            // Recharger le modal complet
+            if (currentProduct) {
+                showProductDetails(currentProduct.cj_pid);
+            }
+        } else {
+            alert('❌ Erreur: ' + data.message);
+        }
+    })
+    .catch(error => {
+        overlay.classList.remove('show');
+        alert('❌ Erreur réseau: ' + error);
+    });
+}
+
+function syncProductStock(productId) {
+    if (!confirm('Synchroniser le stock de ce produit depuis CJ API ?')) {
+        return;
+    }
+    
+    const overlay = document.getElementById('loading-overlay');
+    document.getElementById('loading-text').textContent = 'Synchronisation stock produit...';
+    overlay.classList.add('show');
+    
+    fetch(`/admin/api/cj/product/${productId}/sync-stock`, {
+        method: 'POST',
+        headers: { 'X-Requested-With': 'XMLHttpRequest' }
+    })
+    .then(response => {
+        if (!response.ok) {
+            throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+        }
+        const ct = response.headers.get('content-type') || '';
+        if (!ct.includes('application/json')) {
+            throw new Error('Réponse non-JSON du serveur (session expirée ?)');
+        }
+        return response.json();
+    })
+    .then(data => {
+        overlay.classList.remove('show');
+        
+        if (data.success) {
+            alert(`✓ ${data.message}`);
+            
+            // Recharger le modal et la liste
+            if (currentProduct) {
+                showProductDetails(currentProduct.cj_pid);
+            }
+            loadProducts(currentPage);
+        } else {
+            alert('❌ Erreur: ' + data.message);
+        }
+    })
+    .catch(error => {
+        overlay.classList.remove('show');
+        alert('❌ Erreur réseau: ' + error);
+    });
+}
+
+function syncAllStocks() {
+    if (!confirm('⚠️ ATTENTION: Cette opération va synchroniser TOUS les stocks des produits CJ depuis l\'API.\n\nCela peut prendre plusieurs minutes.\n\nContinuer ?')) {
+        return;
+    }
+    
+    const overlay = document.getElementById('loading-overlay');
+    const loadingText = document.getElementById('loading-text');
+    loadingText.textContent = 'Synchronisation masse en cours...';
+    overlay.classList.add('show');
+    
+    // Désactiver le bouton pendant la synchronisation
+    const btn = document.getElementById('syncAllStocksBtn');
+    btn.disabled = true;
+    btn.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span>Synchronisation...';
+    
+    fetch('/admin/api/cj/sync-all-stocks', {
+        method: 'POST'
+    })
+    .then(response => response.json())
+    .then(data => {
+        overlay.classList.remove('show');
+        btn.disabled = false;
+        btn.innerHTML = '<i class="bi bi-box-seam"></i> Sync Masse Stocks';
+        
+        if (data.success) {
+            const message = `✅ SYNCHRONISATION TERMINÉE\n\n` +
+                `Produits:\n` +
+                `• Traités: ${data.products_processed}\n` +
+                `• Mis à jour: ${data.products_updated}\n` +
+                `• Échecs: ${data.products_failed}\n\n` +
+                `Variantes:\n` +
+                `• Mises à jour: ${data.variants_updated}\n` +
+                `• Échecs: ${data.variants_failed}\n\n` +
+                `Durée: ${data.duration || 'N/A'}`;
+            
+            alert(message);
+            
+            // Recharger la liste des produits
+            loadProducts(currentPage);
+        } else {
+            alert('❌ Erreur: ' + data.message);
+        }
+    })
+    .catch(error => {
+        overlay.classList.remove('show');
+        btn.disabled = false;
+        btn.innerHTML = '<i class="bi bi-box-seam"></i> Sync Masse Stocks';
+        alert('❌ Erreur réseau: ' + error);
+    });
+}
+
+function filterProducts() {
+    const searchTerm = document.getElementById('searchInput').value.trim();
+    
+    // Si on a un terme de recherche, utiliser la recherche globale
+    if (searchTerm) {
+        searchProductsGlobal(searchTerm, 1);
+    } else if (currentCategory) {
+        // Sinon, recharger les produits de la catégorie
+        loadProducts(1);
+    }
+}
+
+function searchProductsGlobal(searchTerm, page = 1) {
+    const overlay = document.getElementById('loading-overlay');
+    overlay.classList.add('show');
+    
+    const formData = new FormData();
+    formData.append('search', searchTerm);
+    formData.append('page', page);
+    formData.append('per_page', 20);
+    
+    fetch('/admin/api/cj/products/search', {
+        method: 'POST',
+        body: formData
+    })
+    .then(response => response.json())
+    .then(data => {
+        overlay.classList.remove('show');
+        
+        if (data.success) {
+            allProducts = data.products;
+            currentPage = page;
+            renderProducts(data.products);
+            renderPagination(data.pagination);
+            updateStats(data.products);
+            
+            // Mettre à jour le chemin de catégorie
+            document.getElementById('categoryPath').textContent = `Résultats de recherche: "${searchTerm}" (${data.pagination.total} produits)`;
+        } else {
+            showError('Erreur: ' + data.message);
+        }
+    })
+    .catch(error => {
+        overlay.classList.remove('show');
+        showError('Erreur réseau: ' + error);
+    });
+}
+
+function showError(message) {
+    alert('✗ ' + message);
+}
+</script>
+{% endblock %}

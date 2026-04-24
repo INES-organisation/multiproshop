@@ -1,41 +1,271 @@
-{% extends 'layout.html' %}
+{% extends 'admin/layout_admin_modern.html' %}
+
+{% block title %}Dashboard Admin{% endblock %}
+
 {% block content %}
-{% extends "base.html" %}
-{% block title %}Admin - Tableau de bord{% endblock %}
-{% block content %}
-<div class="container mt-5">
-    <h1>Bienvenue dans l’espace d’administration</h1>
-    <p>Vous êtes connecté en tant qu’<strong>admin</strong>.</p>
-    <hr>
-    <div class="row">
-        <div class="col-md-4 mb-3">
-            <div class="card h-100">
-                <div class="card-body text-center">
-                    <i class="fas fa-users fa-3x mb-2 text-primary"></i>
-                    <h5 class="card-title">Utilisateurs</h5>
-                    <a href="{{ url_for('admin.users') }}" class="btn btn-outline-primary">Gérer</a>
-                </div>
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <div>
+        <h1 style="font-weight: 800; margin-bottom: 0.5rem;">
+            <i class="fas fa-chart-line"></i> Dashboard
+        </h1>
+        <p style="color: #999; margin: 0;">Vue d'ensemble de votre boutique</p>
+    </div>
+    <div>
+        <a href="{{ url_for('admin_celery.dashboard') }}" class="admin-btn admin-btn-info" style="text-decoration: none; margin-right: 10px;">
+            <i class="fas fa-tasks"></i>
+            Dashboard Celery
+        </a>
+        <button class="admin-btn admin-btn-primary">
+            <i class="fas fa-download"></i>
+            Exporter les Données
+        </button>
+    </div>
+</div>
+
+<!-- Stats Cards -->
+<div class="admin-stats-grid">
+    <div class="admin-stat-card">
+        <div class="admin-stat-icon primary">
+            <i class="fas fa-euro-sign"></i>
+        </div>
+        <div class="admin-stat-content">
+            <div class="admin-stat-label">Chiffre d'Affaires</div>
+            <div class="admin-stat-value">24,580€</div>
+            <div class="admin-stat-change up">
+                <i class="fas fa-arrow-up"></i> +12.5% ce mois
             </div>
         </div>
-        <div class="col-md-4 mb-3">
-            <div class="card h-100">
-                <div class="card-body text-center">
-                    <i class="fas fa-box-open fa-3x mb-2 text-success"></i>
-                    <h5 class="card-title">Produits</h5>
-                    <a href="{{ url_for('admin.products') }}" class="btn btn-outline-success">Gérer</a>
-                </div>
+    </div>
+    
+    <div class="admin-stat-card">
+        <div class="admin-stat-icon success">
+            <i class="fas fa-shopping-cart"></i>
+        </div>
+        <div class="admin-stat-content">
+            <div class="admin-stat-label">Commandes</div>
+            <div class="admin-stat-value">156</div>
+            <div class="admin-stat-change up">
+                <i class="fas fa-arrow-up"></i> +8.2% ce mois
             </div>
         </div>
-        <div class="col-md-4 mb-3">
-            <div class="card h-100">
-                <div class="card-body text-center">
-                    <i class="fas fa-chart-line fa-3x mb-2 text-warning"></i>
-                    <h5 class="card-title">Commandes</h5>
-                    <a href="{{ url_for('admin.orders') }}" class="btn btn-outline-warning">Gérer</a>
+    </div>
+    
+    <div class="admin-stat-card">
+        <div class="admin-stat-icon info">
+            <i class="fas fa-box"></i>
+        </div>
+        <div class="admin-stat-content">
+            <div class="admin-stat-label">Produits</div>
+            <div class="admin-stat-value">{{ products_count if products_count else 0 }}</div>
+            <div class="admin-stat-change">
+                <i class="fas fa-info-circle"></i> Total en stock
+            </div>
+        </div>
+    </div>
+    
+    <div class="admin-stat-card">
+        <div class="admin-stat-icon danger">
+            <i class="fas fa-users"></i>
+        </div>
+        <div class="admin-stat-content">
+            <div class="admin-stat-label">Utilisateurs</div>
+            <div class="admin-stat-value">{{ users_count if users_count else 0 }}</div>
+            <div class="admin-stat-change up">
+                <i class="fas fa-arrow-up"></i> +15 ce mois
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Charts Row -->
+<div class="row g-3 mb-4">
+    <div class="col-lg-8">
+        <div class="admin-card">
+            <div class="admin-card-header">
+                <h5 class="admin-card-title">
+                    <i class="fas fa-chart-area"></i> Ventes Mensuelles
+                </h5>
+                <select class="form-select form-select-sm" style="width: auto;">
+                    <option>2025</option>
+                    <option>2024</option>
+                </select>
+            </div>
+            <div class="admin-card-body">
+                <canvas id="salesChart" height="80"></canvas>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-lg-4">
+        <div class="admin-card">
+            <div class="admin-card-header">
+                <h5 class="admin-card-title">
+                    <i class="fas fa-chart-pie"></i> Catégories
+                </h5>
+            </div>
+            <div class="admin-card-body">
+                <canvas id="categoriesChart"></canvas>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Recent Orders & Top Products -->
+<div class="row g-3">
+    <div class="col-lg-7">
+        <div class="admin-card">
+            <div class="admin-card-header">
+                <h5 class="admin-card-title">
+                    <i class="fas fa-shopping-cart"></i> Commandes Récentes
+                </h5>
+                <a href="{{ url_for('admin.orders') }}" class="admin-btn admin-btn-sm admin-btn-primary">
+                    Voir Tout
+                </a>
+            </div>
+            <div class="admin-card-body" style="padding: 0;">
+                <table class="admin-table">
+                    <thead>
+                        <tr>
+                            <th>N° Commande</th>
+                            <th>Client</th>
+                            <th>Montant</th>
+                            <th>Statut</th>
+                            <th>Date</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td>#CMD-001</td>
+                            <td>Jean Dupont</td>
+                            <td>149.99€</td>
+                            <td><span class="admin-badge admin-badge-success">Livrée</span></td>
+                            <td>01/11/2025</td>
+                        </tr>
+                        <tr>
+                            <td>#CMD-002</td>
+                            <td>Marie Martin</td>
+                            <td>89.50€</td>
+                            <td><span class="admin-badge admin-badge-warning">En cours</span></td>
+                            <td>02/11/2025</td>
+                        </tr>
+                        <tr>
+                            <td>#CMD-003</td>
+                            <td>Pierre Bernard</td>
+                            <td>199.99€</td>
+                            <td><span class="admin-badge admin-badge-info">Expédiée</span></td>
+                            <td>02/11/2025</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-lg-5">
+        <div class="admin-card">
+            <div class="admin-card-header">
+                <h5 class="admin-card-title">
+                    <i class="fas fa-fire"></i> Produits Populaires
+                </h5>
+            </div>
+            <div class="admin-card-body">
+                <div style="display: flex; flex-direction: column; gap: 1rem;">
+                    <div style="display: flex; align-items: center; gap: 1rem; padding: 0.8rem; background: #f8f9fa; border-radius: 8px;">
+                        <img src="https://via.placeholder.com/60" alt="Produit" style="border-radius: 8px;" loading="lazy" decoding="async">
+                        <div style="flex: 1;">
+                            <div style="font-weight: 600;">Produit Example 1</div>
+                            <div style="font-size: 0.85rem; color: #999;">45 ventes</div>
+                        </div>
+                        <div style="font-weight: 700; color: var(--admin-primary);">99.99€</div>
+                    </div>
+                    <div style="display: flex; align-items: center; gap: 1rem; padding: 0.8rem; background: #f8f9fa; border-radius: 8px;">
+                        <img src="https://via.placeholder.com/60" alt="Produit" style="border-radius: 8px;" loading="lazy" decoding="async">
+                        <div style="flex: 1;">
+                            <div style="font-weight: 600;">Produit Example 2</div>
+                            <div style="font-size: 0.85rem; color: #999;">38 ventes</div>
+                        </div>
+                        <div style="font-weight: 700; color: var(--admin-primary);">79.99€</div>
+                    </div>
+                    <div style="display: flex; align-items: center; gap: 1rem; padding: 0.8rem; background: #f8f9fa; border-radius: 8px;">
+                        <img src="https://via.placeholder.com/60" alt="Produit" style="border-radius: 8px;" loading="lazy" decoding="async">
+                        <div style="flex: 1;">
+                            <div style="font-weight: 600;">Produit Example 3</div>
+                            <div style="font-size: 0.85rem; color: #999;">32 ventes</div>
+                        </div>
+                        <div style="font-weight: 700; color: var(--admin-primary);">129.99€</div>
+                    </div>
                 </div>
             </div>
         </div>
     </div>
 </div>
 {% endblock %}
+
+{% block extra_js %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+// Sales Chart
+const salesCtx = document.getElementById('salesChart').getContext('2d');
+new Chart(salesCtx, {
+    type: 'line',
+    data: {
+        labels: ['Jan', 'Fév', 'Mar', 'Avr', 'Mai', 'Jun', 'Jul', 'Aoû', 'Sep', 'Oct', 'Nov', 'Déc'],
+        datasets: [{
+            label: 'Ventes 2025',
+            data: [12000, 19000, 15000, 25000, 22000, 30000, 28000, 32000, 29000, 35000, 38000, 42000],
+            borderColor: '#ffb300',
+            backgroundColor: 'rgba(255, 179, 0, 0.1)',
+            tension: 0.4,
+            fill: true
+        }]
+    },
+    options: {
+        responsive: true,
+        maintainAspectRatio: true,
+        plugins: {
+            legend: {
+                display: false
+            }
+        },
+        scales: {
+            y: {
+                beginAtZero: true,
+                ticks: {
+                    callback: function(value) {
+                        return value / 1000 + 'k€';
+                    }
+                }
+            }
+        }
+    }
+});
+
+// Categories Chart
+const categoriesCtx = document.getElementById('categoriesChart').getContext('2d');
+new Chart(categoriesCtx, {
+    type: 'doughnut',
+    data: {
+        labels: ['Électronique', 'Mode', 'Maison', 'Sport', 'Autres'],
+        datasets: [{
+            data: [35, 25, 20, 15, 5],
+            backgroundColor: [
+                '#ffb300',
+                '#ff9800',
+                '#28a745',
+                '#17a2b8',
+                '#6c757d'
+            ]
+        }]
+    },
+    options: {
+        responsive: true,
+        maintainAspectRatio: true,
+        plugins: {
+            legend: {
+                position: 'bottom'
+            }
+        }
+    }
+});
+</script>
 {% endblock %}

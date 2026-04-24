@@ -1,0 +1,16 @@
+# Dépendances pour les fonctionnalités API avancées
+
+# Traduction automatique
+googletrans==4.0.0-rc1  # Google Translate (gratuit, sans clé API)
+# deepl==1.15.0  # DeepL (nécessite clé API payante) - Décommenter si utilisé
+
+# Synchronisation automatique (Cron)
+APScheduler==3.10.4  # Scheduler pour tâches planifiées
+
+# APIs spécifiques
+# python-amazon-paapi==5.1.0  # Amazon Product Advertising API - Décommenter si utilisé
+# ebaysdk-python==2.2.0  # eBay SDK - Décommenter si utilisé
+
+# Utilitaires
+requests==2.31.0  # Déjà installé normalement
+python-dotenv==1.0.0  # Déjà installé normalement

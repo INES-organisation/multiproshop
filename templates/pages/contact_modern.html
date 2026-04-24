@@ -1,0 +1,385 @@
+{% extends 'layout.html' %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/pages_modern.css') }}">
+<style>
+.contact-info-card {
+    background: linear-gradient(135deg, var(--primary-color), var(--primary-dark));
+    color: var(--dark-color);
+    padding: 3rem;
+    border-radius: var(--border-radius);
+    height: 100%;
+}
+
+.contact-info-item {
+    display: flex;
+    align-items: flex-start;
+    gap: 1.5rem;
+    margin-bottom: 2rem;
+    padding: 1.5rem;
+    background: rgba(0,0,0,0.1);
+    border-radius: var(--border-radius);
+}
+
+.contact-icon {
+    width: 60px;
+    height: 60px;
+    background: var(--white);
+    color: var(--primary-color);
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.5rem;
+    flex-shrink: 0;
+}
+
+.contact-details h4 {
+    font-weight: 700;
+    margin-bottom: 0.5rem;
+}
+
+.contact-details p {
+    margin: 0;
+    opacity: 0.9;
+}
+
+.map-container {
+    border-radius: var(--border-radius);
+    overflow: hidden;
+    height: 400px;
+    background: var(--light-bg);
+}
+
+.faq-item {
+    margin-bottom: 1rem;
+}
+
+.faq-question {
+    background: var(--white);
+    border: 2px solid var(--border-color);
+    border-radius: var(--border-radius);
+    padding: 1.2rem 1.5rem;
+    cursor: pointer;
+    transition: var(--transition);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-weight: 600;
+}
+
+.faq-question:hover {
+    border-color: var(--primary-color);
+    background: var(--light-bg);
+}
+
+.faq-question.active {
+    background: linear-gradient(135deg, var(--primary-color), var(--primary-dark));
+    border-color: var(--primary-color);
+    color: var(--dark-color);
+}
+
+.faq-answer {
+    max-height: 0;
+    overflow: hidden;
+    transition: max-height 0.3s ease;
+    padding: 0 1.5rem;
+}
+
+.faq-answer.active {
+    max-height: 500px;
+    padding: 1.5rem;
+}
+
+.faq-icon {
+    transition: transform 0.3s ease;
+}
+
+.faq-question.active .faq-icon {
+    transform: rotate(180deg);
+}
+</style>
+{% endblock %}
+
+{% block content %}
+<!-- Page Header -->
+<div class="page-header">
+    <div class="container">
+        <h1 class="page-title">
+            <i class="fas fa-envelope"></i>
+            Contactez-nous
+        </h1>
+        <p class="page-subtitle">Nous sommes là pour vous aider</p>
+    </div>
+</div>
+
+<!-- Contact Content -->
+<div class="container page-container">
+    <div class="row g-4 mb-5">
+        <!-- Contact Form -->
+        <div class="col-lg-7">
+            <div class="card-modern">
+                <div class="card-modern-header">
+                    <i class="fas fa-paper-plane"></i> Envoyez-nous un message
+                </div>
+                <div class="card-modern-body">
+                    <form method="post">
+                        <div class="row g-3">
+                            <div class="col-md-6">
+                                <div class="form-group-modern">
+                                    <label class="form-label-modern">
+                                        <i class="fas fa-user"></i>
+                                        Nom complet
+                                    </label>
+                                    <input type="text" class="form-control-modern" name="name" placeholder="Votre nom" required>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="form-group-modern">
+                                    <label class="form-label-modern">
+                                        <i class="fas fa-envelope"></i>
+                                        Email
+                                    </label>
+                                    <input type="email" class="form-control-modern" name="email" placeholder="votre@email.com" required>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="form-group-modern">
+                            <label class="form-label-modern">
+                                <i class="fas fa-phone"></i>
+                                Téléphone (optionnel)
+                            </label>
+                            <input type="tel" class="form-control-modern" name="phone" placeholder="+33 1 23 45 67 89">
+                        </div>
+                        
+                        <div class="form-group-modern">
+                            <label class="form-label-modern">
+                                <i class="fas fa-tag"></i>
+                                Sujet
+                            </label>
+                            <select class="form-control-modern form-select-modern" name="subject" required>
+                                <option value="">Choisissez un sujet</option>
+                                <option value="question">Question générale</option>
+                                <option value="order">Suivi de commande</option>
+                                <option value="return">Retour produit</option>
+                                <option value="technical">Problème technique</option>
+                                <option value="other">Autre</option>
+                            </select>
+                        </div>
+                        
+                        <div class="form-group-modern">
+                            <label class="form-label-modern">
+                                <i class="fas fa-comment"></i>
+                                Message
+                            </label>
+                            <textarea class="form-control-modern" name="message" rows="6" placeholder="Décrivez votre demande..." required></textarea>
+                        </div>
+                        
+                        <button type="submit" class="btn-modern btn-modern-primary btn-modern-lg w-100">
+                            <i class="fas fa-paper-plane"></i>
+                            Envoyer le message
+                        </button>
+                    </form>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Contact Info -->
+        <div class="col-lg-5">
+            <div class="contact-info-card">
+                <h3 style="font-weight: 800; margin-bottom: 2rem;">Nos Coordonnées</h3>
+                
+                <div class="contact-info-item">
+                    <div class="contact-icon">
+                        <i class="fas fa-map-marker-alt"></i>
+                    </div>
+                    <div class="contact-details">
+                        <h4>Adresse</h4>
+                        <p>123 Rue du Commerce<br>75000 Paris, France</p>
+                    </div>
+                </div>
+                
+                <div class="contact-info-item">
+                    <div class="contact-icon">
+                        <i class="fas fa-phone"></i>
+                    </div>
+                    <div class="contact-details">
+                        <h4>Téléphone</h4>
+                        <p>+33 1 23 45 67 89<br>Lun-Ven: 9h-18h</p>
+                    </div>
+                </div>
+                
+                <div class="contact-info-item">
+                    <div class="contact-icon">
+                        <i class="fas fa-envelope"></i>
+                    </div>
+                    <div class="contact-details">
+                        <h4>Email</h4>
+                        <p>contact@multiproshop.com<br>support@multiproshop.com</p>
+                    </div>
+                </div>
+                
+                <div class="contact-info-item">
+                    <div class="contact-icon">
+                        <i class="fas fa-clock"></i>
+                    </div>
+                    <div class="contact-details">
+                        <h4>Horaires</h4>
+                        <p>Lundi - Vendredi: 9h - 18h<br>Samedi: 10h - 16h<br>Dimanche: Fermé</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Map -->
+    <div class="card-modern mb-5">
+        <div class="card-modern-header">
+            <i class="fas fa-map"></i> Notre Localisation
+        </div>
+        <div class="card-modern-body p-0">
+            <div class="map-container">
+                <iframe 
+                    src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d2624.9914406081493!2d2.292292615674!3d48.85837007928746!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x47e66fec70fb1d8f%3A0x40b82c3688c9460!2sTour%20Eiffel!5e0!3m2!1sfr!2sfr!4v1234567890"
+                    width="100%" 
+                    height="400" 
+                    style="border:0;" 
+                    allowfullscreen="" 
+                    loading="lazy">
+                </iframe>
+            </div>
+        </div>
+    </div>
+    
+    <!-- FAQ -->
+    <h2 style="text-align: center; font-weight: 800; margin-bottom: 3rem;">
+        <i class="fas fa-question-circle"></i> Questions Fréquentes
+    </h2>
+    <div class="row justify-content-center mb-5">
+        <div class="col-lg-8">
+            <div class="faq-item">
+                <div class="faq-question" onclick="toggleFaq(this)">
+                    <span>Comment suivre ma commande ?</span>
+                    <i class="fas fa-chevron-down faq-icon"></i>
+                </div>
+                <div class="faq-answer">
+                    <p style="color: #666; line-height: 1.8;">
+                        Vous pouvez suivre votre commande en vous connectant à votre compte et en accédant à la section "Mes commandes". Vous recevrez également un email avec un lien de suivi dès l'expédition de votre colis.
+                    </p>
+                </div>
+            </div>
+            
+            <div class="faq-item">
+                <div class="faq-question" onclick="toggleFaq(this)">
+                    <span>Quels sont les délais de livraison ?</span>
+                    <i class="fas fa-chevron-down faq-icon"></i>
+                </div>
+                <div class="faq-answer">
+                    <p style="color: #666; line-height: 1.8;">
+                        Les délais de livraison sont généralement de 2 à 5 jours ouvrés pour la France métropolitaine. Pour les autres destinations, comptez 5 à 10 jours ouvrés.
+                    </p>
+                </div>
+            </div>
+            
+            <div class="faq-item">
+                <div class="faq-question" onclick="toggleFaq(this)">
+                    <span>Comment retourner un produit ?</span>
+                    <i class="fas fa-chevron-down faq-icon"></i>
+                </div>
+                <div class="faq-answer">
+                    <p style="color: #666; line-height: 1.8;">
+                        Vous disposez de 90 jours pour retourner un produit. Contactez notre service client pour obtenir une étiquette de retour gratuite. Le produit doit être dans son emballage d'origine et en parfait état.
+                    </p>
+                </div>
+            </div>
+            
+            <div class="faq-item">
+                <div class="faq-question" onclick="toggleFaq(this)">
+                    <span>Quels moyens de paiement acceptez-vous ?</span>
+                    <i class="fas fa-chevron-down faq-icon"></i>
+                </div>
+                <div class="faq-answer">
+                    <p style="color: #666; line-height: 1.8;">
+                        Nous acceptons les cartes bancaires (Visa, Mastercard), PayPal, et les virements bancaires. Tous les paiements sont sécurisés et cryptés.
+                    </p>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Features -->
+    <div class="row g-4">
+        <div class="col-md-3 col-sm-6">
+            <div class="card-modern text-center">
+                <div class="card-modern-body">
+                    <div class="feature-icon-wrapper">
+                        <i class="fas fa-headset"></i>
+                    </div>
+                    <h6 class="feature-title">Support 24/7</h6>
+                    <p class="feature-description">Assistance dédiée</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3 col-sm-6">
+            <div class="card-modern text-center">
+                <div class="card-modern-body">
+                    <div class="feature-icon-wrapper">
+                        <i class="fas fa-reply"></i>
+                    </div>
+                    <h6 class="feature-title">Réponse Rapide</h6>
+                    <p class="feature-description">Sous 24h</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3 col-sm-6">
+            <div class="card-modern text-center">
+                <div class="card-modern-body">
+                    <div class="feature-icon-wrapper">
+                        <i class="fas fa-comments"></i>
+                    </div>
+                    <h6 class="feature-title">Chat en Direct</h6>
+                    <p class="feature-description">Disponible</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3 col-sm-6">
+            <div class="card-modern text-center">
+                <div class="card-modern-body">
+                    <div class="feature-icon-wrapper">
+                        <i class="fas fa-smile"></i>
+                    </div>
+                    <h6 class="feature-title">Satisfaction</h6>
+                    <p class="feature-description">Garantie 100%</p>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+function toggleFaq(element) {
+    const answer = element.nextElementSibling;
+    const allQuestions = document.querySelectorAll('.faq-question');
+    const allAnswers = document.querySelectorAll('.faq-answer');
+    
+    // Close all other FAQs
+    allQuestions.forEach(q => {
+        if (q !== element) {
+            q.classList.remove('active');
+        }
+    });
+    allAnswers.forEach(a => {
+        if (a !== answer) {
+            a.classList.remove('active');
+        }
+    });
+    
+    // Toggle current FAQ
+    element.classList.toggle('active');
+    answer.classList.toggle('active');
+}
+</script>
+{% endblock %}

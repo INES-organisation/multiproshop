@@ -1,0 +1,550 @@
+{% extends "admin/layout_admin_modern.html" %}
+
+{% block title %}Dashboard Celery - Monitoring Temps Réel{% endblock %}
+
+{% block extra_css %}
+<style>
+    .dashboard-card {
+        background: white;
+        border-radius: 8px;
+        padding: 20px;
+        margin-bottom: 20px;
+        box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    }
+    
+    .stat-box {
+        text-align: center;
+        padding: 15px;
+        background: #f8f9fa;
+        border-radius: 6px;
+        margin: 10px 0;
+    }
+    
+    .stat-value {
+        font-size: 32px;
+        font-weight: bold;
+        color: #2c3e50;
+    }
+    
+    .stat-label {
+        font-size: 14px;
+        color: #7f8c8d;
+        margin-top: 5px;
+    }
+    
+    .status-indicator {
+        display: inline-block;
+        width: 12px;
+        height: 12px;
+        border-radius: 50%;
+        margin-right: 8px;
+    }
+    
+    .status-active {
+        background: #27ae60;
+        animation: pulse 2s infinite;
+    }
+    
+    .status-inactive {
+        background: #e74c3c;
+    }
+    
+    @keyframes pulse {
+        0%, 100% { opacity: 1; }
+        50% { opacity: 0.5; }
+    }
+    
+    .btn-action {
+        margin: 5px;
+        min-width: 150px;
+    }
+    
+    .task-item {
+        padding: 10px;
+        border-left: 4px solid #3498db;
+        background: #ecf0f1;
+        margin: 10px 0;
+        border-radius: 4px;
+    }
+    
+    .task-running {
+        border-left-color: #f39c12;
+        animation: taskPulse 1.5s infinite;
+    }
+    
+    .task-success {
+        border-left-color: #27ae60;
+    }
+    
+    .task-failed {
+        border-left-color: #e74c3c;
+    }
+    
+    @keyframes taskPulse {
+        0%, 100% { background: #ecf0f1; }
+        50% { background: #fff3cd; }
+    }
+    
+    .progress-bar-animated {
+        animation: progress-bar-stripes 1s linear infinite;
+    }
+    
+    .log-container {
+        background: #2c3e50;
+        color: #ecf0f1;
+        padding: 15px;
+        border-radius: 6px;
+        font-family: 'Courier New', monospace;
+        font-size: 12px;
+        max-height: 300px;
+        overflow-y: auto;
+    }
+    
+    .log-entry {
+        margin: 5px 0;
+        padding: 5px;
+    }
+    
+    .log-info { color: #3498db; }
+    .log-success { color: #27ae60; }
+    .log-warning { color: #f39c12; }
+    .log-error { color: #e74c3c; }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid mt-4">
+    <div class="row mb-4">
+        <div class="col-12">
+            <h2>
+                <i class="fas fa-tasks"></i> Dashboard Celery - Monitoring Temps Réel
+            </h2>
+            <p class="text-muted">Contrôlez et surveillez les tâches de synchronisation CJ Dropshipping</p>
+        </div>
+    </div>
+
+    <!-- Statut Système -->
+    <div class="row">
+        <div class="col-md-3">
+            <div class="dashboard-card">
+                <h5><i class="fas fa-server"></i> Statut Celery</h5>
+                <div class="stat-box">
+                    <div id="celery-status">
+                        <span class="status-indicator status-inactive"></span>
+                        <span>Vérification...</span>
+                    </div>
+                    <div class="stat-label mt-2">Workers: <span id="worker-count">0</span></div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-md-3">
+            <div class="dashboard-card">
+                <h5><i class="fas fa-box"></i> Produits</h5>
+                <div class="stat-box">
+                    <div class="stat-value" id="total-products">-</div>
+                    <div class="stat-label">Total CJ Publiés</div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-md-3">
+            <div class="dashboard-card">
+                <h5><i class="fas fa-check-circle"></i> Avec Variantes</h5>
+                <div class="stat-box">
+                    <div class="stat-value text-success" id="products-with-variants">-</div>
+                    <div class="stat-label">
+                        <span id="completion-rate">0</span>% complété
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-md-3">
+            <div class="dashboard-card">
+                <h5><i class="fas fa-exclamation-circle"></i> Manquants</h5>
+                <div class="stat-box">
+                    <div class="stat-value text-warning" id="products-without-variants">-</div>
+                    <div class="stat-label">À synchroniser</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Contrôles -->
+    <div class="row">
+        <div class="col-md-6">
+            <div class="dashboard-card">
+                <h5><i class="fas fa-play-circle"></i> Lancer une Synchronisation</h5>
+                
+                <button class="btn btn-primary btn-action" onclick="startTask('sync_missing_variants')">
+                    <i class="fas fa-sync"></i> Sync Produits Manquants
+                </button>
+                
+                <button class="btn btn-info btn-action" onclick="showAllVariantsModal()">
+                    <i class="fas fa-sync-alt"></i> Sync Tous les Produits
+                </button>
+                
+                <button class="btn btn-success btn-action" onclick="startTask('update_stock')">
+                    <i class="fas fa-boxes"></i> Mettre à Jour Stocks
+                </button>
+                
+                <hr>
+                
+                <button class="btn btn-warning btn-action" onclick="purgeQueue()">
+                    <i class="fas fa-trash"></i> Vider la File
+                </button>
+                
+                <button class="btn btn-danger btn-action" onclick="shutdownWorkers()">
+                    <i class="fas fa-stop-circle"></i> Arrêter Workers
+                </button>
+                
+                <a href="http://localhost:5555" target="_blank" class="btn btn-secondary btn-action">
+                    <i class="fas fa-external-link-alt"></i> Ouvrir Flower
+                </a>
+            </div>
+        </div>
+        
+        <div class="col-md-6">
+            <div class="dashboard-card">
+                <h5><i class="fas fa-list"></i> Tâches Actives</h5>
+                <div id="active-tasks-container">
+                    <p class="text-muted">Aucune tâche en cours</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Logs en Temps Réel -->
+    <div class="row">
+        <div class="col-12">
+            <div class="dashboard-card">
+                <h5><i class="fas fa-terminal"></i> Logs Temps Réel</h5>
+                <div class="log-container" id="log-container">
+                    <div class="log-entry log-info">[INFO] Dashboard Celery initialisé</div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal Configuration Sync Complète -->
+<div class="modal fade" id="allVariantsModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Synchronisation Complète</h5>
+                <button type="button" class="close" data-dismiss="modal">
+                    <span>&times;</span>
+                </button>
+            </div>
+            <div class="modal-body">
+                <div class="form-group">
+                    <label>Taille des lots</label>
+                    <input type="number" class="form-control" id="batch-size" value="50" min="10" max="100">
+                    <small class="form-text text-muted">Nombre de produits par lot (10-100)</small>
+                </div>
+                <div class="form-group">
+                    <label>Délai entre lots (secondes)</label>
+                    <input type="number" class="form-control" id="batch-delay" value="600" min="60" max="1800">
+                    <small class="form-text text-muted">Temps d'attente entre chaque lot (60-1800s)</small>
+                </div>
+                <div class="alert alert-info">
+                    <strong>Temps estimé:</strong> <span id="estimated-time">~3 heures</span>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-dismiss="modal">Annuler</button>
+                <button type="button" class="btn btn-primary" onclick="startAllVariants()">
+                    <i class="fas fa-play"></i> Démarrer
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+let refreshInterval;
+let currentTasks = {};
+
+// Configuration AJAX globale pour envoyer les credentials
+$.ajaxSetup({
+    xhrFields: {
+        withCredentials: true
+    },
+    crossDomain: false
+});
+
+// Initialisation
+$(document).ready(function() {
+    console.log('Dashboard Celery initialisé');
+    refreshStatus();
+    refreshActiveTasks();
+    
+    // Rafraîchir toutes les 5 secondes
+    refreshInterval = setInterval(function() {
+        refreshStatus();
+        refreshActiveTasks();
+    }, 5000);
+    
+    addLog('info', 'Dashboard initialisé - Rafraîchissement automatique activé');
+});
+
+// Rafraîchir le statut
+function refreshStatus() {
+    $.ajax({
+        url: '/admin/celery/api/status',
+        method: 'GET',
+        dataType: 'json',
+        success: function(data) {
+            console.log('Status reçu:', data);
+            if (data.success) {
+                updateStatusDisplay(data);
+            } else {
+                addLog('error', 'Erreur: ' + (data.error || 'Erreur inconnue'));
+            }
+        },
+        error: function(xhr, status, error) {
+            console.error('Erreur AJAX:', status, error, xhr);
+            $('#celery-status').html('<span class="status-indicator status-inactive"></span><span>Hors ligne</span>');
+            if (xhr.status === 302 || xhr.status === 401) {
+                addLog('error', 'Session expirée - Veuillez vous reconnecter');
+            } else {
+                addLog('error', 'Erreur de connexion: ' + error);
+            }
+        }
+    });
+}
+
+// Mettre à jour l'affichage du statut
+function updateStatusDisplay(data) {
+    const celery = data.celery;
+    const db = data.database;
+    
+    // Statut Celery
+    if (celery.active) {
+        $('#celery-status').html('<span class="status-indicator status-active"></span><span>En ligne</span>');
+    } else {
+        $('#celery-status').html('<span class="status-indicator status-inactive"></span><span>Hors ligne</span>');
+    }
+    
+    $('#worker-count').text(celery.worker_count);
+    
+    // Statistiques BDD
+    $('#total-products').text(db.total_products);
+    $('#products-with-variants').text(db.products_with_variants);
+    $('#products-without-variants').text(db.products_without_variants);
+    $('#completion-rate').text(db.completion_rate);
+}
+
+// Rafraîchir les tâches actives
+function refreshActiveTasks() {
+    $.ajax({
+        url: '/admin/celery/api/tasks/active',
+        method: 'GET',
+        dataType: 'json',
+        success: function(data) {
+            console.log('Tâches actives reçues:', data);
+            if (data.success) {
+                updateActiveTasks(data.tasks);
+            }
+        },
+        error: function(xhr, status, error) {
+            console.error('Erreur récupération tâches:', status, error);
+        }
+    });
+}
+
+// Mettre à jour l'affichage des tâches actives
+function updateActiveTasks(tasks) {
+    const container = $('#active-tasks-container');
+    const totalActive = tasks.total_active + tasks.total_scheduled;
+    
+    if (totalActive === 0) {
+        container.html('<p class="text-muted">Aucune tâche en cours</p>');
+        return;
+    }
+    
+    let html = '<div class="mb-2"><strong>' + totalActive + ' tâche(s) en cours</strong></div>';
+    
+    // Tâches actives
+    for (const worker in tasks.active) {
+        tasks.active[worker].forEach(task => {
+            html += '<div class="task-item task-running">';
+            html += '<strong>' + task.name + '</strong><br>';
+            html += '<small>ID: ' + task.id + '</small>';
+            html += '</div>';
+        });
+    }
+    
+    // Tâches planifiées
+    for (const worker in tasks.scheduled) {
+        tasks.scheduled[worker].forEach(task => {
+            html += '<div class="task-item">';
+            html += '<strong>' + task.request.name + '</strong><br>';
+            html += '<small>Planifiée</small>';
+            html += '</div>';
+        });
+    }
+    
+    container.html(html);
+}
+
+// Démarrer une tâche
+function startTask(taskName) {
+    console.log('startTask appelé avec:', taskName);
+    addLog('info', 'Lancement de la tâche: ' + taskName);
+    
+    $.ajax({
+        url: '/admin/celery/api/tasks/start',
+        method: 'POST',
+        contentType: 'application/json',
+        dataType: 'json',
+        data: JSON.stringify({
+            task: taskName
+        }),
+        success: function(data) {
+            console.log('Réponse startTask:', data);
+            if (data.success) {
+                addLog('success', data.message + ' (ID: ' + data.task_id + ')');
+                showNotification('Succès', data.message, 'success');
+                refreshActiveTasks();
+            } else {
+                addLog('error', 'Erreur: ' + data.error);
+                showNotification('Erreur', data.error, 'error');
+            }
+        },
+        error: function(xhr, status, error) {
+            console.error('Erreur startTask:', status, error, xhr);
+            const errorMsg = xhr.responseJSON ? xhr.responseJSON.error : 'Erreur inconnue: ' + error;
+            addLog('error', 'Erreur: ' + errorMsg);
+            showNotification('Erreur', errorMsg, 'error');
+        }
+    });
+}
+
+// Modal sync complète
+function showAllVariantsModal() {
+    $('#allVariantsModal').modal('show');
+}
+
+// Démarrer sync complète
+function startAllVariants() {
+    const batchSize = parseInt($('#batch-size').val());
+    const delay = parseInt($('#batch-delay').val());
+    
+    $('#allVariantsModal').modal('hide');
+    addLog('info', 'Lancement synchronisation complète (lots: ' + batchSize + ', délai: ' + delay + 's)');
+    
+    $.ajax({
+        url: '/admin/celery/api/tasks/start',
+        method: 'POST',
+        contentType: 'application/json',
+        data: JSON.stringify({
+            task: 'sync_all_variants',
+            params: {
+                batch_size: batchSize,
+                delay: delay
+            }
+        }),
+        success: function(data) {
+            if (data.success) {
+                addLog('success', data.message);
+                showNotification('Succès', data.message, 'success');
+                refreshActiveTasks();
+            }
+        }
+    });
+}
+
+// Vider la file
+function purgeQueue() {
+    console.log('purgeQueue appelé');
+    if (!confirm('Voulez-vous vraiment vider la file d\'attente ?')) return;
+    
+    addLog('warning', 'Vidage de la file d\'attente...');
+    
+    $.ajax({
+        url: '/admin/celery/api/queue/purge',
+        method: 'POST',
+        dataType: 'json',
+        success: function(data) {
+            console.log('Réponse purgeQueue:', data);
+            if (data.success) {
+                addLog('success', data.message);
+                showNotification('Succès', data.message, 'success');
+                refreshActiveTasks();
+            }
+        },
+        error: function(xhr, status, error) {
+            console.error('Erreur purgeQueue:', status, error);
+            addLog('error', 'Erreur: ' + error);
+        }
+    });
+}
+
+// Arrêter les workers
+function shutdownWorkers() {
+    console.log('shutdownWorkers appelé');
+    if (!confirm('Voulez-vous vraiment arrêter tous les workers Celery ?')) return;
+    
+    addLog('warning', 'Arrêt des workers...');
+    
+    $.ajax({
+        url: '/admin/celery/api/workers/shutdown',
+        method: 'POST',
+        dataType: 'json',
+        success: function(data) {
+            console.log('Réponse shutdownWorkers:', data);
+            if (data.success) {
+                addLog('warning', data.message);
+                showNotification('Attention', data.message, 'warning');
+                setTimeout(refreshStatus, 2000);
+            }
+        },
+        error: function(xhr, status, error) {
+            console.error('Erreur shutdownWorkers:', status, error);
+            addLog('error', 'Erreur: ' + error);
+        }
+    });
+}
+
+// Ajouter un log
+function addLog(type, message) {
+    const logContainer = $('#log-container');
+    const timestamp = new Date().toLocaleTimeString();
+    const logClass = 'log-' + type;
+    
+    const logEntry = '<div class="log-entry ' + logClass + '">[' + timestamp + '] ' + message + '</div>';
+    logContainer.append(logEntry);
+    
+    // Scroll vers le bas
+    logContainer.scrollTop(logContainer[0].scrollHeight);
+    
+    // Garder seulement les 50 derniers logs
+    const logs = logContainer.find('.log-entry');
+    if (logs.length > 50) {
+        logs.first().remove();
+    }
+}
+
+// Notification
+function showNotification(title, message, type) {
+    // Utiliser toastr si disponible, sinon alert
+    if (typeof toastr !== 'undefined') {
+        toastr[type](message, title);
+    } else {
+        alert(title + ': ' + message);
+    }
+}
+
+// Nettoyer à la fermeture
+$(window).on('beforeunload', function() {
+    if (refreshInterval) {
+        clearInterval(refreshInterval);
+    }
+});
+</script>
+{% endblock %}

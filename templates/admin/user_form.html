@@ -1,31 +1,68 @@
-{% extends "base.html" %}
+{% extends 'admin/layout_admin_modern.html' %}
 {% block title %}{{ 'Créer' if not user else 'Modifier' }} un utilisateur{% endblock %}
 {% block content %}
-<div class="container mt-5">
-    <h2>{{ 'Créer' if not user else 'Modifier' }} un utilisateur</h2>
-    <form method="post">
-        <div class="mb-3">
-            <label for="username" class="form-label">Nom d'utilisateur</label>
-            <input type="text" class="form-control" id="username" name="username" value="{{ user.username if user else '' }}" required>
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <div>
+        <h1 style="font-weight: 800; margin-bottom: 0.5rem;">
+            <i class="fas fa-user-edit"></i> {{ 'Créer' if not user else 'Modifier' }} un utilisateur
+        </h1>
+        <p style="color: #999; margin: 0;">Gestion des informations utilisateur</p>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-lg-8">
+        <div class="admin-card">
+            <div class="admin-card-header">
+                <i class="fas fa-info-circle"></i> Informations utilisateur
+            </div>
+            <div class="admin-card-body">
+                <form method="post">
+                    <div class="admin-form-group">
+                        <label class="admin-form-label">
+                            <i class="fas fa-user"></i> Nom d'utilisateur
+                        </label>
+                        <input type="text" class="admin-form-control" id="username" name="username" value="{{ user.username if user else '' }}" required>
+                    </div>
+                    
+                    <div class="admin-form-group">
+                        <label class="admin-form-label">
+                            <i class="fas fa-envelope"></i> Email
+                        </label>
+                        <input type="email" class="admin-form-control" id="email" name="email" value="{{ user.email if user else '' }}" required>
+                    </div>
+                    
+                    <div class="admin-form-group">
+                        <label class="admin-form-label">
+                            <i class="fas fa-user-tag"></i> Rôle
+                        </label>
+                        <select class="admin-form-control" id="role" name="role_id" required>
+                            {% for role in roles %}
+                            <option value="{{ role.id }}" {% if user and user.role_id == role.id %}selected{% endif %}>{{ role.name }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    
+                    <div class="admin-form-group">
+                        <label class="admin-form-label">
+                            <i class="fas fa-key"></i> Mot de passe {% if user %}(laisser vide pour ne pas changer){% endif %}
+                        </label>
+                        <input type="password" class="admin-form-control" id="password" name="password" {% if not user %}required{% endif %}>
+                    </div>
+                    
+                    <div style="display: flex; gap: 1rem; margin-top: 2rem;">
+                        <button type="submit" class="admin-btn admin-btn-primary">
+                            <i class="fas fa-save"></i>
+                            {{ 'Créer' if not user else 'Mettre à jour' }}
+                        </button>
+                        <a href="{{ url_for('admin.users') }}" class="admin-btn admin-btn-sm" style="background: #6c757d; color: white;">
+                            <i class="fas fa-times"></i>
+                            Annuler
+                        </a>
+                    </div>
+                </form>
+            </div>
         </div>
-        <div class="mb-3">
-            <label for="email" class="form-label">Email</label>
-            <input type="email" class="form-control" id="email" name="email" value="{{ user.email if user else '' }}" required>
-        </div>
-        <div class="mb-3">
-            <label for="role" class="form-label">Rôle</label>
-            <select class="form-select" id="role" name="role_id" required>
-                {% for role in roles %}
-                <option value="{{ role.id }}" {% if user and user.role_id == role.id %}selected{% endif %}>{{ role.name }}</option>
-                {% endfor %}
-            </select>
-        </div>
-        <div class="mb-3">
-            <label for="password" class="form-label">Mot de passe {% if user %}(laisser vide pour ne pas changer){% endif %}</label>
-            <input type="password" class="form-control" id="password" name="password" {% if not user %}required{% endif %}>
-        </div>
-        <button type="submit" class="btn btn-primary">{{ 'Créer' if not user else 'Mettre à jour' }}</button>
-        <a href="{{ url_for('admin.users') }}" class="btn btn-secondary">Annuler</a>
-    </form>
+    </div>
 </div>
 {% endblock %}

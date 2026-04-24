@@ -1,54 +1,262 @@
-{% extends 'layout.html' %}
+{% extends 'admin/layout_admin_modern.html' %}
+
+{% block title %}Gestion Produits{% endblock %}
+
 {% block content %}
-{% extends "base.html" %}
-{% block title %}Gestion des produits{% endblock %}
-{% block content %}
-<div class="container mt-5">
-    <h2>Produits</h2>
-    <form class="row mb-3" method="get">
-        <div class="col-md-4">
-            <input type="text" class="form-control" name="search" placeholder="Recherche nom ou catégorie" value="{{ search|default('') }}">
-        </div>
-        <div class="col-md-2">
-            <button type="submit" class="btn btn-outline-primary">Rechercher</button>
-        </div>
-        <div class="col-md-2">
-            <a href="{{ url_for('admin.export_products') }}" class="btn btn-outline-success">Exporter CSV</a>
-        </div>
-        <div class="col-md-2">
-            <a href="{{ url_for('admin.create_product') }}" class="btn btn-primary">Créer un produit</a>
-        </div>
-        <div class="col-md-2">
-            <a href="{{ url_for('admin.categories') }}" class="btn btn-outline-info">Gérer les catégories</a>
-        </div>
-    </form>
-    <table class="table table-striped">
-        <thead>
-            <tr>
-                <th>ID</th>
-                <th>Nom</th>
-                <th>Catégorie</th>
-                <th>Prix</th>
-                <th>Stock</th>
-                <th>Actions</th>
-            </tr>
-        </thead>
-        <tbody>
-            {% for product in products %}
-            <tr>
-                <td>{{ product.id }}</td>
-                <td>{{ product.name }}</td>
-                <td>{{ product.category.name if product.category else '' }}</td>
-                <td>{{ '%.2f'|format(product.price) }} €</td>
-                <td>{{ product.stock }}</td>
-                <td>
-                    <a href="{{ url_for('admin.edit_product', product_id=product.id) }}" class="btn btn-sm btn-warning">Modifier</a>
-                    <a href="{{ url_for('admin.delete_product', product_id=product.id) }}" class="btn btn-sm btn-danger">Supprimer</a>
-                </td>
-            </tr>
-            {% endfor %}
-        </tbody>
-    </table>
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <div>
+        <h1 style="font-weight: 800; margin-bottom: 0.5rem;">
+            <i class="fas fa-box"></i> Gestion des Produits
+        </h1>
+        <p style="color: #999; margin: 0;">{{ total_products }} produits au total</p>
+    </div>
+    <div>
+        <a href="{{ url_for('admin.create_product') }}" class="admin-btn admin-btn-primary">
+            <i class="fas fa-plus"></i>
+            Nouveau Produit
+        </a>
+    </div>
 </div>
-{% endblock %}
+
+<!-- Statistiques -->
+<div class="row mb-4">
+    <div class="col-md-3">
+        <div class="admin-card" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white;">
+            <div class="admin-card-body">
+                <div style="display: flex; justify-content: space-between; align-items: center;">
+                    <div>
+                        <div style="font-size: 0.85rem; opacity: 0.9; margin-bottom: 0.5rem;">Total Produits</div>
+                        <div style="font-size: 2rem; font-weight: 800;">{{ total_products }}</div>
+                    </div>
+                    <i class="fas fa-box" style="font-size: 3rem; opacity: 0.3;"></i>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="admin-card" style="background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%); color: white;">
+            <div class="admin-card-body">
+                <div style="display: flex; justify-content: space-between; align-items: center;">
+                    <div>
+                        <div style="font-size: 0.85rem; opacity: 0.9; margin-bottom: 0.5rem;">Actifs</div>
+                        <div style="font-size: 2rem; font-weight: 800;">{{ active_products }}</div>
+                    </div>
+                    <i class="fas fa-check-circle" style="font-size: 3rem; opacity: 0.3;"></i>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="admin-card" style="background: linear-gradient(135deg, #ffecd2 0%, #fcb69f 100%); color: #333;">
+            <div class="admin-card-body">
+                <div style="display: flex; justify-content: space-between; align-items: center;">
+                    <div>
+                        <div style="font-size: 0.85rem; opacity: 0.7; margin-bottom: 0.5rem;">Stock Bas</div>
+                        <div style="font-size: 2rem; font-weight: 800;">{{ low_stock_products }}</div>
+                    </div>
+                    <i class="fas fa-exclamation-triangle" style="font-size: 3rem; opacity: 0.3;"></i>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="admin-card" style="background: linear-gradient(135deg, #ff9a9e 0%, #fecfef 100%); color: #333;">
+            <div class="admin-card-body">
+                <div style="display: flex; justify-content: space-between; align-items: center;">
+                    <div>
+                        <div style="font-size: 0.85rem; opacity: 0.7; margin-bottom: 0.5rem;">Rupture</div>
+                        <div style="font-size: 2rem; font-weight: 800;">{{ out_of_stock_products }}</div>
+                    </div>
+                    <i class="fas fa-times-circle" style="font-size: 3rem; opacity: 0.3;"></i>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Filters -->
+<div class="admin-card mb-4">
+    <div class="admin-card-body">
+        <form method="GET" action="{{ url_for('admin.products') }}">
+            <div class="row g-3">
+                <div class="col-md-4">
+                    <input type="text" class="admin-form-control" placeholder="Rechercher un produit..." name="search" value="{{ search|default('') }}">
+                </div>
+                <div class="col-md-3">
+                    <select class="admin-form-control" name="category">
+                        <option value="">Toutes les catégories</option>
+                        {% for category in categories %}
+                        <option value="{{ category.id }}" {% if current_category == category.id %}selected{% endif %}>
+                            {{ category.name }}
+                        </option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="col-md-3">
+                    <select class="admin-form-control" name="status">
+                        <option value="">Tous les statuts</option>
+                        <option value="active" {% if current_status == 'active' %}selected{% endif %}>Actifs</option>
+                        <option value="inactive" {% if current_status == 'inactive' %}selected{% endif %}>Inactifs</option>
+                        <option value="low_stock" {% if current_status == 'low_stock' %}selected{% endif %}>Stock faible</option>
+                        <option value="out_of_stock" {% if current_status == 'out_of_stock' %}selected{% endif %}>Rupture</option>
+                    </select>
+                </div>
+                <div class="col-md-2">
+                    <button type="submit" class="admin-btn admin-btn-primary w-100">
+                        <i class="fas fa-filter"></i> Filtrer
+                    </button>
+                </div>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- Products Table -->
+<div class="admin-card">
+    <div class="admin-card-body" style="padding: 0;">
+        <table class="admin-table">
+            <thead>
+                <tr>
+                    <th>ID</th>
+                    <th>Image</th>
+                    <th>Nom</th>
+                    <th>Catégorie</th>
+                    <th>Prix</th>
+                    <th>Stock</th>
+                    <th>Statut</th>
+                    <th>Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% if products.items %}
+                    {% for product in products.items %}
+                    <tr>
+                        <td>#{{ product.id }}</td>
+                        <td>
+                            {% if product.image_url %}
+                            <img src="{{ product.image_url }}" alt="{{ product.name }}" style="width: 50px; height: 50px; object-fit: cover; border-radius: 8px;" loading="lazy" decoding="async">
+                            {% else %}
+                            <div style="width: 50px; height: 50px; background: #f8f9fa; border-radius: 8px; display: flex; align-items: center; justify-content: center;">
+                                <i class="fas fa-image" style="color: #ccc;"></i>
+                            </div>
+                            {% endif %}
+                        </td>
+                        <td>
+                            <div style="font-weight: 600;">{{ product.name }}</div>
+                            <div style="font-size: 0.85rem; color: #999;">
+                                {% if product.sku %}<span style="color: #667eea;">SKU: {{ product.sku }}</span> • {% endif %}
+                                {{ product.short_description[:50] if product.short_description else (product.description[:50] if product.description else '') }}
+                            </div>
+                        </td>
+                        <td>
+                            <span class="admin-badge admin-badge-info">{{ product.category.name if product.category else 'N/A' }}</span>
+                        </td>
+                        <td>
+                            <div style="font-weight: 700; color: var(--admin-primary);">{{ "%.2f"|format(product.price) }}€</div>
+                            {% if product.compare_price and product.compare_price > product.price %}
+                            <div style="font-size: 0.85rem; color: #999; text-decoration: line-through;">{{ "%.2f"|format(product.compare_price) }}€</div>
+                            {% endif %}
+                        </td>
+                        <td>
+                            {% if product.stock > 10 %}
+                            <span class="admin-badge admin-badge-success">{{ product.stock }}</span>
+                            {% elif product.stock > 0 %}
+                            <span class="admin-badge admin-badge-warning">{{ product.stock }}</span>
+                            {% else %}
+                            <span class="admin-badge admin-badge-danger">0</span>
+                            {% endif %}
+                        </td>
+                        <td>
+                            {% if product.is_active %}
+                                {% if product.stock > 0 %}
+                                <span class="admin-badge admin-badge-success">
+                                    <i class="fas fa-check-circle"></i> Actif
+                                </span>
+                                {% else %}
+                                <span class="admin-badge admin-badge-danger">
+                                    <i class="fas fa-times-circle"></i> Rupture
+                                </span>
+                                {% endif %}
+                            {% else %}
+                            <span class="admin-badge admin-badge-secondary">
+                                <i class="fas fa-pause-circle"></i> Inactif
+                            </span>
+                            {% endif %}
+                        </td>
+                        <td>
+                            <div class="admin-table-actions">
+                                <a href="{{ url_for('admin.edit_product', product_id=product.id) }}" class="admin-btn admin-btn-sm admin-btn-primary" title="Modifier">
+                                    <i class="fas fa-edit"></i>
+                                </a>
+                                <form method="POST" action="{{ url_for('admin.toggle_product_status', product_id=product.id) }}" style="display: inline;">
+                                    <button type="submit" class="admin-btn admin-btn-sm admin-btn-warning" title="Activer/Désactiver">
+                                        <i class="fas fa-power-off"></i>
+                                    </button>
+                                </form>
+                                <form method="POST" action="{{ url_for('admin.delete_product', product_id=product.id) }}" style="display: inline;" onsubmit="return confirm('Supprimer ce produit ?')">
+                                    <button type="submit" class="admin-btn admin-btn-sm admin-btn-danger" title="Supprimer">
+                                        <i class="fas fa-trash"></i>
+                                    </button>
+                                </form>
+                            </div>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                {% else %}
+                    <tr>
+                        <td colspan="8" style="text-align: center; padding: 3rem; color: #999;">
+                            <i class="fas fa-box" style="font-size: 3rem; margin-bottom: 1rem; display: block;"></i>
+                            Aucun produit trouvé
+                        </td>
+                    </tr>
+                {% endif %}
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<!-- Pagination -->
+{% if products.pages > 1 %}
+<div class="d-flex justify-content-center mt-4">
+    <nav>
+        <ul class="pagination">
+            {% if products.has_prev %}
+            <li class="page-item">
+                <a class="page-link" href="{{ url_for('admin.products', page=products.prev_num, search=search, category=current_category, status=current_status) }}">
+                    <i class="fas fa-chevron-left"></i>
+                </a>
+            </li>
+            {% endif %}
+            
+            {% for page_num in products.iter_pages(left_edge=1, right_edge=1, left_current=2, right_current=2) %}
+                {% if page_num %}
+                    {% if page_num == products.page %}
+                    <li class="page-item active">
+                        <span class="page-link">{{ page_num }}</span>
+                    </li>
+                    {% else %}
+                    <li class="page-item">
+                        <a class="page-link" href="{{ url_for('admin.products', page=page_num, search=search, category=current_category, status=current_status) }}">
+                            {{ page_num }}
+                        </a>
+                    </li>
+                    {% endif %}
+                {% else %}
+                <li class="page-item disabled">
+                    <span class="page-link">...</span>
+                </li>
+                {% endif %}
+            {% endfor %}
+            
+            {% if products.has_next %}
+            <li class="page-item">
+                <a class="page-link" href="{{ url_for('admin.products', page=products.next_num, search=search, category=current_category, status=current_status) }}">
+                    <i class="fas fa-chevron-right"></i>
+                </a>
+            </li>
+            {% endif %}
+        </ul>
+    </nav>
+</div>
+{% endif %}
 {% endblock %}

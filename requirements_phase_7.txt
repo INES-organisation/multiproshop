@@ -1,0 +1,31 @@
+# Dépendances pour Phase 7 - Optimisations
+# À installer avec: pip install -r requirements_phase_7.txt
+
+# Cache Redis
+redis==5.0.1
+
+# Traductions
+googletrans==4.0.0rc1
+# Alternative: deep-translator==1.11.4
+
+# Planification de tâches
+APScheduler==3.10.4
+
+# Optimisation d'images
+Pillow==10.1.0
+
+# Tests
+pytest==7.4.3
+pytest-cov==4.1.0
+pytest-flask==1.3.0
+
+# Tests de charge
+locust==2.20.0
+
+# Monitoring et logs
+sentry-sdk[flask]==1.39.2
+python-json-logger==2.0.7
+
+# Performance
+gunicorn==21.2.0
+gevent==23.9.1

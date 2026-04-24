@@ -1,0 +1,553 @@
+/* ========================================
+   STYLES POUR LES NOUVELLES PAGES
+   ======================================== */
+
+/* ========================================
+   PAGE PROMOTIONS ET DEALS
+   ======================================== */
+.hero-promotions {
+    background: linear-gradient(135deg, #ff6b6b, #ee5a6f);
+    padding: 5rem 0;
+    text-align: center;
+    color: white;
+}
+
+.hero-promotions h1 {
+    font-size: 3rem;
+    font-weight: 800;
+    margin-bottom: 1rem;
+}
+
+.promo-card {
+    background: white;
+    border-radius: 15px;
+    overflow: hidden;
+    box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+    transition: transform 0.3s ease;
+    margin-bottom: 2rem;
+}
+
+.promo-card:hover {
+    transform: translateY(-5px);
+}
+
+.promo-badge {
+    position: absolute;
+    top: 15px;
+    right: 15px;
+    background: #ff6b6b;
+    color: white;
+    padding: 8px 15px;
+    border-radius: 20px;
+    font-weight: 700;
+    font-size: 0.9rem;
+}
+
+.promo-content {
+    padding: 2rem;
+}
+
+.countdown {
+    display: flex;
+    justify-content: center;
+    gap: 1rem;
+    margin: 2rem 0;
+}
+
+.countdown-item {
+    text-align: center;
+    background: var(--light-bg);
+    padding: 1rem;
+    border-radius: 10px;
+    min-width: 80px;
+}
+
+.countdown-number {
+    font-size: 2rem;
+    font-weight: 800;
+    color: var(--primary-color);
+}
+
+.countdown-label {
+    font-size: 0.8rem;
+    color: #666;
+    text-transform: uppercase;
+}
+
+/* ========================================
+   PAGE NOUVEAUTÉS
+   ======================================== */
+.hero-nouveautes {
+    background: linear-gradient(135deg, #667eea, #764ba2);
+    padding: 5rem 0;
+    text-align: center;
+    color: white;
+}
+
+.hero-nouveautes h1 {
+    font-size: 3rem;
+    font-weight: 800;
+    margin-bottom: 1rem;
+}
+
+.new-badge {
+    position: absolute;
+    top: 10px;
+    left: 10px;
+    background: #667eea;
+    color: white;
+    padding: 5px 12px;
+    border-radius: 15px;
+    font-size: 0.75rem;
+    font-weight: 700;
+}
+
+.product-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+    gap: 2rem;
+    margin-top: 3rem;
+}
+
+.product-card {
+    background: white;
+    border-radius: 15px;
+    overflow: hidden;
+    box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+    transition: transform 0.3s ease;
+}
+
+.product-card:hover {
+    transform: translateY(-5px);
+}
+
+.product-image {
+    position: relative;
+    width: 100%;
+    height: 250px;
+    overflow: hidden;
+}
+
+.product-image img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
+.product-info {
+    padding: 1.5rem;
+}
+
+.filter-section {
+    background: var(--light-bg);
+    padding: 2rem;
+    border-radius: 15px;
+    margin-bottom: 2rem;
+}
+
+/* ========================================
+   PAGE ABONNEMENTS ET SERVICES
+   ======================================== */
+.hero-abonnements {
+    background: linear-gradient(135deg, #f093fb, #f5576c);
+    padding: 5rem 0;
+    text-align: center;
+    color: white;
+}
+
+.hero-abonnements h1 {
+    font-size: 3rem;
+    font-weight: 800;
+    margin-bottom: 1rem;
+}
+
+.pricing-card {
+    background: white;
+    border-radius: 20px;
+    padding: 2.5rem;
+    box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+    transition: transform 0.3s ease;
+    margin-bottom: 2rem;
+    position: relative;
+}
+
+.pricing-card:hover {
+    transform: translateY(-10px);
+}
+
+.pricing-card.featured {
+    border: 3px solid var(--primary-color);
+}
+
+.popular-badge {
+    position: absolute;
+    top: -15px;
+    right: 20px;
+    background: var(--primary-color);
+    color: var(--dark-color);
+    padding: 8px 20px;
+    border-radius: 20px;
+    font-weight: 700;
+    font-size: 0.85rem;
+}
+
+.price {
+    font-size: 3rem;
+    font-weight: 800;
+    color: var(--primary-color);
+    margin: 1.5rem 0;
+}
+
+.price-period {
+    font-size: 1rem;
+    color: #666;
+    font-weight: 400;
+}
+
+.features-list {
+    list-style: none;
+    padding: 0;
+    margin: 2rem 0;
+}
+
+.features-list li {
+    padding: 0.75rem 0;
+    border-bottom: 1px solid var(--light-bg);
+}
+
+.features-list li i {
+    color: #4caf50;
+    margin-right: 10px;
+}
+
+.service-card {
+    background: white;
+    border-radius: 15px;
+    padding: 2rem;
+    box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+    margin-bottom: 2rem;
+    text-align: center;
+}
+
+.service-icon {
+    font-size: 3rem;
+    color: var(--primary-color);
+    margin-bottom: 1rem;
+}
+
+/* ========================================
+   PAGE ENCHÈRES
+   ======================================== */
+.hero-encheres {
+    background: linear-gradient(135deg, #fa709a, #fee140);
+    padding: 5rem 0;
+    text-align: center;
+    color: var(--dark-color);
+}
+
+.hero-encheres h1 {
+    font-size: 3rem;
+    font-weight: 800;
+    margin-bottom: 1rem;
+}
+
+.auction-card {
+    background: white;
+    border-radius: 15px;
+    overflow: hidden;
+    box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+    margin-bottom: 2rem;
+    transition: transform 0.3s ease;
+}
+
+.auction-card:hover {
+    transform: translateY(-5px);
+}
+
+.auction-image {
+    position: relative;
+    height: 250px;
+    overflow: hidden;
+}
+
+.auction-image img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
+.auction-status {
+    position: absolute;
+    top: 15px;
+    left: 15px;
+    background: #4caf50;
+    color: white;
+    padding: 8px 15px;
+    border-radius: 20px;
+    font-weight: 700;
+    font-size: 0.85rem;
+}
+
+.auction-status.ending-soon {
+    background: #ff6b6b;
+}
+
+.auction-info {
+    padding: 1.5rem;
+}
+
+.current-bid {
+    font-size: 2rem;
+    font-weight: 800;
+    color: var(--primary-color);
+    margin: 1rem 0;
+}
+
+.bid-count {
+    color: #666;
+    font-size: 0.9rem;
+}
+
+.time-remaining {
+    background: var(--light-bg);
+    padding: 1rem;
+    border-radius: 10px;
+    text-align: center;
+    margin: 1rem 0;
+}
+
+.time-number {
+    font-size: 1.5rem;
+    font-weight: 700;
+    color: var(--primary-color);
+}
+
+.bid-form {
+    display: flex;
+    gap: 0.5rem;
+    margin-top: 1rem;
+}
+
+/* ========================================
+   PAGE PETITES ANNONCES
+   ======================================== */
+.hero-annonces {
+    background: linear-gradient(135deg, #30cfd0, #330867);
+    padding: 5rem 0;
+    text-align: center;
+    color: white;
+}
+
+.hero-annonces h1 {
+    font-size: 3rem;
+    font-weight: 800;
+    margin-bottom: 1rem;
+}
+
+.annonce-card {
+    background: white;
+    border-radius: 15px;
+    padding: 1.5rem;
+    box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+    margin-bottom: 1.5rem;
+    transition: transform 0.3s ease;
+}
+
+.annonce-card:hover {
+    transform: translateY(-3px);
+}
+
+.annonce-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: start;
+    margin-bottom: 1rem;
+}
+
+.annonce-price {
+    font-size: 1.8rem;
+    font-weight: 800;
+    color: var(--primary-color);
+}
+
+.annonce-meta {
+    display: flex;
+    gap: 1rem;
+    color: #666;
+    font-size: 0.9rem;
+    margin-top: 1rem;
+}
+
+.annonce-image {
+    width: 150px;
+    height: 150px;
+    object-fit: cover;
+    border-radius: 10px;
+    margin-right: 1.5rem;
+}
+
+.category-badge {
+    background: var(--light-bg);
+    padding: 5px 12px;
+    border-radius: 15px;
+    font-size: 0.85rem;
+    color: #666;
+}
+
+.filter-sidebar {
+    background: white;
+    border-radius: 15px;
+    padding: 2rem;
+    box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+    position: sticky;
+    top: 100px;
+}
+
+.filter-group {
+    margin-bottom: 2rem;
+}
+
+.filter-group h6 {
+    font-weight: 700;
+    margin-bottom: 1rem;
+}
+
+/* ========================================
+   PAGE BLOG
+   ======================================== */
+.hero-blog {
+    background: linear-gradient(135deg, #667eea, #764ba2);
+    padding: 5rem 0;
+    text-align: center;
+    color: white;
+}
+
+.hero-blog h1 {
+    font-size: 3rem;
+    font-weight: 800;
+    margin-bottom: 1rem;
+}
+
+.blog-card {
+    background: white;
+    border-radius: 15px;
+    overflow: hidden;
+    box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+    margin-bottom: 2rem;
+    transition: transform 0.3s ease;
+}
+
+.blog-card:hover {
+    transform: translateY(-5px);
+}
+
+.blog-image {
+    width: 100%;
+    height: 250px;
+    object-fit: cover;
+}
+
+.blog-content {
+    padding: 2rem;
+}
+
+.blog-meta {
+    display: flex;
+    gap: 1.5rem;
+    color: #666;
+    font-size: 0.9rem;
+    margin-bottom: 1rem;
+}
+
+.blog-category {
+    background: var(--primary-color);
+    color: var(--dark-color);
+    padding: 5px 12px;
+    border-radius: 15px;
+    font-size: 0.8rem;
+    font-weight: 700;
+    display: inline-block;
+    margin-bottom: 1rem;
+}
+
+.featured-post {
+    background: white;
+    border-radius: 20px;
+    overflow: hidden;
+    box-shadow: 0 10px 30px rgba(0,0,0,0.15);
+    margin-bottom: 3rem;
+}
+
+.featured-image {
+    width: 100%;
+    height: 400px;
+    object-fit: cover;
+}
+
+.featured-content {
+    padding: 3rem;
+}
+
+.sidebar-widget {
+    background: white;
+    border-radius: 15px;
+    padding: 2rem;
+    box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+    margin-bottom: 2rem;
+}
+
+.widget-title {
+    font-weight: 700;
+    margin-bottom: 1.5rem;
+    padding-bottom: 1rem;
+    border-bottom: 2px solid var(--primary-color);
+}
+
+.recent-post {
+    display: flex;
+    gap: 1rem;
+    margin-bottom: 1rem;
+    padding-bottom: 1rem;
+    border-bottom: 1px solid var(--light-bg);
+}
+
+.recent-post:last-child {
+    border-bottom: none;
+}
+
+.recent-post-image {
+    width: 80px;
+    height: 80px;
+    object-fit: cover;
+    border-radius: 10px;
+}
+
+.tag-cloud {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+}
+
+.tag {
+    background: var(--light-bg);
+    padding: 5px 15px;
+    border-radius: 20px;
+    font-size: 0.85rem;
+    color: #666;
+    text-decoration: none;
+    transition: all 0.3s ease;
+}
+
+.tag:hover {
+    background: var(--primary-color);
+    color: var(--dark-color);
+}
+
+.newsletter-widget {
+    background: linear-gradient(135deg, var(--primary-color), var(--primary-dark));
+    color: var(--dark-color);
+}
+
+.newsletter-widget .widget-title {
+    border-color: rgba(0,0,0,0.2);
+}

@@ -55,24 +55,6 @@
             </div>
         </div>
 
-        <div class="row premium-feature-row justify-content-center">
-            <div class="col-md-2 premium-feature">
-                <i class="fas fa-shipping-fast"></i><br>Livraison gratuite<br><span class="text-muted" class="text-muted about-fine-print">Pour toute commande &gt; 99€</span>
-            </div>
-            <div class="col-md-2 premium-feature">
-                <i class="fas fa-undo"></i><br>Retour sous 90 jours<br><span class="text-muted" class="text-muted about-fine-print">Si problème produit</span>
-            </div>
-            <div class="col-md-2 premium-feature">
-                <i class="fas fa-lock"></i><br>Paiement sécurisé<br><span class="text-muted" class="text-muted about-fine-print">Paiement 100% sécurisé</span>
-            </div>
-            <div class="col-md-2 premium-feature">
-                <i class="fas fa-headset"></i><br>Support 24/7<br><span class="text-muted" class="text-muted about-fine-print">Assistance dédiée</span>
-            </div>
-            <div class="col-md-2 premium-feature">
-                <i class="fas fa-gift"></i><br>Service cadeau<br><span class="text-muted" class="text-muted about-fine-print">Emballage offert</span>
-            </div>
-        </div>
-
         <!-- Deals Of The Day section avec pagination -->
         <div class="premium-deals mt-4" class="bg-white rounded-12 p-24-18-14-18 shadow-yellow-07">
             <div class="d-flex justify-content-between align-items-center mb-2">
@@ -117,6 +99,25 @@
                 </div>
             </div>
         </div>
+
+        <!-- Section des avantages déplacée en bas de page -->
+        <div class="row premium-feature-row justify-content-center mt-5 mb-4">
+            <div class="col-md-2 premium-feature">
+                <i class="fas fa-shipping-fast"></i><br>Livraison gratuite<br><span class="text-muted" class="text-muted about-fine-print">Pour toute commande &gt; 99€</span>
+            </div>
+            <div class="col-md-2 premium-feature">
+                <i class="fas fa-undo"></i><br>Retour sous 90 jours<br><span class="text-muted" class="text-muted about-fine-print">Si problème produit</span>
+            </div>
+            <div class="col-md-2 premium-feature">
+                <i class="fas fa-lock"></i><br>Paiement sécurisé<br><span class="text-muted" class="text-muted about-fine-print">Paiement 100% sécurisé</span>
+            </div>
+            <div class="col-md-2 premium-feature">
+                <i class="fas fa-headset"></i><br>Support 24/7<br><span class="text-muted" class="text-muted about-fine-print">Assistance dédiée</span>
+            </div>
+            <div class="col-md-2 premium-feature">
+                <i class="fas fa-gift"></i><br>Service cadeau<br><span class="text-muted" class="text-muted about-fine-print">Emballage offert</span>
+            </div>
+        </div>
     </div>
 {% endblock %}
 
@@ -151,7 +152,7 @@
         list.innerHTML = dealsData[dealsPage].map(prod => `
             <div class='col-6 col-md-2 mb-3'>
                 <a href="${prod.url}" class="text-decoration-none" data-id="${prod.id}">
-                    <img src="${prod.img}" alt="${prod.name}" class="img-thumb-100 rounded-8">
+                    <img src="${prod.img}" alt="${prod.name}" class="img-thumb-100 rounded-8" loading="lazy" decoding="async">
                     <div style="font-weight:600;font-size:1.08rem;">${prod.name}</div>
                     <div style="color:#43a047;font-weight:700;">${prod.price}</div>
                     <div class="font-large-0-97 text-gray">${prod.desc}</div>
@@ -192,7 +193,7 @@
         list.innerHTML = suggestions.map(prod => `
             <div class='col-6 col-md-2 mb-3'>
                 <a href="${prod.url}" class="text-decoration-none">
-                    <img src="${prod.img}" alt="${prod.name}" class="img-thumb-100 rounded-8">
+                    <img src="${prod.img}" alt="${prod.name}" class="img-thumb-100 rounded-8" loading="lazy" decoding="async">
                     <div style="font-weight:600;font-size:1.08rem;">${prod.name}</div>
                     <div style="color:#43a047;font-weight:700;">${prod.price}</div>
                 </a>

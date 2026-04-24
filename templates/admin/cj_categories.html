@@ -1,0 +1,590 @@
+{% extends "admin/layout_admin_modern.html" %}
+
+{% block title %}Catégories CJ Dropshipping - Admin{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/admin_cj_categories.css') }}">
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4">
+    <!-- En-tête -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="d-flex justify-content-between align-items-center">
+                <div>
+                    <h1 class="h3 mb-0">
+                        <i class="bi bi-folder-fill text-primary"></i>
+                        Catégories CJ Dropshipping
+                    </h1>
+                    <p class="text-muted mb-0">
+                        Gestion hiérarchique des catégories (3 niveaux) &mdash; Nom EN, Nom FR, Mapping MPS
+                    </p>
+                </div>
+                <div>
+                    <button id="syncCategoriesBtn" class="btn btn-primary">
+                        <i class="bi bi-arrow-repeat"></i>
+                        Synchroniser depuis CJ
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Statistiques -->
+    <div class="row mb-4">
+        <div class="col-md-3">
+            <div class="card border-primary">
+                <div class="card-body">
+                    <h6 class="text-muted mb-2">Total Catégories</h6>
+                    <h3 class="mb-0" id="stat-total">0</h3>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card border-info">
+                <div class="card-body">
+                    <h6 class="text-muted mb-2">Niveau 1</h6>
+                    <h3 class="mb-0" id="stat-level-1">0</h3>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card border-success">
+                <div class="card-body">
+                    <h6 class="text-muted mb-2">Niveau 2</h6>
+                    <h3 class="mb-0" id="stat-level-2">0</h3>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card border-warning">
+                <div class="card-body">
+                    <h6 class="text-muted mb-2">Niveau 3</h6>
+                    <h3 class="mb-0" id="stat-level-3">0</h3>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Filtres et recherche -->
+    <div class="row mb-4">
+        <div class="col-md-4">
+            <div class="input-group">
+                <span class="input-group-text">
+                    <i class="bi bi-search"></i>
+                </span>
+                <input type="text" id="searchInput" class="form-control" 
+                       placeholder="Rechercher (EN ou FR)...">
+                <button class="btn btn-outline-secondary" id="clearSearchBtn" type="button">
+                    <i class="bi bi-x-lg"></i>
+                </button>
+            </div>
+        </div>
+        <div class="col-md-2">
+            <select id="levelFilter" class="form-select">
+                <option value="">Tous les niveaux</option>
+                <option value="1">Niveau 1</option>
+                <option value="2">Niveau 2</option>
+                <option value="3">Niveau 3</option>
+            </select>
+        </div>
+        <div class="col-md-2">
+            <select id="visibilityFilter" class="form-select">
+                <option value="">Toutes</option>
+                <option value="visible">Visibles</option>
+                <option value="hidden">Cachées</option>
+            </select>
+        </div>
+        <div class="col-md-2">
+            <select id="mappingFilter" class="form-select">
+                <option value="">Tous mappings</option>
+                <option value="mapped">Avec mapping</option>
+                <option value="unmapped">Sans mapping</option>
+            </select>
+        </div>
+        <div class="col-md-2">
+            <select id="viewMode" class="form-select">
+                <option value="tree">Vue arbre</option>
+                <option value="table">Vue tableau</option>
+            </select>
+        </div>
+    </div>
+
+    <!-- Liste des catégories -->
+    <div class="row">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <h5 class="mb-0">
+                        <i class="bi bi-list-ul"></i>
+                        Catégories CJ
+                    </h5>
+                    <small class="text-muted" id="filteredCount"></small>
+                </div>
+                <div class="card-body p-0">
+                    <div id="categoriesContainer">
+                        <div class="text-center py-5">
+                            <div class="spinner-border text-primary" role="status">
+                                <span class="visually-hidden">Chargement...</span>
+                            </div>
+                            <p class="mt-3 text-muted">Chargement des catégories...</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Loading Overlay -->
+<div id="loading-overlay">
+    <div class="text-center">
+        <div class="spinner-border text-light" style="width: 3rem; height: 3rem;" role="status">
+            <span class="visually-hidden">Chargement...</span>
+        </div>
+        <p class="text-light mt-3" id="loading-text">Synchronisation en cours...</p>
+    </div>
+</div>
+
+<!-- Toast notifications -->
+<div class="position-fixed bottom-0 end-0 p-3" style="z-index: 11">
+    <div id="toastNotif" class="toast" role="alert">
+        <div class="toast-header">
+            <i class="bi bi-check-circle-fill text-success me-2" id="toastIcon"></i>
+            <strong class="me-auto" id="toastTitle">Notification</strong>
+            <button type="button" class="btn-close" data-bs-dismiss="toast"></button>
+        </div>
+        <div class="toast-body" id="toastMessage"></div>
+    </div>
+</div>
+
+<!-- Modal édition catégorie -->
+<div class="modal fade" id="categoryModal" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">
+                    <i class="bi bi-pencil-square text-primary"></i>
+                    Modifier la catégorie
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body" id="categoryModalBody">
+                <!-- Contenu dynamique -->
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-outline-info" id="viewProductsBtn">
+                    <i class="bi bi-box-seam"></i> Voir les produits
+                </button>
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Annuler</button>
+                <button type="button" class="btn btn-success" id="saveCategoryBtn">
+                    <i class="bi bi-check-lg"></i> Enregistrer
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+let allCategories = [];
+let mpsCategories = [];
+let currentCategory = null;
+
+document.addEventListener('DOMContentLoaded', function() {
+    loadCategories();
+    initEventListeners();
+});
+
+function initEventListeners() {
+    document.getElementById('syncCategoriesBtn').addEventListener('click', syncCategories);
+    document.getElementById('searchInput').addEventListener('input', filterCategories);
+    document.getElementById('clearSearchBtn').addEventListener('click', clearSearch);
+    document.getElementById('levelFilter').addEventListener('change', filterCategories);
+    document.getElementById('visibilityFilter').addEventListener('change', filterCategories);
+    document.getElementById('mappingFilter').addEventListener('change', filterCategories);
+    document.getElementById('viewMode').addEventListener('change', function() { filterCategories(); });
+    
+    document.getElementById('viewProductsBtn').addEventListener('click', function() {
+        if (currentCategory) {
+            window.location.href = '/admin/cj/products?category=' + currentCategory.cj_category_id;
+        }
+    });
+    
+    document.getElementById('saveCategoryBtn').addEventListener('click', saveCategory);
+}
+
+function loadCategories() {
+    fetch('/admin/api/cj/categories/visible', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'}
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            allCategories = data.categories;
+            mpsCategories = data.mps_categories || [];
+            updateStats();
+            filterCategories();
+        } else {
+            showToast('Erreur chargement: ' + data.message, 'error');
+        }
+    })
+    .catch(error => showToast('Erreur réseau: ' + error, 'error'));
+}
+
+function updateStats() {
+    const level1 = allCategories.filter(c => c.level === 1).length;
+    const level2 = allCategories.filter(c => c.level === 2).length;
+    const level3 = allCategories.filter(c => c.level === 3).length;
+    document.getElementById('stat-total').textContent = allCategories.length;
+    document.getElementById('stat-level-1').textContent = level1;
+    document.getElementById('stat-level-2').textContent = level2;
+    document.getElementById('stat-level-3').textContent = level3;
+}
+
+function filterCategories() {
+    const searchTerm = document.getElementById('searchInput').value.toLowerCase();
+    const levelFilter = document.getElementById('levelFilter').value;
+    const visibilityFilter = document.getElementById('visibilityFilter').value;
+    const mappingFilter = document.getElementById('mappingFilter').value;
+    const viewMode = document.getElementById('viewMode').value;
+    
+    let filtered = allCategories;
+    
+    if (searchTerm) {
+        filtered = filtered.filter(c => 
+            c.name.toLowerCase().includes(searchTerm) ||
+            (c.name_fr && c.name_fr.toLowerCase().includes(searchTerm)) ||
+            (c.mapping && c.mapping.mps_category_name && c.mapping.mps_category_name.toLowerCase().includes(searchTerm))
+        );
+    }
+    if (levelFilter) {
+        filtered = filtered.filter(c => c.level === parseInt(levelFilter));
+    }
+    if (visibilityFilter === 'visible') {
+        filtered = filtered.filter(c => c.visible);
+    } else if (visibilityFilter === 'hidden') {
+        filtered = filtered.filter(c => !c.visible);
+    }
+    if (mappingFilter === 'mapped') {
+        filtered = filtered.filter(c => c.mapping);
+    } else if (mappingFilter === 'unmapped') {
+        filtered = filtered.filter(c => !c.mapping);
+    }
+    
+    document.getElementById('filteredCount').textContent = 
+        filtered.length + ' / ' + allCategories.length + ' catégories';
+    
+    if (viewMode === 'table') {
+        renderTable(filtered);
+    } else {
+        renderTree(filtered);
+    }
+}
+
+function renderTable(categories) {
+    const container = document.getElementById('categoriesContainer');
+    
+    if (categories.length === 0) {
+        container.innerHTML = '<div class="alert alert-info m-3"><i class="bi bi-info-circle"></i> Aucune catégorie trouvée.</div>';
+        return;
+    }
+    
+    let html = `
+    <div class="table-responsive">
+        <table class="table table-hover table-sm mb-0 cj-cat-table">
+            <thead class="table-light">
+                <tr>
+                    <th>Niv.</th>
+                    <th>Nom anglais (CJ)</th>
+                    <th>Nom français</th>
+                    <th>Mapping MPS</th>
+                    <th class="text-center">Produits</th>
+                    <th class="text-center">Visible</th>
+                    <th class="text-center">Action</th>
+                </tr>
+            </thead>
+            <tbody>`;
+    
+    categories.forEach(cat => {
+        const levelClass = 'level-badge-' + cat.level;
+        const mappingHtml = cat.mapping 
+            ? '<span class="badge bg-success">' + escapeHtml(cat.mapping.mps_category_name) + '</span>'
+            : '<span class="badge bg-outline-secondary cj-no-mapping">Non mappé</span>';
+        const visibleHtml = cat.visible 
+            ? '<i class="bi bi-eye-fill text-success"></i>' 
+            : '<i class="bi bi-eye-slash text-warning"></i>';
+        
+        html += `
+            <tr class="cj-cat-row" data-cj-id="${cat.cj_category_id}">
+                <td><span class="badge ${levelClass}">${cat.level}</span></td>
+                <td class="cj-name-en">${escapeHtml(cat.name)}</td>
+                <td class="cj-name-fr">${cat.name_fr ? escapeHtml(cat.name_fr) : '<em class="text-muted">—</em>'}</td>
+                <td>${mappingHtml}</td>
+                <td class="text-center">${cat.product_count || 0}</td>
+                <td class="text-center">${visibleHtml}</td>
+                <td class="text-center">
+                    <button class="btn btn-sm btn-outline-primary" onclick="showCategoryDetails('${cat.cj_category_id}')">
+                        <i class="bi bi-pencil"></i>
+                    </button>
+                </td>
+            </tr>`;
+    });
+    
+    html += '</tbody></table></div>';
+    container.innerHTML = html;
+}
+
+function renderTree(categories) {
+    const container = document.getElementById('categoriesContainer');
+    
+    if (categories.length === 0) {
+        container.innerHTML = '<div class="alert alert-info m-3"><i class="bi bi-info-circle"></i> Aucune catégorie trouvée.</div>';
+        return;
+    }
+    
+    const level1Categories = categories.filter(c => c.level === 1);
+    let html = '<div class="category-tree p-3">';
+    
+    level1Categories.forEach(cat1 => {
+        html += renderCategoryCard(cat1);
+        const level2Children = categories.filter(c => c.level === 2 && c.parent_id === cat1.id);
+        level2Children.forEach(cat2 => {
+            html += renderCategoryCard(cat2);
+            const level3Children = categories.filter(c => c.level === 3 && c.parent_id === cat2.id);
+            level3Children.forEach(cat3 => {
+                html += renderCategoryCard(cat3);
+            });
+        });
+    });
+    
+    html += '</div>';
+    container.innerHTML = html;
+}
+
+function renderCategoryCard(category) {
+    const mappingHtml = category.mapping 
+        ? '<span class="badge bg-success"><i class="bi bi-arrow-right-short"></i>' + escapeHtml(category.mapping.mps_category_name) + '</span>'
+        : '<span class="badge bg-outline-secondary cj-no-mapping">Non mappé</span>';
+    
+    return `
+        <div class="card category-card category-level-${category.level}" 
+             data-category-id="${category.cj_category_id}">
+            <div class="card-body py-2">
+                <div class="d-flex justify-content-between align-items-center">
+                    <div class="flex-grow-1">
+                        <div class="d-flex align-items-center gap-2 mb-1">
+                            <span class="badge level-badge-${category.level}">N${category.level}</span>
+                            <span class="cj-name-en fw-semibold">${escapeHtml(category.name)}</span>
+                            <i class="bi bi-arrow-right text-muted"></i>
+                            <span class="cj-name-fr text-primary">${category.name_fr ? escapeHtml(category.name_fr) : '<em class="text-muted">Non traduit</em>'}</span>
+                        </div>
+                        <div class="d-flex align-items-center gap-2">
+                            ${mappingHtml}
+                            <span class="badge bg-info">${category.product_count || 0} produits</span>
+                            ${category.visible ? '<span class="badge bg-success-subtle text-success">Visible</span>' : '<span class="badge bg-warning-subtle text-warning">Caché</span>'}
+                        </div>
+                    </div>
+                    <div>
+                        <button class="btn btn-sm btn-outline-primary" onclick="showCategoryDetails('${category.cj_category_id}')">
+                            <i class="bi bi-pencil"></i>
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    `;
+}
+
+function showCategoryDetails(categoryId) {
+    const category = allCategories.find(c => c.cj_category_id === categoryId);
+    if (!category) return;
+    
+    currentCategory = category;
+    
+    // Construire le select des catégories MPS
+    let mpsOptions = '<option value="">-- Aucun mapping --</option>';
+    mpsCategories.forEach(mps => {
+        const prefix = mps.level > 1 ? '&nbsp;'.repeat((mps.level - 1) * 4) + '└ ' : '';
+        const selected = (category.mapping && category.mapping.mps_category_id === mps.id) ? 'selected' : '';
+        const label = mps.name_fr ? mps.name_fr : mps.name;
+        mpsOptions += '<option value="' + mps.id + '" ' + selected + '>' + prefix + escapeHtml(label) + ' (N' + mps.level + ')</option>';
+    });
+    
+    const modalBody = document.getElementById('categoryModalBody');
+    modalBody.innerHTML = `
+        <div class="row">
+            <div class="col-md-6">
+                <h6 class="text-muted mb-3">Informations</h6>
+                <table class="table table-sm table-bordered">
+                    <tr>
+                        <th class="cj-modal-th">ID CJ</th>
+                        <td><code>${escapeHtml(category.cj_category_id)}</code></td>
+                    </tr>
+                    <tr>
+                        <th class="cj-modal-th">Nom anglais</th>
+                        <td><strong>${escapeHtml(category.name)}</strong></td>
+                    </tr>
+                    <tr>
+                        <th class="cj-modal-th">Chemin</th>
+                        <td><small>${escapeHtml(category.path)}</small></td>
+                    </tr>
+                    <tr>
+                        <th class="cj-modal-th">Niveau</th>
+                        <td><span class="badge level-badge-${category.level}">Niveau ${category.level}</span></td>
+                    </tr>
+                    <tr>
+                        <th class="cj-modal-th">Produits</th>
+                        <td>${category.product_count || 0}</td>
+                    </tr>
+                </table>
+            </div>
+            <div class="col-md-6">
+                <h6 class="text-muted mb-3">Modifier</h6>
+                <div class="mb-3">
+                    <label for="editNameFr" class="form-label fw-semibold">Nom français</label>
+                    <input type="text" class="form-control" id="editNameFr" 
+                           value="${category.name_fr ? escapeHtml(category.name_fr) : ''}" 
+                           placeholder="Traduction française...">
+                </div>
+                <div class="mb-3">
+                    <label for="editVisible" class="form-label fw-semibold">Visibilité</label>
+                    <select class="form-select" id="editVisible">
+                        <option value="1" ${category.visible ? 'selected' : ''}>Visible</option>
+                        <option value="0" ${!category.visible ? 'selected' : ''}>Caché</option>
+                    </select>
+                </div>
+                <div class="mb-3">
+                    <label for="editMapping" class="form-label fw-semibold">Mapping catégorie MPS</label>
+                    <select class="form-select" id="editMapping">
+                        ${mpsOptions}
+                    </select>
+                    <div class="form-text">Associer cette catégorie CJ à une catégorie MPS locale</div>
+                </div>
+            </div>
+        </div>
+    `;
+    
+    const modal = new bootstrap.Modal(document.getElementById('categoryModal'));
+    modal.show();
+}
+
+function saveCategory() {
+    if (!currentCategory) return;
+    
+    const nameFr = document.getElementById('editNameFr').value;
+    const visible = document.getElementById('editVisible').value === '1';
+    const mpsId = document.getElementById('editMapping').value;
+    
+    const btn = document.getElementById('saveCategoryBtn');
+    btn.disabled = true;
+    btn.innerHTML = '<span class="spinner-border spinner-border-sm"></span> Enregistrement...';
+    
+    fetch('/admin/api/cj/category/update', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({
+            category_id: currentCategory.id,
+            name_fr: nameFr,
+            visible: visible,
+            mps_category_id: mpsId || null
+        })
+    })
+    .then(response => response.json())
+    .then(data => {
+        btn.disabled = false;
+        btn.innerHTML = '<i class="bi bi-check-lg"></i> Enregistrer';
+        
+        if (data.success) {
+            showToast(data.message, 'success');
+            
+            // Mettre à jour localement
+            const idx = allCategories.findIndex(c => c.id === currentCategory.id);
+            if (idx !== -1) {
+                allCategories[idx].name_fr = nameFr;
+                allCategories[idx].visible = visible;
+                if (mpsId) {
+                    const mpsCat = mpsCategories.find(m => m.id === parseInt(mpsId));
+                    allCategories[idx].mapping = {
+                        mps_category_id: parseInt(mpsId),
+                        mps_category_name: mpsCat ? (mpsCat.name_fr || mpsCat.name) : 'Inconnue',
+                        apply_markup: allCategories[idx].mapping ? allCategories[idx].mapping.apply_markup : 1.3,
+                        auto_import: true
+                    };
+                } else {
+                    allCategories[idx].mapping = null;
+                }
+            }
+            
+            filterCategories();
+            bootstrap.Modal.getInstance(document.getElementById('categoryModal')).hide();
+        } else {
+            showToast('Erreur: ' + data.message, 'error');
+        }
+    })
+    .catch(error => {
+        btn.disabled = false;
+        btn.innerHTML = '<i class="bi bi-check-lg"></i> Enregistrer';
+        showToast('Erreur réseau: ' + error, 'error');
+    });
+}
+
+function syncCategories() {
+    const overlay = document.getElementById('loading-overlay');
+    overlay.classList.add('show');
+    
+    fetch('/admin/api/cj/sync/categories', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'}
+    })
+    .then(response => response.json())
+    .then(data => {
+        overlay.classList.remove('show');
+        if (data.success) {
+            showToast(data.synced + ' catégories synchronisées sur ' + data.total, 'success');
+            loadCategories();
+        } else {
+            showToast('Erreur synchronisation: ' + data.message, 'error');
+        }
+    })
+    .catch(error => {
+        overlay.classList.remove('show');
+        showToast('Erreur réseau: ' + error, 'error');
+    });
+}
+
+function clearSearch() {
+    document.getElementById('searchInput').value = '';
+    filterCategories();
+}
+
+function showToast(message, type) {
+    const toast = document.getElementById('toastNotif');
+    const icon = document.getElementById('toastIcon');
+    const title = document.getElementById('toastTitle');
+    const body = document.getElementById('toastMessage');
+    
+    if (type === 'error') {
+        icon.className = 'bi bi-x-circle-fill text-danger me-2';
+        title.textContent = 'Erreur';
+    } else {
+        icon.className = 'bi bi-check-circle-fill text-success me-2';
+        title.textContent = 'Succès';
+    }
+    body.textContent = message;
+    
+    const bsToast = new bootstrap.Toast(toast, { delay: 3000 });
+    bsToast.show();
+}
+
+function escapeHtml(text) {
+    if (!text) return '';
+    const div = document.createElement('div');
+    div.textContent = text;
+    return div.innerHTML;
+}
+</script>
+{% endblock %}

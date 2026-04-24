@@ -1,14 +1,34 @@
-# Script PowerShell pour fermer et relancer MultiProShop
-# Aller dans le dossier du projet
-Set-Location "C:\Users\Anthony\CascadeProjects\multiproshop"
+# Script de lancement MultiProShop
+# Démarre le serveur Flask en mode développement
 
-# (Optionnel) Activer l'environnement virtuel si tu utilises un venv
-if (Test-Path ".\venv\Scripts\Activate") {
-    .\venv\Scripts\Activate
+Write-Host "========================================" -ForegroundColor Cyan
+Write-Host "   MULTIPROSHOP - Démarrage Serveur" -ForegroundColor Cyan
+Write-Host "========================================" -ForegroundColor Cyan
+Write-Host ""
+
+# Vérifier que l'environnement virtuel est activé
+if (-not $env:VIRTUAL_ENV) {
+    Write-Host "[INFO] Activation de l'environnement virtuel..." -ForegroundColor Yellow
+    & ".\venv\Scripts\Activate.ps1"
 }
 
-# Fermer tout processus python app.py existant
-Get-Process python -ErrorAction SilentlyContinue | Where-Object { $_.Path -like '*python.exe' -and $_.MainWindowTitle -like '*app.py*' } | ForEach-Object { $_.CloseMainWindow(); Start-Sleep -Seconds 2; if (!$_.HasExited) { $_.Kill() } }
+# Vérifier que Redis est lancé
+Write-Host "[INFO] Vérification de Redis..." -ForegroundColor Yellow
+$redisRunning = Get-Process redis-server -ErrorAction SilentlyContinue
+if (-not $redisRunning) {
+    Write-Host "[ATTENTION] Redis n'est pas lancé !" -ForegroundColor Red
+    Write-Host "            Démarrez Redis avant de continuer" -ForegroundColor Red
+    Write-Host ""
+}
 
 # Lancer le serveur Flask
-Start-Process python -ArgumentList 'app.py' -NoNewWindow
+Write-Host "[INFO] Démarrage du serveur Flask..." -ForegroundColor Green
+Write-Host ""
+Write-Host "Serveur disponible sur :" -ForegroundColor Cyan
+Write-Host "  - http://127.0.0.1:5000" -ForegroundColor White
+Write-Host "  - http://multiproshop.local" -ForegroundColor White
+Write-Host ""
+Write-Host "Appuyez sur Ctrl+C pour arrêter le serveur" -ForegroundColor Yellow
+Write-Host ""
+
+python wsgi.py

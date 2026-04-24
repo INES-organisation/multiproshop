@@ -1,35 +1,179 @@
-{% extends "base.html" %}
+{% extends 'admin/layout_admin_modern.html' %}
 {% block title %}{{ 'Créer' if not product else 'Modifier' }} un produit{% endblock %}
 {% block content %}
-<div class="container mt-5">
-    <h2>{{ 'Créer' if not product else 'Modifier' }} un produit</h2>
-    <form method="post">
-        <div class="mb-3">
-            <label for="name" class="form-label">Nom du produit</label>
-            <input type="text" class="form-control" id="name" name="name" value="{{ product.name if product else '' }}" required>
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <div>
+        <h1 style="font-weight: 800; margin-bottom: 0.5rem;">
+            <i class="fas fa-box-open"></i> {{ 'Créer' if not product else 'Modifier' }} un produit
+        </h1>
+        <p style="color: #999; margin: 0;">Gestion des informations produit</p>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-lg-8">
+        <div class="admin-card">
+            <div class="admin-card-header">
+                <i class="fas fa-info-circle"></i> Informations produit
+            </div>
+            <div class="admin-card-body">
+                <form method="post" enctype="multipart/form-data">
+                    <div class="admin-form-group">
+                        <label class="admin-form-label">
+                            <i class="fas fa-tag"></i> Nom du produit *
+                        </label>
+                        <input type="text" class="admin-form-control" id="name" name="name" value="{{ product.name if product else '' }}" required>
+                    </div>
+                    
+                    <div class="row g-3">
+                        <div class="col-md-6">
+                            <div class="admin-form-group">
+                                <label class="admin-form-label">
+                                    <i class="fas fa-barcode"></i> SKU (Référence)
+                                </label>
+                                <input type="text" class="admin-form-control" id="sku" name="sku" value="{{ product.sku if product else '' }}" placeholder="Ex: PROD-001">
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="admin-form-group">
+                                <label class="admin-form-label">
+                                    <i class="fas fa-copyright"></i> Marque
+                                </label>
+                                <input type="text" class="admin-form-control" id="brand" name="brand" value="{{ product.brand if product else '' }}" placeholder="Ex: Samsung">
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="admin-form-group">
+                        <label class="admin-form-label">
+                            <i class="fas fa-folder"></i> Catégorie *
+                        </label>
+                        <select class="admin-form-control" id="category_id" name="category_id" required>
+                            <option value="">-- Sélectionner une catégorie --</option>
+                            {% for category in categories %}
+                            <option value="{{ category.id }}" {% if product and product.category_id == category.id %}selected{% endif %}>
+                                {{ '—' * (category.level - 1) }} {{ category.name }}
+                            </option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    
+                    <div class="admin-form-group">
+                        <label class="admin-form-label">
+                            <i class="fas fa-align-left"></i> Description courte
+                        </label>
+                        <textarea class="admin-form-control" id="short_description" name="short_description" rows="2" placeholder="Résumé en une phrase">{{ product.short_description if product else '' }}</textarea>
+                    </div>
+                    
+                    <div class="row g-3">
+                        <div class="col-md-4">
+                            <div class="admin-form-group">
+                                <label class="admin-form-label">
+                                    <i class="fas fa-euro-sign"></i> Prix (€) *
+                                </label>
+                                <input type="number" step="0.01" class="admin-form-control" id="price" name="price" value="{{ product.price if product else '' }}" required placeholder="19.99">
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="admin-form-group">
+                                <label class="admin-form-label">
+                                    <i class="fas fa-tag"></i> Prix barré (€)
+                                </label>
+                                <input type="number" step="0.01" class="admin-form-control" id="compare_price" name="compare_price" value="{{ product.compare_price if product else '' }}" placeholder="29.99">
+                                <small class="text-muted">Pour afficher une promotion</small>
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="admin-form-group">
+                                <label class="admin-form-label">
+                                    <i class="fas fa-boxes"></i> Stock *
+                                </label>
+                                <input type="number" class="admin-form-control" id="stock" name="stock" value="{{ product.stock if product else '0' }}" required>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="admin-form-group">
+                        <label class="admin-form-label">
+                            <i class="fas fa-weight"></i> Poids (kg)
+                        </label>
+                        <input type="number" step="0.01" class="admin-form-control" id="weight" name="weight" value="{{ product.weight if product else '' }}" placeholder="0.5">
+                        <small class="text-muted">Pour le calcul des frais de livraison</small>
+                    </div>
+                    
+                    <div class="admin-form-group">
+                        <label class="admin-form-label">
+                            <i class="fas fa-align-left"></i> Description complète
+                        </label>
+                        <textarea class="admin-form-control" id="description" name="description" rows="6" placeholder="Description détaillée du produit...">{{ product.description if product else '' }}</textarea>
+                    </div>
+                    
+                    <div class="admin-form-group">
+                        <label class="admin-form-label">
+                            <i class="fas fa-image"></i> Image principale
+                        </label>
+                        {% if product and product.image_url %}
+                        <div style="margin-bottom: 1rem;">
+                            <img src="{{ product.image_url }}" alt="{{ product.name }}" style="max-width: 200px; border-radius: 8px; border: 2px solid #e0e0e0;" loading="lazy" decoding="async">
+                        </div>
+                        {% endif %}
+                        <input type="file" class="admin-form-control" id="image" name="image" accept="image/*">
+                        <small class="text-muted">Formats acceptés: JPG, PNG, WEBP (max 2MB)</small>
+                    </div>
+                    
+                    <div class="admin-form-group">
+                        <label class="admin-form-label">
+                            <i class="fas fa-cog"></i> Options
+                        </label>
+                        <div style="display: flex; flex-direction: column; gap: 0.75rem;">
+                            <label style="display: flex; align-items: center; gap: 0.5rem; cursor: pointer;">
+                                <input type="checkbox" name="is_active" {% if not product or product.is_active %}checked{% endif %}>
+                                <span>Produit actif (visible sur le site)</span>
+                            </label>
+                            <label style="display: flex; align-items: center; gap: 0.5rem; cursor: pointer;">
+                                <input type="checkbox" name="is_featured" {% if product and product.is_featured %}checked{% endif %}>
+                                <span>Produit mis en avant</span>
+                            </label>
+                            <label style="display: flex; align-items: center; gap: 0.5rem; cursor: pointer;">
+                                <input type="checkbox" name="is_new" {% if product and product.is_new %}checked{% endif %}>
+                                <span>Nouveau produit</span>
+                            </label>
+                        </div>
+                    </div>
+                    
+                    <div style="display: flex; gap: 1rem; margin-top: 2rem;">
+                        <button type="submit" class="admin-btn admin-btn-primary">
+                            <i class="fas fa-save"></i>
+                            {{ 'Créer' if not product else 'Mettre à jour' }}
+                        </button>
+                        <a href="{{ url_for('admin.products') }}" class="admin-btn admin-btn-sm" style="background: #6c757d; color: white;">
+                            <i class="fas fa-times"></i>
+                            Annuler
+                        </a>
+                    </div>
+                </form>
+            </div>
         </div>
-        <div class="mb-3">
-            <label for="category_id" class="form-label">Catégorie</label>
-            <select class="form-select" id="category_id" name="category_id" required>
-                {% for category in categories %}
-                <option value="{{ category.id }}" {% if product and product.category_id == category.id %}selected{% endif %}>{{ category.name }}</option>
-                {% endfor %}
-            </select>
+    </div>
+    
+    <div class="col-lg-4">
+        <div class="admin-card">
+            <div class="admin-card-header">
+                <i class="fas fa-lightbulb"></i> Aide
+            </div>
+            <div class="admin-card-body">
+                <p style="margin-bottom: 1rem; color: #666;">
+                    <strong>Conseils :</strong>
+                </p>
+                <ul style="color: #666; font-size: 0.9rem;">
+                    <li>Choisissez un nom clair et descriptif</li>
+                    <li>Sélectionnez la bonne catégorie</li>
+                    <li>Le prix doit être en euros (€)</li>
+                    <li>Indiquez le stock disponible</li>
+                    <li>Ajoutez une description détaillée</li>
+                </ul>
+            </div>
         </div>
-        <div class="mb-3">
-            <label for="price" class="form-label">Prix (€)</label>
-            <input type="number" step="0.01" class="form-control" id="price" name="price" value="{{ product.price if product else '' }}" required>
-        </div>
-        <div class="mb-3">
-            <label for="stock" class="form-label">Stock</label>
-            <input type="number" class="form-control" id="stock" name="stock" value="{{ product.stock if product else '' }}" required>
-        </div>
-        <div class="mb-3">
-            <label for="description" class="form-label">Description</label>
-            <textarea class="form-control" id="description" name="description" rows="3">{{ product.description if product else '' }}</textarea>
-        </div>
-        <button type="submit" class="btn btn-primary">{{ 'Créer' if not product else 'Mettre à jour' }}</button>
-        <a href="{{ url_for('admin.products') }}" class="btn btn-secondary">Annuler</a>
-    </form>
+    </div>
 </div>
 {% endblock %}

@@ -1,0 +1,206 @@
+{% extends 'layout.html' %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/pages_modern.css') }}">
+<style>
+.auth-container {
+    min-height: calc(100vh - 200px);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 3rem 0;
+}
+
+.auth-card {
+    max-width: 500px;
+    width: 100%;
+}
+
+.auth-header {
+    text-align: center;
+    margin-bottom: 2rem;
+}
+
+.auth-header h1 {
+    font-size: 2rem;
+    font-weight: 800;
+    margin-bottom: 0.5rem;
+}
+
+.auth-header p {
+    color: #666;
+}
+
+.auth-divider {
+    display: flex;
+    align-items: center;
+    text-align: center;
+    margin: 2rem 0;
+}
+
+.auth-divider::before,
+.auth-divider::after {
+    content: '';
+    flex: 1;
+    border-bottom: 1px solid var(--border-color);
+}
+
+.auth-divider span {
+    padding: 0 1rem;
+    color: #999;
+    font-size: 0.9rem;
+}
+
+.social-login {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 1rem;
+    margin-bottom: 2rem;
+}
+
+.social-btn {
+    padding: 0.8rem;
+    border: 2px solid var(--border-color);
+    border-radius: var(--border-radius);
+    background: var(--white);
+    cursor: pointer;
+    transition: var(--transition);
+    font-weight: 600;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+}
+
+.social-btn:hover {
+    border-color: var(--primary-color);
+    background: var(--light-bg);
+}
+
+.social-btn.google {
+    color: #DB4437;
+}
+
+.social-btn.facebook {
+    color: #4267B2;
+}
+
+.remember-forgot {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin: 1rem 0;
+}
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="auth-container">
+    <div class="container">
+        <div class="row justify-content-center">
+            <div class="col-lg-5 col-md-7">
+                <div class="auth-card">
+                    <div class="card-modern">
+                        <div class="card-modern-body" style="padding: 3rem;">
+                            <!-- Header -->
+                            <div class="auth-header">
+                                <div style="width: 80px; height: 80px; margin: 0 auto 1.5rem; background: linear-gradient(135deg, var(--primary-color), var(--primary-dark)); border-radius: 50%; display: flex; align-items: center; justify-content: center; color: white; font-size: 2.5rem;">
+                                    <i class="fas fa-user"></i>
+                                </div>
+                                <h1>Connexion</h1>
+                                <p>Bienvenue ! Connectez-vous à votre compte</p>
+                            </div>
+                            
+                            <!-- Social Login -->
+                            <div class="social-login">
+                                <button class="social-btn google">
+                                    <i class="fab fa-google"></i>
+                                    Google
+                                </button>
+                                <button class="social-btn facebook">
+                                    <i class="fab fa-facebook-f"></i>
+                                    Facebook
+                                </button>
+                            </div>
+                            
+                            <div class="auth-divider">
+                                <span>OU</span>
+                            </div>
+                            
+                            <!-- Login Form -->
+                            <form method="post">
+                                <div class="form-group-modern">
+                                    <label class="form-label-modern">
+                                        <i class="fas fa-envelope"></i>
+                                        Email ou nom d'utilisateur
+                                    </label>
+                                    <input type="text" class="form-control-modern" id="username" name="username" placeholder="Entrez votre email" required>
+                                </div>
+                                
+                                <div class="form-group-modern">
+                                    <label class="form-label-modern">
+                                        <i class="fas fa-lock"></i>
+                                        Mot de passe
+                                    </label>
+                                    <input type="password" class="form-control-modern" id="password" name="password" placeholder="Entrez votre mot de passe" required>
+                                </div>
+                                
+                                <div class="remember-forgot">
+                                    <div class="form-check-modern">
+                                        <input type="checkbox" id="remember">
+                                        <label for="remember">Se souvenir de moi</label>
+                                    </div>
+                                    <a href="{{ url_for('auth.forgot_password') }}" style="color: var(--primary-color); text-decoration: none; font-weight: 600;">
+                                        Mot de passe oublié ?
+                                    </a>
+                                </div>
+                                
+                                <button type="submit" class="btn-modern btn-modern-primary w-100 btn-modern-lg mt-3">
+                                    <i class="fas fa-sign-in-alt"></i>
+                                    Se connecter
+                                </button>
+                            </form>
+                            
+                            <!-- Links -->
+                            <div class="text-center mt-4">
+                                <p style="color: #666;">
+                                    Pas encore de compte ?
+                                    <a href="{{ url_for('auth.register') }}" style="color: var(--primary-color); text-decoration: none; font-weight: 700;">
+                                        Créer un compte
+                                    </a>
+                                </p>
+                                <p style="color: #666; margin-top: 1rem;">
+                                    <a href="{{ url_for('auth.admin_login') }}" style="color: var(--danger-color); text-decoration: none; font-weight: 600;">
+                                        <i class="fas fa-user-shield"></i>
+                                        Connexion administrateur
+                                    </a>
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Security Info -->
+                    <div class="card-modern mt-4">
+                        <div class="card-modern-body text-center">
+                            <div class="d-flex justify-content-center gap-4">
+                                <div>
+                                    <i class="fas fa-shield-alt" style="font-size: 2rem; color: var(--success-color);"></i>
+                                    <p class="mb-0 mt-2" style="font-size: 0.85rem; color: #666;">Connexion sécurisée</p>
+                                </div>
+                                <div>
+                                    <i class="fas fa-lock" style="font-size: 2rem; color: var(--primary-color);"></i>
+                                    <p class="mb-0 mt-2" style="font-size: 0.85rem; color: #666;">Données cryptées</p>
+                                </div>
+                                <div>
+                                    <i class="fas fa-user-check" style="font-size: 2rem; color: var(--info-color);"></i>
+                                    <p class="mb-0 mt-2" style="font-size: 0.85rem; color: #666;">100% confidentiel</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
