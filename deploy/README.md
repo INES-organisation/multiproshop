@@ -16,7 +16,7 @@ réseau Docker d'INES, servi par `ines-nginx`. Aucun port publié, aucun nouveau
 1. **Changer toutes les clés** qui étaient dans le `.env` versionné (elles restent lisibles dans
    l'historique git) : `SECRET_KEY`, mot de passe d'application Gmail, mot de passe et clé CJ,
    secret de webhook CJ, clés Stripe de test.
-2. Passer la base de SQLite à PostgreSQL (étape 2 du plan).
+2. Copier la base SQLite vers PostgreSQL (procédure ci-dessous, étape 3).
 3. Brancher le paiement sur le Stripe d'INES (étape 3 du plan).
 
 ## Procédure (sur le VPS, `ssh ines-vps`)
@@ -32,12 +32,20 @@ cp deploy/.env.example deploy/.env && chmod 600 deploy/.env   # remplir les vale
 docker exec -i ines-postgres psql -U ines -d ines_db -c "CREATE ROLE multiproshop LOGIN PASSWORD '…'"
 docker exec -i ines-postgres psql -U ines -d ines_db -c "CREATE DATABASE multiproshop OWNER multiproshop"
 
-# 3. Conteneurs
+# 3. Données : copie de instance/multiproshop.db (envoyée depuis le Mac, ex. scp vers ~/multiproshop.db)
+#    vers PostgreSQL, avec vérification ligne à ligne. Le script refuse une base cible non vide.
 docker network ls | grep ines            # vérifier le nom du réseau (INES_NETWORK)
-docker compose -f deploy/docker-compose.yml --env-file deploy/.env up -d --build
+docker compose -f deploy/docker-compose.yml --env-file deploy/.env build
+docker compose -f deploy/docker-compose.yml --env-file deploy/.env run --rm --no-deps \
+  -v ~/multiproshop.db:/data/multiproshop.db:ro multiproshop-web \
+  python scripts/migrate_sqlite_to_postgres.py /data/multiproshop.db
+#    → doit finir par « Copie vérifiée : toutes les tables sont identiques. »
+
+# 4. Conteneurs
+docker compose -f deploy/docker-compose.yml --env-file deploy/.env up -d
 docker exec multiproshop-web python -c "import urllib.request;print(urllib.request.urlopen('http://127.0.0.1:8000/health').read())"
 
-# 4. HTTPS (une fois le DNS de multiproshop.com propagé vers le VPS), puis nginx
+# 5. HTTPS (une fois le DNS de multiproshop.com propagé vers le VPS), puis nginx
 bash /opt/ines/scripts/add-custom-domain.sh multiproshop.com
 #    ajouter deploy/nginx-multiproshop.conf dans monitoring/nginx/nginx.conf (dépôt INES), puis :
 docker exec ines-nginx nginx -t && docker exec ines-nginx nginx -s reload

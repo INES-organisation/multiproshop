@@ -7,7 +7,7 @@ class Product(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     
     # Informations de base
-    name = db.Column(db.String(200), nullable=False)
+    name = db.Column(db.String(255), nullable=False)
     slug = db.Column(db.String(250), unique=True, nullable=False)
     sku = db.Column(db.String(50), unique=True, nullable=True)  # Référence unique
     description = db.Column(db.Text, nullable=True)
@@ -21,7 +21,7 @@ class Product(db.Model):
     low_stock_threshold = db.Column(db.Integer, default=5)  # Alerte stock bas
     
     # Images (stockage JSON des URLs)
-    image_url = db.Column(db.String(255), nullable=True)  # Image principale
+    image_url = db.Column(db.String(1000), nullable=True)  # Image principale
     images = db.Column(db.Text, nullable=True)  # JSON array des images supplémentaires
     
     # Catégorisation
