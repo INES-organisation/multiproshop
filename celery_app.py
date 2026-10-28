@@ -27,7 +27,8 @@ def make_celery(app_name=__name__):
             'tasks.cj_sync_tasks',
             'tasks.email_tasks',
             'tasks.analytics_tasks',
-            'tasks.variant_sync_tasks'  # Nouvelles tâches de synchronisation variantes
+            'tasks.variant_sync_tasks',  # Nouvelles tâches de synchronisation variantes
+            'tasks.payment_tasks',
         ]
     )
     
@@ -92,6 +93,11 @@ def make_celery(app_name=__name__):
             'sync-cj-orders-every-30min': {
                 'task': 'tasks.cj_sync_tasks.sync_orders_task',
                 'schedule': 1800.0,  # Toutes les 30 minutes (inchangé)
+            },
+            
+            'reconcile-pending-payments-15min': {
+                'task': 'tasks.payment_tasks.reconcile_pending_orders',
+                'schedule': 900.0,  # Commandes payées sans retour du client sur le site
             },
             
             'cleanup-old-webhooks-weekly': {

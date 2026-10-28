@@ -17,7 +17,8 @@ réseau Docker d'INES, servi par `ines-nginx`. Aucun port publié, aucun nouveau
    l'historique git) : `SECRET_KEY`, mot de passe d'application Gmail, mot de passe et clé CJ,
    secret de webhook CJ, clés Stripe de test.
 2. Copier la base SQLite vers PostgreSQL (procédure ci-dessous, étape 3).
-3. Brancher le paiement sur le Stripe d'INES (étape 3 du plan).
+3. Paiement : vérifier que Stripe est configuré en mode live dans INES (`/admin/integrations`), créer une
+   clé API INES d'un compte administrateur (INES → Clés API) et la mettre dans `INES_API_KEY`.
 
 ## Procédure (sur le VPS, `ssh ines-vps`)
 

@@ -161,23 +161,19 @@
                         </strong>
                     </div>
                     
-                    <div class="order-detail-row">
-                        <span>TVA (20%)</span>
-                        <strong>{{ "%.2f"|format(order.tax) }}€</strong>
-                    </div>
-                    
                     <div class="order-detail-row" style="padding-top: 1.5rem; margin-top: 1rem; border-top: 2px solid var(--border-color);">
-                        <span style="font-size: 1.2rem; font-weight: 700;">Total</span>
+                        <span style="font-size: 1.2rem; font-weight: 700;">Total TTC</span>
                         <span style="font-size: 1.5rem; font-weight: 800; color: var(--success-color);">
                             {{ "%.2f"|format(order.total_price) }}€
                         </span>
                     </div>
+                    <p class="text-muted" style="font-size: 0.85rem; text-align: right;">dont TVA (20 %) : {{ "%.2f"|format(order.tax) }}€</p>
                     
                     <!-- Status -->
                     <div style="margin-top: 1.5rem; padding-top: 1.5rem; border-top: 1px solid var(--border-color);">
                         <div style="display: flex; justify-content: space-between; margin-bottom: 0.5rem;">
                             <span>Statut:</span>
-                            <span class="badge-modern badge-warning">En attente</span>
+                            {% if order.payment_status == 'paid' %}<span class="badge-modern badge-success">Payée</span>{% else %}<span class="badge-modern badge-warning">En attente de paiement</span>{% endif %}
                         </div>
                         <div style="display: flex; justify-content: space-between;">
                             <span>Paiement:</span>

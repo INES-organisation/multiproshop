@@ -7,7 +7,7 @@ class Order(db.Model):
     __tablename__ = 'order'
     
     id = db.Column(db.Integer, primary_key=True)
-    order_number = db.Column(db.String(20), unique=True, nullable=False)
+    order_number = db.Column(db.String(32), unique=True, nullable=False)
     user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=True)  # Nullable pour invités
     
     # Statut et paiement
