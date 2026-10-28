@@ -380,16 +380,16 @@ class CjSyncService:
             )
             db.session.add(variant)
     
-    def sync_stock(self) -> Dict:
-        """Synchroniser le stock de tous les produits CJ actifs"""
+    def sync_stock(self, limit: Optional[int] = None) -> Dict:
+        """Synchroniser le stock des produits CJ actifs (les plus anciennement synchronisés d'abord)"""
         try:
-            logger.info("[CjSync] Début sync stock")
+            logger.info(f"[CjSync] Début sync stock (limite : {limit or 'aucune'})")
             
-            # Récupérer tous les produits CJ actifs
-            products = Product.query.filter(
+            query = Product.query.filter(
                 Product.cj_pid.isnot(None),
                 Product.is_active == True
-            ).all()
+            ).order_by(Product.synced_at.is_(None).desc(), Product.synced_at.asc())
+            products = query.limit(limit).all() if limit else query.all()
             
             updated = 0
             errors = []

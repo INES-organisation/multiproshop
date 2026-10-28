@@ -183,22 +183,30 @@ class Product(db.Model):
         return False
     
     @property
-    def average_rating(self):
-        """Calcule la note moyenne des avis approuvés"""
+    def public_reviews(self):
+        """Avis affichés : approuvés et déposés sur le site. Les avis importés de CJ (laissés
+        sur d'autres boutiques) ne sont pas présentés comme des avis de nos clients."""
         from models.product_review import ProductReview
-        reviews = ProductReview.query.filter_by(
-            product_id=self.id,
-            is_approved=True
-        ).all()
+        return ProductReview.query.filter(
+            ProductReview.product_id == self.id,
+            ProductReview.is_approved == True,
+            ProductReview.cj_review_id.is_(None),
+        )
+
+    @property
+    def latest_reviews(self):
+        from models.product_review import ProductReview
+        return self.public_reviews.order_by(ProductReview.created_at.desc()).limit(10).all()
+
+    @property
+    def average_rating(self):
+        """Calcule la note moyenne des avis affichés"""
+        reviews = self.public_reviews.all()
         if not reviews:
             return 0
         return round(sum(r.rating for r in reviews) / len(reviews), 1)
     
     @property
     def reviews_count(self):
-        """Compte le nombre d'avis approuvés"""
-        from models.product_review import ProductReview
-        return ProductReview.query.filter_by(
-            product_id=self.id,
-            is_approved=True
-        ).count()
+        """Compte le nombre d'avis affichés"""
+        return self.public_reviews.count()

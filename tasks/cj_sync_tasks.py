@@ -2,6 +2,7 @@
 Tâches Celery pour synchronisation CJ Dropshipping
 Exécution asynchrone des synchronisations
 """
+import os
 from celery_app import celery
 from app import app
 from models.product import Product
@@ -20,14 +21,19 @@ logger = logging.getLogger(__name__)
 
 
 @celery.task(name='tasks.cj_sync_tasks.sync_products_task', bind=True, max_retries=3)
-def sync_products_task(self, category_id=None, limit=100):
+def sync_products_task(self, category_id=None, limit=100, scheduled=False):
     """
     Tâche asynchrone: Synchroniser les produits CJ
     
     Args:
         category_id: ID catégorie CJ (optionnel)
         limit: Nombre max de produits
+        scheduled: lancement quotidien du planificateur. Il importait 100 produits CJ pris au
+            hasard chaque jour ; le catalogue est maintenant choisi (scripts/select_cj_products.py),
+            donc ce lancement ne fait rien sauf si CJ_AUTO_IMPORT_PRODUCTS=true.
     """
+    if scheduled and os.getenv('CJ_AUTO_IMPORT_PRODUCTS', 'false').lower() != 'true':
+        return {'status': 'skipped', 'reason': 'import automatique désactivé'}
     try:
         with app.app_context():
             logger.info(f"[Celery] Début sync produits (category={category_id}, limit={limit})")
@@ -96,7 +102,9 @@ def sync_stock_task(self, product_ids=None):
             sync_service = CjSyncService(cj_api)
             
             # Synchroniser
-            result = sync_service.sync_stock()
+            # Quota CJ : 1 000 requêtes par jour pour tout le compte (paiement, commandes compris).
+            # Chaque passage horaire ne met à jour que les produits synchronisés il y a le plus longtemps.
+            result = sync_service.sync_stock(limit=int(os.getenv('CJ_STOCK_SYNC_BATCH', '15')))
             
             if result.get('success'):
                 logger.info(f"[Celery] ✅ Sync stock terminée: {result.get('updated')} produits")

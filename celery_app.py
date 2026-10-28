@@ -29,6 +29,7 @@ def make_celery(app_name=__name__):
             'tasks.analytics_tasks',
             'tasks.variant_sync_tasks',  # Nouvelles tâches de synchronisation variantes
             'tasks.payment_tasks',
+            'tasks.cart_reminder_tasks',
         ]
     )
     
@@ -69,6 +70,7 @@ def make_celery(app_name=__name__):
             'sync-cj-products-daily': {
                 'task': 'tasks.cj_sync_tasks.sync_products_task',
                 'schedule': crontab(hour=15, minute=0),  # 15h00 (3h PM) - Décalé de TonyAlpha (03h00)
+                'kwargs': {'scheduled': True},  # sans effet sauf CJ_AUTO_IMPORT_PRODUCTS=true
             },
             
             'sync-missing-variants-daily': {
@@ -100,15 +102,18 @@ def make_celery(app_name=__name__):
                 'schedule': 900.0,  # Commandes payées sans retour du client sur le site
             },
             
+            'send-cart-reminders-15min': {
+                'task': 'tasks.cart_reminder_tasks.send_cart_reminders',
+                'schedule': 900.0,  # Relances de panier abandonné (1 h, 24 h, 72 h)
+            },
+            
             'cleanup-old-webhooks-weekly': {
                 'task': 'tasks.analytics_tasks.cleanup_old_webhooks',
                 'schedule': 604800.0,  # Toutes les semaines (inchangé)
             },
             
-            'sync-reviews-weekly': {
-                'task': 'sync_reviews_weekly',
-                'schedule': crontab(hour=17, minute=0, day_of_week=0),  # Dimanche 17h
-            },
+            # Plus d'import hebdomadaire des avis CJ : ce sont des avis laissés sur d'autres
+            # boutiques, qu'on ne peut pas présenter comme ceux de nos clients.
             
             'cleanup-old-data-monthly': {
                 'task': 'cleanup_old_data',

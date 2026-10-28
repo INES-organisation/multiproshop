@@ -220,7 +220,7 @@ def sync_missing_variants(self):
                 ~Product.id.in_(
                     db.session.query(ProductVariant.product_id).distinct()
                 )
-            ).all()
+            ).limit(int(os.getenv('CJ_VARIANT_SYNC_BATCH', '30'))).all()  # quota CJ : 1 000 requêtes/jour
             
             total = len(products_without_variants)
             logger.info(f"[Celery] {total} produits sans variantes trouvés")

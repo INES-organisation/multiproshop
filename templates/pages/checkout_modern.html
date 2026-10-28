@@ -196,7 +196,8 @@
                                 <i class="fas fa-envelope"></i>
                                 Email
                             </label>
-                            <input type="email" class="form-control-modern" name="email" autocomplete="email" required>
+                            <input type="email" class="form-control-modern" name="email" id="checkout-email" autocomplete="email" required>
+                            <small class="text-muted d-block mt-1">Pour vous envoyer la confirmation et le suivi. Si la commande n'est pas finalisée, nous vous enverrons au plus 3 rappels, avec un lien pour les arrêter.</small>
                         </div>
                         
                         <div class="form-group-modern">
@@ -713,6 +714,11 @@
 {% block extra_js %}
 <script>
 const SUBTOTAL = {{ total }};
+document.getElementById('checkout-email')?.addEventListener('change', function () {
+    if (this.checkValidity()) {
+        fetch({{ url_for('cart.remember_email')|tojson }}, {method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({email: this.value})});
+    }
+});
 mpsTrack('begin_checkout', {
     value: SUBTOTAL,
     items: [{% for item in cart_items %}{item_id: {{ item.product.id }}, item_name: {{ item.product.name|tojson }}, price: {{ item.price }}, quantity: {{ item.quantity }}}{{ ',' if not loop.last }}{% endfor %}]

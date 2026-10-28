@@ -290,6 +290,47 @@ def _remember_order(order_id):
         session['my_orders'] = (ids + [order_id])[-20:]
 
 
+@cart_bp.route('/remember-email', methods=['POST'])
+def remember_email():
+    """E-mail saisi au paiement : garde le panier pour les relances (1 h, 24 h, 72 h)"""
+    from services import cart_reminders
+
+    data = request.get_json(silent=True) or {}
+    token = cart_reminders.remember(data.get('email'), session.get('cart'), session.get('reminder_token'))
+    if token:
+        session['reminder_token'] = token
+    return ('', 204)
+
+
+@cart_bp.route('/reprendre/<token>')
+def restore_cart(token):
+    """Lien des e-mails de relance : remet le panier enregistré dans ce navigateur"""
+    from models.cart_reminder import CartReminder
+
+    reminder = CartReminder.query.filter_by(token=token).first()
+    if not reminder:
+        flash("Ce lien n'est plus valable.", 'info')
+        return redirect(url_for('cart.view_cart'))
+    cart = Cart()
+    for cart_key, item in reminder.get_items().items():
+        if isinstance(item, dict) and cart_key not in cart.get_items():
+            product = Product.query.get(item['product_id'])
+            if product and product.is_active and product.stock > 0:
+                cart.add_item(product.id, item['quantity'], item.get('variant_id'))
+    session['reminder_token'] = token
+    return redirect(url_for('cart.checkout'))
+
+
+@cart_bp.route('/relances/stop/<token>')
+def stop_reminders(token):
+    """Lien de désinscription des relances de panier"""
+    from services import cart_reminders
+
+    cart_reminders.stop(token)
+    flash("C'est noté : vous ne recevrez plus de rappel pour ce panier.", 'success')
+    return redirect(url_for('main.index'))
+
+
 @cart_bp.route('/checkout', methods=['GET', 'POST'])
 def checkout():
     """Page de commande : adresse et livraison, puis paiement sur la page sécurisée Stripe."""
