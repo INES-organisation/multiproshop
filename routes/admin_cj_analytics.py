@@ -356,10 +356,12 @@ def get_performance_metrics():
         )
         
         # Taux de disponibilité (produits en stock)
+        total_products = Product.query.filter(Product.cj_pid.isnot(None)).count()
+        out_of_stock_products = Product.query.filter(Product.cj_pid.isnot(None), Product.stock <= 0).count()
         availability_rate = round(
             ((total_products - out_of_stock_products) / total_products * 100) if total_products > 0 else 0,
             2
-        ) if 'total_products' in locals() else 0
+        )
         
         # Taux de succès webhooks (7 derniers jours)
         seven_days_ago = datetime.now() - timedelta(days=7)
