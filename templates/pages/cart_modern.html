@@ -81,26 +81,26 @@
                 <div class="summary-row">
                     <span>Livraison</span>
                     <span id="cart-shipping">
-                        {% if total >= 50 %}
-                        <span class="badge-modern badge-success">Gratuite</span>
+                        {% if total >= free_shipping_threshold %}
+                        <span class="badge-modern badge-success">Offerte en France</span>
                         {% else %}
-                        5.99€
+                        Calculée à l'étape suivante
                         {% endif %}
                     </span>
                 </div>
                 
-                {% if total < 50 %}
+                {% if total < free_shipping_threshold %}
                 <div class="alert-modern alert-info" id="free-shipping-alert">
                     <i class="fas fa-info-circle"></i>
                     <div>
-                        <strong>Plus que {{ "%.2f"|format(50 - total) }}€</strong> pour la livraison gratuite !
+                        <strong>Plus que {{ "%.2f"|format(free_shipping_threshold - total) }}€</strong> pour la livraison offerte en France !
                     </div>
                 </div>
                 {% endif %}
                 
                 <div class="summary-row" style="border-top: 2px solid #e0e0e0; padding-top: 1rem; margin-top: 1rem; font-size: 1.2rem; font-weight: 800;">
-                    <span>Total TTC</span>
-                    <span id="cart-total" style="color: var(--success-color);">{{ "%.2f"|format(total if total < 50 else total) }}€</span>
+                    <span>{% if total >= free_shipping_threshold %}Total{% else %}Total hors livraison{% endif %}</span>
+                    <span id="cart-total" style="color: var(--success-color);">{{ "%.2f"|format(total) }}€</span>
                 </div>
                 
                 <a href="{{ url_for('cart.checkout') }}" class="btn-modern btn-modern-primary w-100 mt-3">
@@ -114,24 +114,8 @@
                     <div class="d-flex justify-content-center gap-2">
                         <i class="fab fa-cc-visa" style="font-size: 2rem; color: #1A1F71;"></i>
                         <i class="fab fa-cc-mastercard" style="font-size: 2rem; color: #EB001B;"></i>
-                        <i class="fab fa-cc-paypal" style="font-size: 2rem; color: #003087;"></i>
                         <i class="fas fa-lock" style="font-size: 2rem; color: var(--success-color);"></i>
                     </div>
-                </div>
-            </div>
-            
-            <!-- Promo Code -->
-            <div class="card-modern mt-4">
-                <div class="card-modern-header">
-                    <i class="fas fa-tag"></i> Code promo
-                </div>
-                <div class="card-modern-body">
-                    <div class="form-group-modern mb-3">
-                        <input type="text" class="form-control-modern" placeholder="Entrez votre code">
-                    </div>
-                    <button class="btn-modern btn-modern-outline w-100">
-                        Appliquer
-                    </button>
                 </div>
             </div>
         </div>
@@ -158,8 +142,8 @@
                     <div class="feature-icon-wrapper">
                         <i class="fas fa-truck"></i>
                     </div>
-                    <h6 class="feature-title">Livraison Rapide</h6>
-                    <p class="feature-description">Expédition sous 24-48h</p>
+                    <h6 class="feature-title">Livraison suivie</h6>
+                    <p class="feature-description">{{ delivery_days }}</p>
                 </div>
             </div>
         </div>
@@ -169,8 +153,8 @@
                     <div class="feature-icon-wrapper">
                         <i class="fas fa-undo"></i>
                     </div>
-                    <h6 class="feature-title">Retour Gratuit</h6>
-                    <p class="feature-description">90 jours pour changer d'avis</p>
+                    <h6 class="feature-title">Retours</h6>
+                    <p class="feature-description">{{ return_days }} jours pour changer d'avis</p>
                 </div>
             </div>
         </div>
@@ -191,8 +175,8 @@
                     <div class="feature-icon-wrapper">
                         <i class="fas fa-headset"></i>
                     </div>
-                    <h6 class="feature-title">Support 24/7</h6>
-                    <p class="feature-description">Assistance dédiée</p>
+                    <h6 class="feature-title">Service client</h6>
+                    <p class="feature-description">Réponse sous 48 h ouvrées</p>
                 </div>
             </div>
         </div>

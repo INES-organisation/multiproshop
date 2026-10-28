@@ -1,30 +1,5 @@
 <!-- Footer Moderne -->
 <footer class="modern-footer">
-    <!-- Newsletter Section -->
-    <div class="footer-newsletter">
-        <div class="container">
-            <div class="newsletter-content">
-                <div class="newsletter-text">
-                    <h3>
-                        <i class="fas fa-envelope-open"></i>
-                        Restez connecté
-                    </h3>
-                    <p>Inscrivez-vous pour recevoir nos offres exclusives et nouveautés</p>
-                </div>
-                <form class="newsletter-form-footer" id="footerNewsletterForm">
-                    <div class="input-wrapper">
-                        <i class="fas fa-envelope input-icon"></i>
-                        <input type="email" placeholder="Votre adresse email" required>
-                        <button type="submit">
-                            <span>S'abonner</span>
-                            <i class="fas fa-paper-plane"></i>
-                        </button>
-                    </div>
-                </form>
-            </div>
-        </div>
-    </div>
-
     <!-- Main Footer Content -->
     <div class="footer-main">
         <div class="container">
@@ -36,26 +11,9 @@
                         MultiProShop
                     </h4>
                     <p class="footer-description">
-                        Votre marketplace de confiance pour tous vos achats en ligne. 
-                        Qualité, prix et service garantis.
+                        Les bonnes trouvailles du quotidien, livrées chez vous.
+                        Boutique éditée par {{ seller.company }}, entreprise individuelle basée à La Réunion.
                     </p>
-                    <div class="social-links">
-                        <a href="#" class="social-link" title="Facebook">
-                            <i class="fab fa-facebook-f"></i>
-                        </a>
-                        <a href="#" class="social-link" title="Twitter">
-                            <i class="fab fa-twitter"></i>
-                        </a>
-                        <a href="#" class="social-link" title="Instagram">
-                            <i class="fab fa-instagram"></i>
-                        </a>
-                        <a href="#" class="social-link" title="LinkedIn">
-                            <i class="fab fa-linkedin-in"></i>
-                        </a>
-                        <a href="#" class="social-link" title="YouTube">
-                            <i class="fab fa-youtube"></i>
-                        </a>
-                    </div>
                 </div>
 
                 <!-- Liens rapides -->
@@ -75,9 +33,9 @@
                             </a>
                         </li>
                         <li>
-                            <a href="#">
+                            <a href="{{ url_for('faq.index') }}">
                                 <i class="fas fa-chevron-right"></i>
-                                Promotions
+                                FAQ
                             </a>
                         </li>
                         <li>
@@ -100,33 +58,27 @@
                     <h4 class="footer-title">Service Client</h4>
                     <ul class="footer-links">
                         <li>
-                            <a href="#">
+                            <a href="{{ url_for('user.orders') }}">
                                 <i class="fas fa-chevron-right"></i>
                                 Suivi de commande
                             </a>
                         </li>
                         <li>
-                            <a href="#">
+                            <a href="{{ url_for('main.terms') }}#retractation">
                                 <i class="fas fa-chevron-right"></i>
                                 Retours & Remboursements
                             </a>
                         </li>
                         <li>
-                            <a href="#">
+                            <a href="{{ url_for('main.terms') }}#livraison">
                                 <i class="fas fa-chevron-right"></i>
                                 Livraison
                             </a>
                         </li>
                         <li>
-                            <a href="#">
+                            <a href="{{ url_for('main.contact') }}">
                                 <i class="fas fa-chevron-right"></i>
-                                FAQ
-                            </a>
-                        </li>
-                        <li>
-                            <a href="#">
-                                <i class="fas fa-chevron-right"></i>
-                                Support 24/7
+                                Nous contacter
                             </a>
                         </li>
                     </ul>
@@ -139,7 +91,7 @@
                         <li>
                             <a href="{{ url_for('main.terms') }}">
                                 <i class="fas fa-chevron-right"></i>
-                                Conditions d'utilisation
+                                Conditions générales de vente
                             </a>
                         </li>
                         <li>
@@ -155,15 +107,9 @@
                             </a>
                         </li>
                         <li>
-                            <a href="#">
+                            <a href="{{ url_for('main.privacy') }}#cookies">
                                 <i class="fas fa-chevron-right"></i>
                                 Cookies
-                            </a>
-                        </li>
-                        <li>
-                            <a href="#">
-                                <i class="fas fa-chevron-right"></i>
-                                Plan du site
                             </a>
                         </li>
                     </ul>
@@ -175,19 +121,19 @@
                     <ul class="footer-contact">
                         <li>
                             <i class="fas fa-map-marker-alt"></i>
-                            <span>123 Rue du Commerce<br>75001 Paris, France</span>
+                            <span>{{ seller.address }}<br>{{ seller.postal_code }} {{ seller.city }}, {{ seller.region }}</span>
                         </li>
                         <li>
                             <i class="fas fa-phone"></i>
-                            <span>+33 1 23 45 67 89</span>
+                            <a href="tel:{{ seller.phone_link }}">{{ seller.phone }}</a>
                         </li>
                         <li>
                             <i class="fas fa-envelope"></i>
-                            <span>contact@multiproshop.fr</span>
+                            <a href="mailto:{{ seller.email }}">{{ seller.email }}</a>
                         </li>
                         <li>
                             <i class="fas fa-clock"></i>
-                            <span>Lun - Ven: 9h - 18h</span>
+                            <span>Du lundi au vendredi, 9h-18h (heure de La Réunion)</span>
                         </li>
                     </ul>
                 </div>
@@ -206,7 +152,6 @@
                 <div class="payment-methods">
                     <i class="fab fa-cc-visa" title="Visa"></i>
                     <i class="fab fa-cc-mastercard" title="Mastercard"></i>
-                    <i class="fab fa-cc-paypal" title="PayPal"></i>
                     <i class="fab fa-cc-amex" title="American Express"></i>
                     <i class="fas fa-credit-card" title="Carte bancaire"></i>
                 </div>
@@ -219,7 +164,7 @@
         <div class="container">
             <div class="footer-bottom-content">
                 <p class="copyright">
-                    &copy; {{ now.year }} <strong>MultiProShop</strong>. Tous droits réservés.
+                    &copy; {{ now.year }} <strong>MultiProShop</strong> · {{ seller.company }} · SIREN {{ seller.siren }} · {{ seller.vat }}
                 </p>
                 <p class="made-with">
                     Fait avec <i class="fas fa-heart"></i> en France
@@ -235,16 +180,6 @@
 </button>
 
 <script>
-// Newsletter Form
-document.getElementById('footerNewsletterForm')?.addEventListener('submit', function(e) {
-    e.preventDefault();
-    const input = this.querySelector('input[type="email"]');
-    if (input) {
-        alert('Merci pour votre inscription !');
-        input.value = '';
-    }
-});
-
 // Scroll to Top
 const scrollToTopBtn = document.getElementById('scrollToTop');
 

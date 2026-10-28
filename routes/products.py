@@ -3,12 +3,12 @@ from models.category import Category
 from models.product import Product
 from models.product_review import ProductReview
 from services.product_service import ProductService
-from extensions import cache, db
+from extensions import cache, db, personal_page
 
 products = Blueprint('products', __name__)
 
 @products.route('/')
-@cache.cached(timeout=300, query_string=True)  # Cache 5 min avec query params
+@cache.cached(timeout=300, query_string=True, unless=personal_page)  # Cache 5 min, visiteurs anonymes
 def list_products():
     page = request.args.get('page', 1, type=int)
     per_page = 12
@@ -80,7 +80,7 @@ def by_category(category_id):
     return category_products(category_id)
 
 @products.route('/<int:product_id>')
-@cache.cached(timeout=600)  # Cache 10 minutes - Réactivé
+@cache.cached(timeout=600, unless=personal_page)  # Cache 10 minutes, visiteurs anonymes
 def product_detail(product_id):
     product = ProductService.get_product_by_id(product_id)
     if not product:

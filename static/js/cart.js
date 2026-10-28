@@ -3,16 +3,17 @@
  */
 
 // Ajouter un produit au panier
-function addToCart(productId, quantity = 1) {
+function addToCart(productId, quantity = 1, variantId = null) {
+    const payload = {product_id: productId, quantity: quantity};
+    if (variantId) {
+        payload.variant_id = variantId;
+    }
     fetch('/cart/add', {
         method: 'POST',
         headers: {
             'Content-Type': 'application/json',
         },
-        body: JSON.stringify({
-            product_id: productId,
-            quantity: quantity
-        })
+        body: JSON.stringify(payload)
     })
     .then(response => response.json())
     .then(data => {

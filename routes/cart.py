@@ -19,6 +19,23 @@ def view_cart():
                          total=total,
                          cart=cart)
 
+def _wants_json():
+    """Appel AJAX (fiche produit, cart.js) ou simple formulaire HTML (cartes produits)."""
+    return request.is_json or request.headers.get('X-Requested-With') == 'XMLHttpRequest' \
+        or request.accept_mimetypes.best == 'application/json'
+
+
+def _with_free_shipping(methods, subtotal, country):
+    """Livraison offerte en France dès le seuil affiché sur le site : la méthode la moins chère passe à 0 €."""
+    if not methods or country not in current_app.config['FREE_SHIPPING_COUNTRIES'] \
+            or subtotal < current_app.config['FREE_SHIPPING_THRESHOLD']:
+        return methods
+    methods = [dict(m) for m in methods]
+    cheapest = min(methods, key=lambda m: m['price'])
+    cheapest['price'] = 0
+    return sorted(methods, key=lambda m: m['price'])
+
+
 @cart_bp.route('/add', methods=['POST'])
 def add_to_cart():
     """Ajouter un produit au panier avec variante optionnelle (AJAX)"""
@@ -76,7 +93,11 @@ def add_to_cart():
         # Ajouter au panier
         cart = Cart()
         cart.add_item(product_id, quantity, variant_id)
-        
+
+        if not _wants_json():
+            flash(message, 'success')
+            return redirect(request.referrer or url_for('cart.view_cart'))
+
         return jsonify({
             'success': True,
             'message': message,
@@ -214,7 +235,8 @@ def get_checkout_shipping():
         from services.shipping_service import ShippingService
         shipping_service = ShippingService()
         result = shipping_service.calculate_shipping(shipping_items, country_code)
-        
+        result['methods'] = _with_free_shipping(result.get('methods', []), cart.get_total_price(), country_code)
+
         return jsonify(result)
         
     except Exception as e:
@@ -224,19 +246,14 @@ def get_checkout_shipping():
             'message': str(e)
         }), 500
 
-# Prix affichés TTC : la TVA est incluse, seulement indiquée sur le récapitulatif
-VAT_RATE = 0.20
+# Micro-entreprise en franchise de TVA (art. 293 B du CGI) : aucune TVA facturée
 REQUIRED_FIELDS = {
     'first_name': 'prénom', 'last_name': 'nom', 'email': 'e-mail', 'phone': 'téléphone',
     'address': 'adresse', 'city': 'ville', 'postal_code': 'code postal',
 }
 
 
-def vat_included(amount_ttc):
-    return round(amount_ttc - amount_ttc / (1 + VAT_RATE), 2)
-
-
-def _shipping_price(items, country, method_code):
+def _shipping_price(items, country, method_code, subtotal):
     """Prix de la méthode de livraison choisie, recalculé ici (jamais celui envoyé par le navigateur)."""
     from services.shipping_service import ShippingService
     shipping_items = [{
@@ -247,7 +264,7 @@ def _shipping_price(items, country, method_code):
         'product': item['product'],
     } for item in items]
     result = ShippingService().calculate_shipping(shipping_items, country)
-    for method in result.get('methods', []):
+    for method in _with_free_shipping(result.get('methods', []), subtotal, country):
         if method.get('code') == method_code:
             return round(float(method['price']), 2)
     return None
@@ -298,7 +315,7 @@ def checkout():
             return redirect(url_for('cart.checkout'))
 
         country = form['country'] or 'FR'
-        shipping_cost = _shipping_price(items, country, form['shipping_method'])
+        shipping_cost = _shipping_price(items, country, form['shipping_method'], total)
         if shipping_cost is None:
             flash("Cette méthode de livraison n'est plus disponible, merci d'en choisir une autre.", 'error')
             return redirect(url_for('cart.checkout'))
@@ -311,7 +328,7 @@ def checkout():
                 payment_method='card',
                 subtotal=total,
                 shipping_cost=shipping_cost,
-                tax=vat_included(total + shipping_cost),
+                tax=0,
                 total_price=round(total + shipping_cost, 2),
                 customer_email=form['email'],
                 customer_phone=form['phone'],
@@ -355,7 +372,7 @@ def checkout():
             return redirect(url_for('cart.checkout'))
 
     return render_template('pages/checkout.html', cart_items=items, total=total,
-                           vat_rate=VAT_RATE, payment_enabled=ines_payment.enabled())
+                           payment_enabled=ines_payment.enabled())
 
 
 @cart_bp.route('/order/<int:order_id>')

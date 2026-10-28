@@ -97,7 +97,11 @@ def create_app(config_name='development'):
         
         return {
             'now': now_naive(),
-            'main_categories': main_categories
+            'main_categories': main_categories,
+            'seller': app.config['SELLER'],
+            'free_shipping_threshold': app.config['FREE_SHIPPING_THRESHOLD'],
+            'return_days': app.config['RETURN_DAYS'],
+            'delivery_days': app.config['DELIVERY_DAYS'],
         }
     
     # Enregistrer les blueprints

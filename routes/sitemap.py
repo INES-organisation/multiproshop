@@ -2,7 +2,8 @@
 Routes pour sitemap.xml et robots.txt
 Phase 4 - SEO
 """
-from flask import Blueprint, Response, render_template_string
+from flask import Blueprint, Response, render_template_string, current_app
+from extensions import cache
 from datetime import datetime
 from models.product import Product
 from models.category import Category
@@ -11,6 +12,7 @@ sitemap_bp = Blueprint('sitemap', __name__)
 
 
 @sitemap_bp.route('/sitemap.xml')
+@cache.cached(timeout=86400)  # 20 000 produits : recalculé une fois par jour
 def sitemap():
     """Générer sitemap.xml"""
     
@@ -27,12 +29,6 @@ def sitemap():
             'lastmod': datetime.utcnow().strftime('%Y-%m-%d'),
             'changefreq': 'daily',
             'priority': '0.9'
-        },
-        {
-            'loc': '/search',
-            'lastmod': datetime.utcnow().strftime('%Y-%m-%d'),
-            'changefreq': 'weekly',
-            'priority': '0.8'
         }
     ]
     
@@ -47,7 +43,7 @@ def sitemap():
         })
     
     # Ajouter les produits actifs
-    products = Product.query.filter(Product.is_active == True).all()
+    products = Product.query.with_entities(Product.id, Product.updated_at).filter(Product.is_active == True).all()
     for product in products:
         urls.append({
             'loc': f'/products/{product.id}',
@@ -72,7 +68,7 @@ def sitemap():
     xml = render_template_string(
         sitemap_xml,
         urls=urls,
-        base_url='https://multiproshop.local'
+        base_url=current_app.config['SITE_URL']
     )
     
     return Response(xml, mimetype='application/xml')
@@ -82,14 +78,15 @@ def sitemap():
 def robots():
     """Générer robots.txt"""
     
-    robots_txt = """User-agent: *
+    robots_txt = f"""User-agent: *
 Allow: /
 Disallow: /admin/
 Disallow: /user/
 Disallow: /cart/
 Disallow: /api/
+Disallow: /search
 
-Sitemap: https://multiproshop.local/sitemap.xml
+Sitemap: {current_app.config['SITE_URL']}/sitemap.xml
 """
     
     return Response(robots_txt, mimetype='text/plain')

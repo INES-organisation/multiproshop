@@ -1,13 +1,13 @@
-from flask import Blueprint, render_template, current_app
+from flask import Blueprint, render_template, current_app, request, flash, redirect, url_for
 from models.product import Product
 from models.category import Category
 from services.product_service import ProductService
-from extensions import cache
+from extensions import cache, personal_page
 
 main = Blueprint('main', __name__)
 
 @main.route('/')
-@cache.cached(timeout=300)  # Cache 5 minutes
+@cache.cached(timeout=300, unless=personal_page)  # Cache 5 minutes, visiteurs anonymes
 def index():
     # Produits en vedette (les 8 premiers)
     featured_products = ProductService.get_featured_products()
@@ -35,8 +35,27 @@ def index():
 def about():
     return render_template('pages/about.html')
 
-@main.route('/contact')
+@main.route('/contact', methods=['GET', 'POST'])
 def contact():
+    if request.method == 'POST':
+        from html import escape
+        from utils.email import _send_via_ines
+
+        form = {k: (request.form.get(k) or '').strip() for k in ('name', 'email', 'phone', 'subject', 'message', 'website')}
+        if form['website']:  # champ invisible : rempli seulement par les robots
+            return redirect(url_for('main.contact'))
+        if not (form['name'] and form['email'] and form['message']):
+            flash("Merci d'indiquer votre nom, votre e-mail et votre message.", 'error')
+            return redirect(url_for('main.contact'))
+        seller = current_app.config['SELLER']
+        html = ''.join(f'<p><strong>{label} :</strong> {escape(form[key])}</p>' for key, label in (
+            ('name', 'Nom'), ('email', 'E-mail'), ('phone', 'Téléphone'), ('subject', 'Sujet'))) \
+            + '<p>' + escape(form['message']).replace('\n', '<br>') + '</p>'
+        if _send_via_ines(seller['email'], f"[MultiProShop] Contact : {form['subject'] or 'question'} ({form['name']})", html):
+            flash('Message envoyé, merci ! Nous vous répondons sous 48 h ouvrées.', 'success')
+        else:
+            flash(f"Votre message n'a pas pu être envoyé. Écrivez-nous directement à {seller['email']}.", 'error')
+        return redirect(url_for('main.contact'))
     return render_template('pages/contact.html')
 
 @main.route('/terms')

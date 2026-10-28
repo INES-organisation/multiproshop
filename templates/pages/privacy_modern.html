@@ -82,7 +82,7 @@
             Politique de Confidentialité
         </h1>
         <p class="page-subtitle">Protection de vos données personnelles</p>
-        <p class="legal-date">Dernière mise à jour : 2 Novembre 2025</p>
+        <p class="legal-date">Dernière mise à jour : 28 octobre 2026</p>
     </div>
 </div>
 
@@ -115,6 +115,9 @@
                         <div class="legal-toc-item" onclick="scrollToSection('securite')">
                             6. Sécurité
                         </div>
+                        <div class="legal-toc-item" onclick="scrollToSection('cookies')">
+                            7. Cookies
+                        </div>
                     </div>
                 </div>
             </div>
@@ -130,9 +133,9 @@
                 </p>
                 <div class="legal-highlight">
                     <p style="margin: 0;"><strong>Responsable du traitement :</strong></p>
-                    <p style="margin: 0;">MultiProShop SAS</p>
-                    <p style="margin: 0;">123 Rue du Commerce, 75000 Paris, France</p>
-                    <p style="margin: 0;">Email : dpo@multiproshop.com</p>
+                    <p style="margin: 0;">{{ seller.company }} ({{ seller.trade_name }}), entreprise individuelle de {{ seller.owner }}</p>
+                    <p style="margin: 0;">{{ seller.address }}, {{ seller.postal_code }} {{ seller.city }}, {{ seller.region }}</p>
+                    <p style="margin: 0;">E-mail : <a href="mailto:{{ seller.email }}">{{ seller.email }}</a></p>
                 </div>
                 <p>
                     Nous nous engageons à respecter le Règlement Général sur la Protection des Données (RGPD) et la loi Informatique et Libertés.
@@ -208,10 +211,9 @@
                 </p>
                 <h3>4.1 Prestataires de services</h3>
                 <ul>
-                    <li><strong>Transporteurs :</strong> Pour la livraison de vos commandes</li>
-                    <li><strong>Processeurs de paiement :</strong> Pour traiter les transactions</li>
-                    <li><strong>Services d'hébergement :</strong> Pour stocker les données</li>
-                    <li><strong>Services d'analyse :</strong> Pour améliorer le site</li>
+                    <li><strong>Fournisseur et transporteurs</strong> (CJ Dropshipping et ses transporteurs) : nom, adresse et téléphone, pour préparer et livrer votre commande. Ce fournisseur est situé hors de l'Union européenne.</li>
+                    <li><strong>Paiement</strong> (Stripe) : pour traiter le paiement. Vos données bancaires ne nous sont jamais transmises.</li>
+                    <li><strong>Hébergement</strong> (OVH SAS, France) : pour stocker les données du site.</li>
                 </ul>
                 
                 <h3>4.2 Obligations légales</h3>
@@ -291,8 +293,8 @@
                     Pour exercer vos droits, contactez-nous :
                 </p>
                 <ul>
-                    <li><strong>Email :</strong> dpo@multiproshop.com</li>
-                    <li><strong>Courrier :</strong> MultiProShop SAS - DPO, 123 Rue du Commerce, 75000 Paris</li>
+                    <li><strong>E-mail :</strong> <a href="mailto:{{ seller.email }}">{{ seller.email }}</a></li>
+                    <li><strong>Courrier :</strong> {{ seller.company }}, {{ seller.address }}, {{ seller.postal_code }} {{ seller.city }}, {{ seller.region }}</li>
                     <li><strong>Formulaire :</strong> <a href="{{ url_for('main.contact') }}" style="color: var(--primary-color); font-weight: 600;">Page de contact</a></li>
                 </ul>
                 <p>
@@ -335,8 +337,8 @@
                                 <div class="feature-icon-wrapper">
                                     <i class="fas fa-shield-alt"></i>
                                 </div>
-                                <h6 class="feature-title">Protection Active</h6>
-                                <p class="feature-description">Surveillance 24/7</p>
+                                <h6 class="feature-title">Paiement externalisé</h6>
+                                <p class="feature-description">Aucune donnée bancaire chez nous</p>
                             </div>
                         </div>
                     </div>
@@ -352,6 +354,17 @@
                     <li><strong>Données marketing :</strong> 3 ans après votre dernier contact</li>
                 </ul>
             </div>
+
+            <!-- Section 7 -->
+            <div class="legal-section" id="cookies">
+                <h2>7. Cookies</h2>
+                <p>
+                    Le site n'utilise aujourd'hui que des cookies nécessaires à son fonctionnement : session, panier et connexion à votre compte. Ils sont exemptés de consentement.
+                </p>
+                <p>
+                    Aucun cookie de mesure d'audience ou publicitaire n'est déposé sans votre accord. S'il en est ajouté, un bandeau vous permettra de les accepter ou de les refuser, et de changer d'avis à tout moment.
+                </p>
+            </div>
             
             <!-- Contact -->
             <div class="card-modern">
@@ -360,12 +373,12 @@
                 </div>
                 <div class="card-modern-body">
                     <p style="color: #666; margin-bottom: 1rem;">
-                        Notre Délégué à la Protection des Données est à votre disposition pour répondre à toutes vos questions.
+                        Pour toute question sur vos données, écrivez-nous : nous répondons sous un mois au plus tard.
                     </p>
                     <div class="d-flex gap-2">
-                        <a href="mailto:dpo@multiproshop.com" class="btn-modern btn-modern-primary">
+                        <a href="mailto:{{ seller.email }}" class="btn-modern btn-modern-primary">
                             <i class="fas fa-envelope"></i>
-                            Contacter le DPO
+                            Nous écrire
                         </a>
                         <a href="{{ url_for('main.contact') }}" class="btn-modern btn-modern-outline">
                             <i class="fas fa-paper-plane"></i>

@@ -82,7 +82,7 @@
             Conditions Générales de Vente
         </h1>
         <p class="page-subtitle">Conditions d'utilisation du site et de vente</p>
-        <p class="legal-date">Dernière mise à jour : 2 Novembre 2025</p>
+        <p class="legal-date">Dernière mise à jour : 28 octobre 2026</p>
     </div>
 </div>
 
@@ -98,7 +98,7 @@
                     </div>
                     <div class="card-modern-body" style="padding: 0.5rem;">
                         <div class="legal-toc-item active" onclick="scrollToSection('objet')">
-                            1. Objet
+                            1. Objet et vendeur
                         </div>
                         <div class="legal-toc-item" onclick="scrollToSection('commandes')">
                             2. Commandes
@@ -118,6 +118,9 @@
                         <div class="legal-toc-item" onclick="scrollToSection('garanties')">
                             7. Garanties
                         </div>
+                        <div class="legal-toc-item" onclick="scrollToSection('mediation')">
+                            8. Médiation
+                        </div>
                     </div>
                 </div>
             </div>
@@ -127,15 +130,18 @@
         <div class="col-lg-9">
             <!-- Section 1 -->
             <div class="legal-section" id="objet">
-                <h2>1. Objet</h2>
+                <h2>1. Objet et vendeur</h2>
                 <p>
-                    Les présentes Conditions Générales de Vente (CGV) régissent les relations contractuelles entre <strong>MultiProShop SAS</strong> et tout client souhaitant effectuer un achat sur le site www.multiproshop.com.
+                    Les présentes Conditions Générales de Vente (CGV) s'appliquent à toute commande passée sur le site <strong>multiproshop.com</strong> par un client consommateur.
                 </p>
                 <div class="legal-highlight">
-                    <p style="margin: 0;"><strong>En passant commande, vous acceptez sans réserve les présentes CGV.</strong></p>
+                    <p style="margin: 0;"><strong>Vendeur :</strong> {{ seller.company }} (nom commercial : {{ seller.trade_name }}), entreprise individuelle (EI) de {{ seller.owner }}</p>
+                    <p style="margin: 0;">SIREN {{ seller.siren }}, siège {{ seller.address }}, {{ seller.postal_code }} {{ seller.city }}, {{ seller.region }}</p>
+                    <p style="margin: 0;">{{ seller.vat }} : les prix indiqués sont nets, sans TVA.</p>
+                    <p style="margin: 0;">Contact : <a href="mailto:{{ seller.email }}">{{ seller.email }}</a> · {{ seller.phone }}</p>
                 </div>
                 <p>
-                    MultiProShop se réserve le droit de modifier les présentes CGV à tout moment. Les CGV applicables sont celles en vigueur à la date de la commande.
+                    Les produits sont expédiés directement par nos fournisseurs partenaires (notamment CJ Dropshipping), le plus souvent depuis leurs entrepôts situés hors de l'Union européenne. Les CGV applicables sont celles en vigueur à la date de la commande.
                 </p>
             </div>
             
@@ -143,38 +149,25 @@
             <div class="legal-section" id="commandes">
                 <h2>2. Commandes</h2>
                 <h3>2.1 Processus de commande</h3>
-                <p>
-                    Pour passer commande, vous devez :
-                </p>
+                <p>Pour passer commande, avec ou sans compte client :</p>
                 <ol>
-                    <li>Sélectionner les produits et les ajouter au panier</li>
-                    <li>Vérifier le contenu de votre panier</li>
-                    <li>Renseigner vos informations de livraison</li>
-                    <li>Choisir votre mode de livraison</li>
-                    <li>Sélectionner votre mode de paiement</li>
-                    <li>Valider votre commande après avoir accepté les CGV</li>
+                    <li>Ajoutez les produits au panier, avec l'option (couleur, taille) choisie</li>
+                    <li>Vérifiez votre panier</li>
+                    <li>Renseignez vos coordonnées et votre adresse de livraison</li>
+                    <li>Choisissez le mode de livraison : son prix et son délai s'affichent avant le paiement</li>
+                    <li>Cliquez sur « Commander avec obligation de paiement » et réglez sur la page sécurisée Stripe</li>
                 </ol>
+                <p>La commande est ferme une fois le paiement accepté.</p>
                 
                 <h3>2.2 Confirmation de commande</h3>
                 <p>
-                    Après validation de votre commande, vous recevrez un email de confirmation contenant :
+                    Après paiement, vous recevez un e-mail de confirmation récapitulant le numéro de commande, les produits, le montant total et l'adresse de livraison. Conservez-le : il vaut justificatif d'achat.
                 </p>
-                <ul>
-                    <li>Le numéro de commande</li>
-                    <li>Le récapitulatif des produits commandés</li>
-                    <li>Le montant total</li>
-                    <li>L'adresse de livraison</li>
-                </ul>
                 
                 <h3>2.3 Disponibilité des produits</h3>
                 <p>
-                    Nos offres sont valables dans la limite des stocks disponibles. En cas d'indisponibilité d'un produit après passation de votre commande, nous vous en informerons dans les plus brefs délais et vous proposerons :
+                    Nos offres sont valables dans la limite des stocks de nos fournisseurs. Si un produit devient indisponible après votre commande, nous vous prévenons par e-mail et vous remboursons le produit indisponible sous 14 jours au plus tard, ou annulons la commande si vous le souhaitez.
                 </p>
-                <ul>
-                    <li>Un produit de remplacement équivalent</li>
-                    <li>Le remboursement du produit indisponible</li>
-                    <li>L'annulation totale de la commande</li>
-                </ul>
             </div>
             
             <!-- Section 3 -->
@@ -182,25 +175,20 @@
                 <h2>3. Prix</h2>
                 <h3>3.1 Prix des produits</h3>
                 <p>
-                    Les prix de nos produits sont indiqués en euros (€) toutes taxes comprises (TTC), hors frais de livraison.
+                    Les prix sont indiqués en euros, hors frais de livraison. {{ seller.vat }} : aucune TVA n'est facturée. Le prix facturé est celui affiché au moment de la validation de la commande.
                 </p>
                 <p>
-                    MultiProShop se réserve le droit de modifier ses prix à tout moment. Les produits sont facturés au prix en vigueur au moment de la validation de la commande.
+                    Pour une livraison hors de l'Union européenne, des droits de douane ou taxes locales peuvent être demandés par le pays de destination. Ils restent à la charge du client.
                 </p>
                 
                 <h3>3.2 Frais de livraison</h3>
                 <p>
-                    Les frais de livraison sont calculés en fonction :
+                    Les frais de livraison dépendent du mode choisi, du poids du colis et du pays de destination. Ils sont affichés avant le paiement et ajoutés au total.
                 </p>
-                <ul>
-                    <li>Du mode de livraison choisi</li>
-                    <li>Du poids et du volume du colis</li>
-                    <li>De l'adresse de livraison</li>
-                </ul>
                 <div class="alert-modern alert-success">
                     <i class="fas fa-gift"></i>
                     <div>
-                        <strong>Livraison gratuite</strong> pour toute commande supérieure à 50€ en France métropolitaine.
+                        <strong>Livraison offerte</strong> en France métropolitaine pour toute commande d'au moins {{ "%.0f"|format(free_shipping_threshold) }} € de produits : le mode de livraison le moins cher passe à 0 €.
                     </div>
                 </div>
             </div>
@@ -208,46 +196,12 @@
             <!-- Section 4 -->
             <div class="legal-section" id="paiement">
                 <h2>4. Paiement</h2>
-                <h3>4.1 Modes de paiement acceptés</h3>
                 <p>
-                    Nous acceptons les modes de paiement suivants :
+                    Le paiement s'effectue en ligne, en euros, sur la page sécurisée de <strong>Stripe</strong> : carte bancaire (CB, Visa, Mastercard, American Express) et, selon votre appareil, Apple Pay ou Google Pay. Vos coordonnées bancaires ne transitent pas par nos serveurs et ne sont jamais stockées par {{ seller.trade_name }}.
                 </p>
-                <ul>
-                    <li><strong>Carte bancaire :</strong> Visa, Mastercard, American Express</li>
-                    <li><strong>PayPal :</strong> Paiement sécurisé via votre compte PayPal</li>
-                    <li><strong>Virement bancaire :</strong> Pour les commandes professionnelles</li>
-                </ul>
-                
-                <h3>4.2 Sécurité des paiements</h3>
                 <p>
-                    Tous les paiements sont sécurisés par cryptage SSL. Vos données bancaires ne sont jamais stockées sur nos serveurs.
+                    Le paiement est débité à la validation de la commande. L'authentification forte (3D Secure) peut vous être demandée par votre banque.
                 </p>
-                <div class="row g-3">
-                    <div class="col-md-4">
-                        <div class="card-modern text-center">
-                            <div class="card-modern-body">
-                                <i class="fas fa-lock" style="font-size: 2rem; color: var(--success-color); margin-bottom: 0.5rem;"></i>
-                                <p style="margin: 0; font-weight: 600;">Cryptage SSL</p>
-                            </div>
-                        </div>
-                    </div>
-                    <div class="col-md-4">
-                        <div class="card-modern text-center">
-                            <div class="card-modern-body">
-                                <i class="fas fa-shield-alt" style="font-size: 2rem; color: var(--success-color); margin-bottom: 0.5rem;"></i>
-                                <p style="margin: 0; font-weight: 600;">3D Secure</p>
-                            </div>
-                        </div>
-                    </div>
-                    <div class="col-md-4">
-                        <div class="card-modern text-center">
-                            <div class="card-modern-body">
-                                <i class="fas fa-check-circle" style="font-size: 2rem; color: var(--success-color); margin-bottom: 0.5rem;"></i>
-                                <p style="margin: 0; font-weight: 600;">PCI DSS</p>
-                            </div>
-                        </div>
-                    </div>
-                </div>
             </div>
             
             <!-- Section 5 -->
@@ -255,75 +209,47 @@
                 <h2>5. Livraison</h2>
                 <h3>5.1 Zones de livraison</h3>
                 <p>
-                    Nous livrons dans les pays suivants :
+                    Nous livrons en France (métropole et outre-mer), dans toute l'Europe et dans de nombreux autres pays. Les pays desservis, les modes de livraison et leurs tarifs sont affichés à l'étape de livraison de la commande.
                 </p>
-                <ul>
-                    <li>France métropolitaine</li>
-                    <li>Corse</li>
-                    <li>Belgique</li>
-                    <li>Luxembourg</li>
-                    <li>Suisse</li>
-                </ul>
                 
                 <h3>5.2 Délais de livraison</h3>
-                <table class="table-modern">
-                    <thead>
-                        <tr>
-                            <th>Mode de livraison</th>
-                            <th>Délai</th>
-                            <th>Tarif</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        <tr>
-                            <td>Standard</td>
-                            <td>3-5 jours ouvrés</td>
-                            <td>Gratuit > 50€</td>
-                        </tr>
-                        <tr>
-                            <td>Express</td>
-                            <td>1-2 jours ouvrés</td>
-                            <td>9.99€</td>
-                        </tr>
-                        <tr>
-                            <td>Point Relais</td>
-                            <td>3-4 jours ouvrés</td>
-                            <td>4.99€</td>
-                        </tr>
-                    </tbody>
-                </table>
+                <p>
+                    La livraison suivie prend en général <strong>{{ delivery_days }}</strong> après la commande pour la France. Le délai précis du mode choisi est indiqué avant le paiement. En cas de retard de plus de 7 jours sur ce délai, vous pouvez nous demander d'annuler la commande et d'être remboursé, conformément à l'article L216-6 du Code de la consommation.
+                </p>
                 
                 <h3>5.3 Suivi de commande</h3>
                 <p>
-                    Dès l'expédition de votre colis, vous recevrez un email avec un numéro de suivi vous permettant de suivre votre livraison en temps réel.
+                    Dès l'expédition, vous recevez un e-mail avec le numéro de suivi du colis. Si vous avez un compte, l'état de vos commandes est aussi visible dans « Mes commandes ».
                 </p>
             </div>
             
             <!-- Section 6 -->
             <div class="legal-section" id="retractation">
-                <h2>6. Droit de Rétractation</h2>
+                <h2>6. Droit de rétractation</h2>
                 <h3>6.1 Délai de rétractation</h3>
                 <p>
-                    Conformément à la législation en vigueur, vous disposez d'un délai de <strong>90 jours</strong> à compter de la réception de votre commande pour exercer votre droit de rétractation, sans avoir à justifier de motifs ni à payer de pénalités.
+                    Conformément aux articles L221-18 et suivants du Code de la consommation, vous disposez d'un délai de <strong>{{ return_days }} jours</strong> à compter de la réception de votre commande pour vous rétracter, sans avoir à vous justifier.
                 </p>
                 
                 <h3>6.2 Procédure de retour</h3>
-                <p>
-                    Pour retourner un produit :
-                </p>
                 <ol>
-                    <li>Contactez notre service client via votre compte ou par email</li>
-                    <li>Indiquez le numéro de commande et les produits à retourner</li>
-                    <li>Recevez votre étiquette de retour gratuite</li>
-                    <li>Renvoyez le produit dans son emballage d'origine</li>
+                    <li>Envoyez-nous avant la fin du délai une déclaration claire de rétractation, par e-mail à <a href="mailto:{{ seller.email }}">{{ seller.email }}</a>, avec votre numéro de commande (vous pouvez utiliser le modèle ci-dessous)</li>
+                    <li>Nous vous indiquons l'adresse de retour</li>
+                    <li>Renvoyez le produit dans les 14 jours suivant votre déclaration, non utilisé et dans son emballage d'origine</li>
                 </ol>
+                <p>
+                    Les frais de retour sont à votre charge, sauf si le produit est défectueux ou ne correspond pas à la commande. Les produits descellés qui ne peuvent être renvoyés pour des raisons d'hygiène ou de protection de la santé sont exclus du droit de rétractation (article L221-28 du Code de la consommation).
+                </p>
                 
                 <h3>6.3 Remboursement</h3>
                 <p>
-                    Le remboursement sera effectué dans un délai de 14 jours suivant la réception du produit retourné, par le même moyen de paiement que celui utilisé lors de l'achat.
+                    Nous remboursons le prix des produits et les frais de livraison initiaux (sur la base du mode le moins cher) dans les 14 jours suivant votre rétractation, par le moyen de paiement utilisé lors de la commande. Nous pouvons attendre la réception du produit, ou la preuve de son expédition, avant de rembourser.
                 </p>
                 <div class="legal-highlight">
-                    <p style="margin: 0;"><strong>Conditions :</strong> Le produit doit être retourné dans son état d'origine, non utilisé, avec tous ses accessoires et son emballage.</p>
+                    <p style="margin: 0 0 0.5rem;"><strong>Modèle de formulaire de rétractation</strong></p>
+                    <p style="margin: 0;">À l'attention de {{ seller.company }}, {{ seller.address }}, {{ seller.postal_code }} {{ seller.city }}, {{ seller.email }} :<br>
+                    Je vous notifie par la présente ma rétractation du contrat portant sur la vente du bien ci-dessous : [produit], commandé le [date], reçu le [date], commande n° [numéro].<br>
+                    Nom et adresse du consommateur, date, signature (en cas d'envoi papier).</p>
                 </div>
             </div>
             
@@ -332,23 +258,34 @@
                 <h2>7. Garanties</h2>
                 <h3>7.1 Garantie légale de conformité</h3>
                 <p>
-                    Tous nos produits bénéficient de la garantie légale de conformité de 2 ans à compter de la livraison.
+                    Tous les produits bénéficient de la garantie légale de conformité de 2 ans à compter de la livraison (articles L217-3 et suivants du Code de la consommation). En cas de défaut, vous pouvez demander la réparation ou le remplacement du produit, ou à défaut une réduction du prix ou le remboursement.
                 </p>
                 
-                <h3>7.2 Garantie constructeur</h3>
+                <h3>7.2 Garantie des vices cachés</h3>
                 <p>
-                    Certains produits bénéficient également d'une garantie constructeur dont les conditions sont précisées sur la fiche produit.
+                    Vous bénéficiez également de la garantie contre les vices cachés (articles 1641 et suivants du Code civil), pendant 2 ans à compter de leur découverte.
                 </p>
                 
-                <h3>7.3 Service après-vente</h3>
+                <h3>7.3 Service client</h3>
                 <p>
-                    Notre service client est à votre disposition pour toute question :
+                    Pour toute question ou réclamation, écrivez-nous à <a href="mailto:{{ seller.email }}">{{ seller.email }}</a> ou appelez le {{ seller.phone }} ({{ seller.hours }}). Nous répondons sous 48 heures ouvrées.
+                </p>
+            </div>
+            
+            <!-- Section 8 -->
+            <div class="legal-section" id="mediation">
+                <h2>8. Médiation et droit applicable</h2>
+                <p>
+                    En cas de litige non résolu avec notre service client, vous pouvez saisir gratuitement le médiateur de la consommation :
                 </p>
                 <ul>
-                    <li><strong>Email :</strong> sav@multiproshop.com</li>
-                    <li><strong>Téléphone :</strong> +33 1 23 45 67 89 (Lun-Ven 9h-18h)</li>
-                    <li><strong>Chat :</strong> Disponible sur le site</li>
+                    <li><strong>CNPM — Médiation de la consommation</strong></li>
+                    <li>23 rue Terrenoire, 42100 Saint-Étienne, France</li>
+                    <li>Site : <a href="https://www.cnpm-mediation-consommation.fr" rel="noopener">www.cnpm-mediation-consommation.fr</a></li>
                 </ul>
+                <p>
+                    Les présentes CGV sont soumises au droit français. À défaut d'accord amiable, les tribunaux français sont compétents, sous réserve des règles protectrices du consommateur.
+                </p>
             </div>
             
             <!-- Contact -->
@@ -365,7 +302,7 @@
                             <i class="fas fa-paper-plane"></i>
                             Nous Contacter
                         </a>
-                        <a href="mailto:contact@multiproshop.com" class="btn-modern btn-modern-outline">
+                        <a href="mailto:{{ seller.email }}" class="btn-modern btn-modern-outline">
                             <i class="fas fa-envelope"></i>
                             Email
                         </a>
