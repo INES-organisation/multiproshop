@@ -2,7 +2,7 @@
 Routes pour la recherche de produits
 Phase 3.2 - Recherche avancée avec filtres
 """
-from flask import Blueprint, render_template, request, jsonify
+from flask import Blueprint, render_template, request, jsonify, url_for
 from services.search_service import get_search_service
 import logging
 
@@ -73,11 +73,18 @@ def api_suggestions():
         limit = request.args.get('limit', 5, type=int)
         
         search_service = get_search_service()
-        suggestions = search_service.get_search_suggestions(query, limit)
+        products = search_service.get_product_suggestions(query, min(limit, 10))
         
         return jsonify({
             'success': True,
-            'suggestions': suggestions
+            'suggestions': [p.name for p in products],
+            'products': [{
+                'id': p.id,
+                'name': p.name,
+                'price': p.price,
+                'image': p.image_url,
+                'url': url_for('products.product_detail', product_id=p.id),
+            } for p in products]
         })
         
     except Exception as e:

@@ -1,0 +1,26 @@
+{# Bandeau cookies + mesure : rendu seulement si un identifiant GA4, Meta ou TikTok est configuré #}
+{% if analytics %}
+<script>window.MPS_ANALYTICS = {{ analytics|tojson }};</script>
+<script src="{{ url_for('static', filename='js/analytics.js') }}?v=1"></script>
+<div id="consent-banner" class="consent-banner" role="dialog" aria-live="polite" aria-label="Cookies" hidden>
+    <p>
+        Nous utilisons des cookies de mesure d'audience et publicitaires pour comprendre l'usage du site et mesurer nos publicités.
+        Ils ne sont déposés qu'avec votre accord. <a href="{{ url_for('main.privacy') }}#cookies">En savoir plus</a>
+    </p>
+    <div class="consent-actions">
+        <button type="button" class="consent-btn" data-consent="denied">Tout refuser</button>
+        <button type="button" class="consent-btn consent-btn-primary" data-consent="granted">Tout accepter</button>
+    </div>
+</div>
+<style>
+.consent-banner { position: fixed; left: 1rem; right: 1rem; bottom: 1rem; z-index: 2000; max-width: 640px; margin: 0 auto;
+    background: #fff; color: #1f2937; border-radius: 12px; box-shadow: 0 10px 30px rgba(0,0,0,.2); padding: 1rem 1.25rem; font-size: .9rem; }
+.consent-banner[hidden] { display: none; }
+.consent-banner p { margin: 0 0 .75rem; }
+.consent-actions { display: flex; gap: .5rem; justify-content: flex-end; flex-wrap: wrap; }
+.consent-btn { flex: 1 1 140px; border: 1px solid #1f2937; background: #fff; color: #1f2937; border-radius: 8px; padding: .55rem 1rem; font-weight: 600; }
+.consent-btn-primary { background: #1f2937; color: #fff; }
+</style>
+{% else %}
+<script>window.mpsTrack = function () {};</script>
+{% endif %}

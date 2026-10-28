@@ -1,6 +1,64 @@
 {% extends 'layout.html' %}
 
+{% block title %}{{ product.meta_title or product.name[:65] }} | MultiProShop{% endblock %}
+
+{% block meta_description %}{{ (product.meta_description or product.short_description or product.description or product.name)|striptags|replace('\n', ' ')|truncate(155, True, '…', 0) }}{% endblock %}
+
+{% block social_meta %}
+    <meta property="og:type" content="product">
+    <meta property="og:title" content="{{ product.name[:90] }}">
+    <meta property="og:description" content="{{ self.meta_description() }}">
+    <meta property="og:url" content="{{ site_url }}{{ url_for('products.product_detail', product_id=product.id) }}">
+    {% if product.image_url %}<meta property="og:image" content="{{ product.image_url }}">{% endif %}
+    <meta property="product:price:amount" content="{{ '%.2f'|format(product.price) }}">
+    <meta property="product:price:currency" content="EUR">
+{% endblock %}
+
+{% block structured_data %}
+{% set product_url = site_url ~ url_for('products.product_detail', product_id=product.id) %}
+{% set ld = {
+    '@context': 'https://schema.org',
+    '@type': 'Product',
+    'name': product.name,
+    'sku': product.sku or product.id|string,
+    'image': ([product.image_url] + product.get_images_list())[:8] if product.image_url else [],
+    'description': self.meta_description()|striptags,
+    'url': product_url,
+    'offers': {
+        '@type': 'Offer',
+        'url': product_url,
+        'priceCurrency': 'EUR',
+        'price': '%.2f'|format(product.price),
+        'availability': 'https://schema.org/InStock' if product.stock > 0 else 'https://schema.org/OutOfStock',
+        'itemCondition': 'https://schema.org/NewCondition',
+        'seller': {'@type': 'Organization', 'name': 'MultiProShop'},
+        'hasMerchantReturnPolicy': {
+            '@type': 'MerchantReturnPolicy',
+            'applicableCountry': 'FR',
+            'returnPolicyCategory': 'https://schema.org/MerchantReturnFiniteReturnWindow',
+            'merchantReturnDays': return_days,
+            'returnFees': 'https://schema.org/ReturnFeesCustomerResponsibility'
+        }
+    }
+} %}
+{% if product.reviews_count %}
+{% set _ = ld.update({'aggregateRating': {'@type': 'AggregateRating', 'ratingValue': product.average_rating, 'reviewCount': product.reviews_count}}) %}
+{% endif %}
+    <script type="application/ld+json">{{ ld|tojson }}</script>
+{% endblock %}
+
 {% block extra_css %}
+<style>
+.delivery-estimate { color: #047857; font-size: .95rem; margin: -.25rem 0 1rem; }
+.mobile-buy-bar { display: none; }
+@media (max-width: 767px) {
+    .mobile-buy-bar { position: fixed; left: 0; right: 0; bottom: 0; z-index: 1500; gap: .75rem; align-items: center;
+        background: #fff; padding: .6rem 1rem calc(.6rem + env(safe-area-inset-bottom)); box-shadow: 0 -4px 16px rgba(0,0,0,.12);
+        transform: translateY(110%); transition: transform .2s; display: flex; }
+    .mobile-buy-bar.visible { transform: none; }
+    .mobile-buy-price { font-weight: 700; font-size: 1.15rem; white-space: nowrap; }
+}
+</style>
 <link rel="stylesheet" href="{{ url_for('static', filename='css/pages_modern.css') }}">
 <link rel="stylesheet" href="{{ url_for('static', filename='css/product_detail.css') }}">
 <link rel="stylesheet" href="{{ url_for('static', filename='css/product_variants.css') }}">
@@ -256,7 +314,7 @@
         <div class="col-lg-6">
             <div class="product-detail-image">
                 {% if product.image_url %}
-                <img id="mainImage" src="{{ product.image_url }}" alt="{{ product.name }}" loading="lazy" decoding="async">
+                <img id="mainImage" src="{{ product.image_url }}" alt="{{ product.name }}" fetchpriority="high" decoding="async">
                 {% else %}
                 <img id="mainImage" src="https://via.placeholder.com/600x600?text={{ product.name[:1] }}" alt="{{ product.name }}" loading="lazy" decoding="async">
                 {% endif %}
@@ -493,6 +551,12 @@
                     <p class="price-info">
                         <i class="fas fa-info-circle"></i> {{ seller.vat }} • Livraison offerte en France dès {{ "%.0f"|format(free_shipping_threshold) }} €
                     </p>
+                    {% if product.stock > 0 %}
+                    {% set window = delivery_window() %}
+                    <p class="delivery-estimate">
+                        <i class="fas fa-truck"></i> Commandez aujourd'hui, livraison estimée entre le <strong>{{ window[0] }}</strong> et le <strong>{{ window[1] }}</strong>
+                    </p>
+                    {% endif %}
                 </div>
                 
                 <!-- Quantity Selector -->
@@ -506,9 +570,13 @@
                 <!-- Action Buttons -->
                 <div class="d-flex gap-2 mb-3">
                     {% if product.stock > 0 %}
-                    <button class="btn-modern btn-modern-primary btn-modern-lg flex-fill" onclick="addToCartDetail({{ product.id }})">
+                    <button class="btn-modern btn-modern-primary btn-modern-lg flex-fill" id="add-to-cart-btn" onclick="addToCartDetail({{ product.id }})">
                         <i class="fas fa-shopping-cart"></i>
                         Ajouter au panier
+                    </button>
+                    <button class="btn-modern btn-modern-outline btn-modern-lg flex-fill" id="buy-now-btn" onclick="addToCartDetail({{ product.id }}, true)">
+                        <i class="fas fa-bolt"></i>
+                        Acheter maintenant
                     </button>
                     {% else %}
                     <button class="btn-modern btn-modern-primary btn-modern-lg flex-fill" disabled>
@@ -833,6 +901,14 @@
     </div>
     {% endif %}
 </div>
+{% if product.stock > 0 %}
+<div class="mobile-buy-bar" id="mobile-buy-bar">
+    <div class="mobile-buy-price">{{ "%.2f"|format(product.price) }} €</div>
+    <button class="btn-modern btn-modern-primary flex-fill" onclick="addToCartDetail({{ product.id }})">
+        <i class="fas fa-shopping-cart"></i> Ajouter au panier
+    </button>
+</div>
+{% endif %}
 {% endblock %}
 
 {% block extra_js %}
@@ -875,15 +951,36 @@ function switchTab(index) {
     document.getElementById(`tab-${index}`).classList.add('active');
 }
 
-function addToCartDetail(productId) {
+function currentPrice() {
+    return parseFloat(document.getElementById('product-price').textContent.replace(',', '.')) || {{ product.price }};
+}
+
+function addToCartDetail(productId, buyNow = false) {
     const quantity = parseInt(document.getElementById('quantity').value) || 1;
     const variantInput = document.getElementById('selected-variant-id');
     if (variantInput && !variantInput.value) {
         showNotification('Choisissez une option avant d\'ajouter au panier', 'error');
+        document.querySelector('.variant-option')?.scrollIntoView({behavior: 'smooth', block: 'center'});
         return;
     }
-    addToCart(productId, quantity, variantInput ? variantInput.value : null);
+    addToCart(productId, quantity, variantInput ? variantInput.value : null, {name: {{ product.name|tojson }}, price: currentPrice()})
+        .then(ok => { if (ok && buyNow) location.href = {{ url_for('cart.checkout')|tojson }}; });
 }
+
+mpsTrack('view_item', {
+    value: {{ product.price }},
+    items: [{item_id: {{ product.id }}, item_name: {{ product.name|tojson }}, price: {{ product.price }}}]
+});
+
+// Barre d'achat fixe sur mobile, affichée quand le bouton principal sort de l'écran
+(function () {
+    const bar = document.getElementById('mobile-buy-bar');
+    const mainBtn = document.getElementById('add-to-cart-btn');
+    if (!bar || !mainBtn || !('IntersectionObserver' in window)) return;
+    new IntersectionObserver(entries => {
+        bar.classList.toggle('visible', !entries[0].isIntersecting && entries[0].boundingClientRect.top < 0);
+    }).observe(mainBtn);
+})();
 
 function addToWishlist(productId) {
     // TODO: Implémenter l'ajout aux favoris
@@ -948,15 +1045,20 @@ function selectVariant(element) {
     }
     
     // Activer/désactiver le bouton panier
-    const addToCartBtn = document.querySelector('.btn-modern-primary');
-    if (addToCartBtn && !addToCartBtn.classList.contains('btn-modern-outline')) {
-        if (variantStock > 0) {
-            addToCartBtn.disabled = false;
-            addToCartBtn.innerHTML = '<i class="fas fa-shopping-cart"></i> Ajouter au panier';
-        } else {
-            addToCartBtn.disabled = true;
-            addToCartBtn.innerHTML = '<i class="fas fa-times-circle"></i> Rupture de stock';
-        }
+    const addToCartBtn = document.getElementById('add-to-cart-btn');
+    const buyNowBtn = document.getElementById('buy-now-btn');
+    if (addToCartBtn) {
+        addToCartBtn.disabled = variantStock <= 0;
+        addToCartBtn.innerHTML = variantStock > 0
+            ? '<i class="fas fa-shopping-cart"></i> Ajouter au panier'
+            : '<i class="fas fa-times-circle"></i> Rupture de stock';
+    }
+    if (buyNowBtn) {
+        buyNowBtn.hidden = variantStock <= 0;
+    }
+    const mobilePrice = document.querySelector('.mobile-buy-price');
+    if (mobilePrice) {
+        mobilePrice.textContent = variantPrice.toFixed(2) + ' €';
     }
 }
 

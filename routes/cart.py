@@ -10,14 +10,18 @@ def view_cart():
     """Afficher le panier"""
     from flask import session
     
+    from services.product_service import ProductService
+
     cart = Cart()
     items = cart.get_items_with_products()
     total = cart.get_total_price()
+    suggestions = ProductService.get_cart_suggestions([item['product'] for item in items])
     
     return render_template('pages/cart.html',
                          cart_items=items,
                          total=total,
-                         cart=cart)
+                         cart=cart,
+                         suggestions=suggestions)
 
 def _wants_json():
     """Appel AJAX (fiche produit, cart.js) ou simple formulaire HTML (cartes produits)."""
@@ -81,6 +85,15 @@ def add_to_cart():
             
             message = f'{product.name} ({variant.display_name}) ajouté au panier'
         else:
+            if product.variants.count():
+                # Taille, couleur… : le choix se fait sur la fiche produit
+                message = 'Choisissez une option (taille, couleur…) sur la fiche du produit'
+                url = url_for('products.product_detail', product_id=product.id)
+                if not _wants_json():
+                    flash(message, 'info')
+                    return redirect(url)
+                return jsonify({'success': False, 'needs_variant': True, 'url': url, 'message': message}), 400
+
             # Vérifier le stock du produit
             if product.stock < quantity:
                 return jsonify({

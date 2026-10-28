@@ -58,7 +58,7 @@
                     <h4 class="footer-title">Service Client</h4>
                     <ul class="footer-links">
                         <li>
-                            <a href="{{ url_for('user.orders') }}">
+                            <a href="{{ url_for('main.order_tracking') }}">
                                 <i class="fas fa-chevron-right"></i>
                                 Suivi de commande
                             </a>
@@ -107,9 +107,9 @@
                             </a>
                         </li>
                         <li>
-                            <a href="{{ url_for('main.privacy') }}#cookies">
+                            <a href="{{ url_for('main.privacy') }}#cookies"{% if analytics %} onclick="mpsOpenConsent(); return false;"{% endif %}>
                                 <i class="fas fa-chevron-right"></i>
-                                Cookies
+                                {{ 'Gérer les cookies' if analytics else 'Cookies' }}
                             </a>
                         </li>
                     </ul>

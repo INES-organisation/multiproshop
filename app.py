@@ -98,11 +98,26 @@ def create_app(config_name='development'):
         return {
             'now': now_naive(),
             'main_categories': main_categories,
+            'site_url': app.config['SITE_URL'],
             'seller': app.config['SELLER'],
             'free_shipping_threshold': app.config['FREE_SHIPPING_THRESHOLD'],
             'return_days': app.config['RETURN_DAYS'],
             'delivery_days': app.config['DELIVERY_DAYS'],
+            'delivery_window': delivery_window,
+            'analytics': {k: v for k, v in app.config['ANALYTICS'].items() if v},
         }
+
+    def delivery_window():
+        """Dates de livraison estimées (jours ouvrés, à partir d'aujourd'hui), ex. « 6 nov. et 18 nov. »"""
+        from datetime import date, timedelta
+        months = ('janv.', 'févr.', 'mars', 'avr.', 'mai', 'juin', 'juil.', 'août', 'sept.', 'oct.', 'nov.', 'déc.')
+        def add_business_days(day, n):
+            while n:
+                day += timedelta(days=1)
+                n -= day.weekday() < 5
+            return day
+        return tuple(f'{d.day} {months[d.month - 1]}' for d in
+                     (add_business_days(date.today(), n) for n in app.config['DELIVERY_BUSINESS_DAYS']))
     
     # Enregistrer les blueprints
     register_blueprints(app)

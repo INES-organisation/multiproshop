@@ -107,6 +107,68 @@
 
 .search-form {
     width: 100%;
+    position: relative;
+}
+
+/* Suggestions de recherche */
+.search-suggestions {
+    position: absolute;
+    top: calc(100% + 6px);
+    left: 0;
+    right: 0;
+    z-index: 1200;
+    background: var(--white, #fff);
+    border-radius: 12px;
+    box-shadow: 0 12px 32px rgba(0,0,0,0.15);
+    overflow: hidden;
+}
+
+.search-suggestion {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    padding: 0.55rem 1rem;
+    color: inherit;
+    text-decoration: none;
+}
+
+.search-suggestion:hover,
+.search-suggestion:focus {
+    background: var(--light-bg, #f5f5f5);
+}
+
+.search-suggestion img {
+    width: 40px;
+    height: 40px;
+    object-fit: cover;
+    border-radius: 6px;
+    flex-shrink: 0;
+}
+
+.search-suggestion-name {
+    flex: 1;
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    font-size: 0.9rem;
+}
+
+.search-suggestion-price {
+    font-weight: 700;
+    white-space: nowrap;
+}
+
+.search-suggestion-all {
+    display: block;
+    width: 100%;
+    border: 0;
+    border-top: 1px solid #eee;
+    background: none;
+    padding: 0.6rem 1rem;
+    text-align: left;
+    font-weight: 600;
+    color: var(--primary-dark, #b37d00);
 }
 
 .search-wrapper {

@@ -74,30 +74,31 @@ def legal():
 def confidentialite():
     return render_template('pages/confidentialite.html')
 
-@main.route('/template-test')
-def template_test():
-    return render_template('pages/template_test.html')
+@main.route('/suivi-commande', methods=['GET', 'POST'])
+def order_tracking():
+    """Suivi sans compte : numéro de commande + e-mail de la commande"""
+    from models.order import Order
+    order = None
+    if request.method == 'POST':
+        number = (request.form.get('order_number') or '').strip().upper()
+        email = (request.form.get('email') or '').strip().lower()
+        if number and email:
+            order = Order.query.filter_by(order_number=number).first()
+            if order and order.customer_email.strip().lower() != email:
+                order = None
+        if not order:
+            flash("Aucune commande ne correspond à ce numéro et à cet e-mail.", 'error')
+    return render_template('pages/order_tracking.html', order=order)
 
+# Anciennes pages de démonstration (contenu fictif) : redirigées vers le catalogue
 @main.route('/promotions')
-def promotions():
-    return render_template('pages/promotions.html')
+@main.route('/abonnements')
+@main.route('/encheres')
+@main.route('/annonces')
+@main.route('/blog')
+def retired_page():
+    return redirect(url_for('products.list_products'), 301)
 
 @main.route('/nouveautes')
 def nouveautes():
-    return render_template('pages/nouveautes.html')
-
-@main.route('/abonnements')
-def abonnements():
-    return render_template('pages/abonnements.html')
-
-@main.route('/encheres')
-def encheres():
-    return render_template('pages/encheres.html')
-
-@main.route('/annonces')
-def annonces():
-    return render_template('pages/annonces.html')
-
-@main.route('/blog')
-def blog():
-    return render_template('pages/blog.html')
+    return redirect(url_for('products.list_products', sort='newest'), 301)

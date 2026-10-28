@@ -148,7 +148,7 @@
                 <i class="fas fa-chevron-down faq-icon"></i>
             </div>
             <div class="faq-answer">
-                <p>Les délais de livraison varient selon le produit et votre localisation. En général, comptez 7 à 15 jours ouvrés pour la livraison standard. Les délais exacts sont affichés lors du checkout.</p>
+                <p>Les produits sont expédiés depuis les entrepôts de notre fournisseur. Comptez en général {{ delivery_days }} pour la livraison standard ; le délai de chaque transporteur est affiché avant le paiement. La livraison est offerte en France métropolitaine dès {{ "%.0f"|format(free_shipping_threshold) }} € d'achat.</p>
             </div>
         </div>
         
@@ -158,7 +158,7 @@
                 <i class="fas fa-chevron-down faq-icon"></i>
             </div>
             <div class="faq-answer">
-                <p>Une fois votre commande expédiée, vous recevrez un email avec un numéro de suivi. Vous pouvez également consulter l'état de vos commandes dans votre espace client, section "Mes Commandes".</p>
+                <p>Une fois votre commande expédiée, vous recevez un e-mail avec un numéro de suivi. Vous pouvez aussi suivre votre colis sur la page <a href="{{ url_for('main.order_tracking') }}">Suivi de commande</a> avec votre numéro de commande et votre e-mail, ou dans votre espace client, section « Mes commandes ».</p>
             </div>
         </div>
         
@@ -168,7 +168,7 @@
                 <i class="fas fa-chevron-down faq-icon"></i>
             </div>
             <div class="faq-answer">
-                <p>Vous pouvez modifier ou annuler votre commande dans les 24h suivant sa validation, avant qu'elle ne soit expédiée. Contactez notre service client avec votre numéro de commande.</p>
+                <p>Tant que votre commande n'est pas expédiée, écrivez-nous au plus vite à <a href="mailto:{{ seller.email }}">{{ seller.email }}</a> avec votre numéro de commande : nous la modifions ou l'annulons si le fournisseur ne l'a pas encore préparée. Après l'expédition, vous gardez votre droit de rétractation de {{ return_days }} jours.</p>
             </div>
         </div>
     </div>
@@ -203,7 +203,7 @@
                 <i class="fas fa-chevron-down faq-icon"></i>
             </div>
             <div class="faq-answer">
-                <p>Oui, une facture est automatiquement générée et envoyée par email après chaque commande. Vous pouvez également la télécharger depuis votre espace client.</p>
+                <p>Oui. Le récapitulatif de commande vous est envoyé par e-mail ; pour une facture, écrivez-nous à <a href="mailto:{{ seller.email }}">{{ seller.email }}</a> avec votre numéro de commande.</p>
             </div>
         </div>
     </div>
@@ -218,17 +218,17 @@
                 <i class="fas fa-chevron-down faq-icon"></i>
             </div>
             <div class="faq-answer">
-                <p>La disponibilité est indiquée sur chaque fiche produit. Si un produit est en rupture de stock, vous verrez un badge "Rupture de stock". Notre stock est synchronisé en temps réel avec nos fournisseurs.</p>
+                <p>La disponibilité est indiquée sur chaque fiche produit. Si un produit est en rupture de stock, vous verrez un badge « Rupture de stock ». Le stock est synchronisé régulièrement avec notre fournisseur ; si un article venait à manquer après votre commande, nous vous prévenons et vous remboursons.</p>
             </div>
         </div>
         
         <div class="faq-item">
             <div class="faq-question">
-                <span>Les produits sont-ils authentiques ?</span>
+                <span>D'où viennent les produits ?</span>
                 <i class="fas fa-chevron-down faq-icon"></i>
             </div>
             <div class="faq-answer">
-                <p>Oui, tous nos produits proviennent de fournisseurs certifiés et vérifiés. Nous travaillons avec CJ Dropshipping, un leader mondial du dropshipping, garantissant l'authenticité de tous les articles.</p>
+                <p>Nous travaillons avec le fournisseur CJ Dropshipping, qui prépare et expédie les commandes depuis ses entrepôts. Les produits vendus sont des articles génériques, sans marque, sauf mention contraire sur la fiche. Vous bénéficiez des garanties légales de conformité (2 ans) et des vices cachés.</p>
             </div>
         </div>
         
@@ -238,7 +238,7 @@
                 <i class="fas fa-chevron-down faq-icon"></i>
             </div>
             <div class="faq-answer">
-                <p>Oui, vous disposez de 14 jours pour retourner un produit non utilisé dans son emballage d'origine. Les frais de retour sont à votre charge sauf en cas de produit défectueux.</p>
+                <p>Oui, vous disposez de {{ return_days }} jours après réception pour changer d'avis, sans avoir à vous justifier. Les frais de retour sont à votre charge, sauf produit défectueux ou non conforme. La marche à suivre et le formulaire sont dans nos <a href="{{ url_for('main.terms') }}#retractation">CGV</a>.</p>
             </div>
         </div>
         
@@ -248,7 +248,7 @@
                 <i class="fas fa-chevron-down faq-icon"></i>
             </div>
             <div class="faq-answer">
-                <p>Chaque fiche produit contient un guide des tailles et des informations détaillées sur les variantes disponibles. N'hésitez pas à consulter les avis clients pour des retours d'expérience.</p>
+                <p>Les dimensions et les variantes disponibles sont indiquées sur chaque fiche produit. En cas de doute, écrivez-nous avant de commander : nous vérifions auprès du fournisseur.</p>
             </div>
         </div>
     </div>
@@ -263,7 +263,7 @@
                 <i class="fas fa-chevron-down faq-icon"></i>
             </div>
             <div class="faq-answer">
-                <p>Non, vous pouvez commander en tant qu'invité. Cependant, créer un compte vous permet de suivre vos commandes, sauvegarder vos adresses et accéder à des offres exclusives.</p>
+                <p>Non, vous pouvez commander en tant qu'invité. Cependant, créer un compte vous permet de retrouver toutes vos commandes au même endroit.</p>
             </div>
         </div>
         
@@ -273,7 +273,7 @@
                 <i class="fas fa-chevron-down faq-icon"></i>
             </div>
             <div class="faq-answer">
-                <p>Connectez-vous à votre espace client, puis accédez à "Mon Profil". Vous pourrez y modifier vos informations personnelles, adresses de livraison et préférences.</p>
+                <p>Connectez-vous à votre espace client, puis accédez à "Mon Profil". Vous pourrez y modifier vos informations personnelles.</p>
             </div>
         </div>
         

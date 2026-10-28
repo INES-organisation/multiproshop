@@ -1,5 +1,8 @@
 {% extends 'layout.html' %}
 
+{% block title %}Paiement sécurisé | MultiProShop{% endblock %}
+{% block robots %}<meta name="robots" content="noindex, follow">{% endblock %}
+
 {% block extra_css %}
 <link rel="stylesheet" href="{{ url_for('static', filename='css/pages_modern.css') }}">
 <style>
@@ -710,6 +713,10 @@
 {% block extra_js %}
 <script>
 const SUBTOTAL = {{ total }};
+mpsTrack('begin_checkout', {
+    value: SUBTOTAL,
+    items: [{% for item in cart_items %}{item_id: {{ item.product.id }}, item_name: {{ item.product.name|tojson }}, price: {{ item.price }}, quantity: {{ item.quantity }}}{{ ',' if not loop.last }}{% endfor %}]
+});
 
 function selectShippingMethod(element, code, price) {
     document.querySelectorAll('#shipping-methods-list .shipping-option').forEach(m => m.classList.remove('active'));

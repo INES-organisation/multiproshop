@@ -45,6 +45,13 @@ class Config:
     FREE_SHIPPING_COUNTRIES = ('FR',)  # France métropolitaine
     RETURN_DAYS = 14
     DELIVERY_DAYS = '7 à 15 jours ouvrés'
+    DELIVERY_BUSINESS_DAYS = (7, 15)  # même fourchette, pour la date de livraison estimée
+    # Mesure d'audience et publicité : rien n'est chargé sans identifiant ni sans accord du visiteur
+    ANALYTICS = {
+        'ga4': os.getenv('GA4_MEASUREMENT_ID', ''),
+        'meta': os.getenv('META_PIXEL_ID', ''),
+        'tiktok': os.getenv('TIKTOK_PIXEL_ID', ''),
+    }
     SELLER = {
         'company': 'TONY ALPHA 8.0',
         'trade_name': 'MultiProShop',
