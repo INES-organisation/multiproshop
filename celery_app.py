@@ -16,11 +16,13 @@ def make_celery(app_name=__name__):
     
     # Configuration Redis
     redis_url = os.getenv('REDIS_URL', 'redis://localhost:6379/0')
+    # En production, Celery a sa propre base Redis, séparée du cache
+    broker_url = os.getenv('CELERY_BROKER_URL', redis_url)
     
     celery = Celery(
         app_name,
-        broker=redis_url,
-        backend=redis_url,
+        broker=broker_url,
+        backend=broker_url,
         include=[
             'tasks.cj_sync_tasks',
             'tasks.email_tasks',

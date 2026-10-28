@@ -17,21 +17,32 @@ class Config:
     # Sécurité
     SECRET_KEY = os.getenv('SECRET_KEY', 'votre_clé_secrète_ici')
     
-    # Base de données
+    # Base de données : DATABASE_URL (PostgreSQL en production), SQLite local par défaut
     DB_PATH = BASE_DIR / 'instance' / 'multiproshop.db'
-    SQLALCHEMY_DATABASE_URI = f'sqlite:///{DB_PATH}'
+    SQLALCHEMY_DATABASE_URI = os.getenv('DATABASE_URL') or f'sqlite:///{DB_PATH}'
+    if SQLALCHEMY_DATABASE_URI.startswith('postgres://'):
+        SQLALCHEMY_DATABASE_URI = SQLALCHEMY_DATABASE_URI.replace('postgres://', 'postgresql://', 1)
     SQLALCHEMY_TRACK_MODIFICATIONS = False
     SQLALCHEMY_POOL_RECYCLE = 280
-    SQLALCHEMY_ENGINE_OPTIONS = {
-        'pool_size': 10,              # Nombre de connexions dans le pool
-        'max_overflow': 20,            # Connexions supplémentaires autorisées
-        'pool_timeout': 30,            # Timeout pour obtenir une connexion (secondes)
-        'pool_pre_ping': True,         # Vérifier la connexion avant utilisation
-        'connect_args': {
-            'check_same_thread': False,  # Nécessaire pour SQLite multi-thread
-            'timeout': 30                # Timeout pour les opérations DB
+    if SQLALCHEMY_DATABASE_URI.startswith('sqlite'):
+        SQLALCHEMY_ENGINE_OPTIONS = {
+            'pool_size': 10,              # Nombre de connexions dans le pool
+            'max_overflow': 20,            # Connexions supplémentaires autorisées
+            'pool_timeout': 30,            # Timeout pour obtenir une connexion (secondes)
+            'pool_pre_ping': True,         # Vérifier la connexion avant utilisation
+            'connect_args': {
+                'check_same_thread': False,  # Nécessaire pour SQLite multi-thread
+                'timeout': 30                # Timeout pour les opérations DB
+            }
         }
-    }
+    else:
+        # PostgreSQL partagé avec INES : peu de connexions par processus
+        SQLALCHEMY_ENGINE_OPTIONS = {
+            'pool_size': 5,
+            'max_overflow': 5,
+            'pool_timeout': 30,
+            'pool_pre_ping': True,
+        }
     
     # Cache Redis (activé pour performance maximale)
     CACHE_TYPE = 'RedisCache'
@@ -114,6 +125,9 @@ class TestingConfig(Config):
     """Configuration tests"""
     TESTING = True
     SQLALCHEMY_DATABASE_URI = 'sqlite:///:memory:'
+    SQLALCHEMY_ENGINE_OPTIONS = {}
+    CACHE_TYPE = 'SimpleCache'
+    CACHE_OPTIONS = {}
     WTF_CSRF_ENABLED = False
 
 
