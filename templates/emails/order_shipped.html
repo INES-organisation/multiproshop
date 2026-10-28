@@ -18,9 +18,11 @@
         <p>Bonjour <strong>{{ order.shipping_first_name }}</strong>,</p>
         <p>Bonne nouvelle ! Votre commande <strong>{{ order.order_number }}</strong> a été expédiée.</p>
         
+        {% set tracking_number = tracking_number or order.cj_tracking_number %}
         {% if tracking_number %}
         <div class="info-box">
-            <p><strong>Numéro de suivi :</strong> {{ tracking_number }}</p>
+            <p><strong>Numéro de suivi{% if order.cj_logistics_name %} ({{ order.cj_logistics_name }}){% endif %} :</strong> {{ tracking_number }}<br>
+            <a href="https://t.17track.net/fr#nums={{ tracking_number|urlencode }}">Suivre le colis</a></p>
         </div>
         {% endif %}
         
@@ -30,10 +32,10 @@
             {{ order.shipping_postal_code }} {{ order.shipping_city }}</p>
         </div>
         
-        <p>Vous recevrez votre colis sous <strong>2-5 jours ouvrés</strong>.</p>
+        <p>Le colis arrive en général sous <strong>{{ delivery_days }}</strong> après l'expédition. Le suivi peut mettre 2 à 3 jours à s'activer.</p>
         
         <center>
-            <a href="http://multiproshop.local/user/orders/{{ order.id }}" class="button">Suivre ma commande</a>
+            <a href="{{ site_url }}/suivi-commande" class="button">Suivre ma commande</a>
         </center>
         
         <p style="text-align: center; color: #999; font-size: 12px; margin-top: 30px;">

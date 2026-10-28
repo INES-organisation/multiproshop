@@ -1,4 +1,8 @@
 {% extends 'layout.html' %}
+{% block canonical %}{{ site_url }}{{ url_for('products.category_products', category_id=category.id, page=pagination.page if pagination.page > 1 else None) }}{% endblock %}
+
+{% block title %}{{ category.name_fr or category.name }} | MultiProShop{% endblock %}
+{% block meta_description %}{{ category.name_fr or category.name }} : notre sélection au meilleur prix. Paiement sécurisé, livraison suivie, offerte en France dès {{ '%.0f'|format(free_shipping_threshold) }} €.{% endblock %}
 {% block content %}
 <div class="container py-5 premium-page">
     <h1 class="mb-4">{{ category.name }}</h1>

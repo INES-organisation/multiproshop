@@ -3,7 +3,20 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>{% block title %}MultiProShop - Votre marketplace de confiance{% endblock %}</title>
+    <title>{% block title %}MultiProShop : maison, high-tech, mode et loisirs livrés chez vous{% endblock %}</title>
+    <meta name="description" content="{% block meta_description %}Des milliers de produits pour la maison, le high-tech, la mode et les loisirs. Paiement sécurisé, livraison suivie, offerte en France dès {{ '%.0f'|format(free_shipping_threshold) }} €, {{ return_days }} jours pour changer d'avis.{% endblock %}">
+    <link rel="canonical" href="{% block canonical %}{{ site_url }}{{ request.path }}{% endblock %}">
+    <meta property="og:site_name" content="MultiProShop">
+    <meta property="og:locale" content="fr_FR">
+    {% block social_meta %}
+    <meta property="og:type" content="website">
+    <meta property="og:title" content="{{ self.title() }}">
+    <meta property="og:description" content="{{ self.meta_description() }}">
+    <meta property="og:url" content="{{ site_url }}{{ request.path }}">
+    <meta property="og:image" content="{{ site_url }}{{ url_for('static', filename='images/MultiProShop.png') }}">
+    {% endblock %}
+    {% block robots %}{% endblock %}
+    {% block structured_data %}{% endblock %}
     
     <!-- Bootstrap CSS -->
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
@@ -12,7 +25,7 @@
     
     <!-- Styles -->
     <link rel="stylesheet" href="{{ url_for('static', filename='css/styles.css') }}?v=3">
-    <link rel="stylesheet" href="{{ url_for('static', filename='css/layout_modern.css') }}?v=5">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/layout_modern.css') }}?v=6">
     {% block extra_css %}{% endblock %}
 </head>
 <body>
@@ -45,8 +58,10 @@
     <!-- Bootstrap Bundle JS (incl. Popper) -->
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
     
+    {% include 'partials/consent_analytics.html' %}
+
     <!-- Script panier global -->
-    <script src="{{ url_for('static', filename='js/cart.js') }}"></script>
+    <script src="{{ url_for('static', filename='js/cart.js') }}?v=2"></script>
     
     <!-- Scripts personnalisés -->
     {% block extra_js %}{% endblock %}

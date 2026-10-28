@@ -1,6 +1,7 @@
 {% extends "layout.html" %}
 
-{% block title %}Recherche{% if query %}: {{ query }}{% endif %}{% endblock %}
+{% block title %}Recherche{% if query %} : {{ query }}{% endif %} | MultiProShop{% endblock %}
+{% block robots %}<meta name="robots" content="noindex, follow">{% endblock %}
 
 {% block extra_css %}
 <style>

@@ -1,0 +1,98 @@
+{% extends 'layout.html' %}
+
+{% block robots %}<meta name="robots" content="noindex, follow">{% endblock %}
+
+{% block title %}Suivi de commande | MultiProShop{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/pages_modern.css') }}">
+<style>
+.tracking-steps { display: flex; justify-content: space-between; gap: .5rem; margin: 1.5rem 0; }
+.tracking-step { flex: 1; text-align: center; font-size: .9rem; color: #9ca3af; }
+.tracking-step i { display: block; font-size: 1.4rem; margin-bottom: .4rem; }
+.tracking-step.done { color: var(--primary-color, #2563eb); font-weight: 600; }
+.tracking-details dt { font-weight: 600; }
+.tracking-details dd { margin-bottom: .75rem; }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <div class="container">
+        <h1 class="page-title"><i class="fas fa-truck-fast"></i> Suivi de commande</h1>
+        <p class="page-subtitle">Où en est mon colis ?</p>
+    </div>
+</div>
+
+<div class="container page-container">
+    <div class="row justify-content-center">
+        <div class="col-lg-7">
+            {% if order %}
+            {% set steps = [('paid', 'fa-credit-card', 'Payée'), ('processing', 'fa-box', 'En préparation'), ('shipped', 'fa-truck', 'Expédiée'), ('delivered', 'fa-house', 'Livrée')] %}
+            {% set reached = {'pending': 0, 'paid': 1, 'processing': 2, 'shipped': 3, 'delivered': 4}.get(order.status, 0) %}
+            <div class="card-modern mb-4">
+                <div class="card-modern-header">
+                    <i class="fas fa-receipt"></i> Commande {{ order.order_number }}
+                </div>
+                <div class="card-modern-body">
+                    {% if order.status == 'cancelled' %}
+                    <p class="mb-3"><strong>Cette commande a été annulée.</strong> Si vous avez été débité, le remboursement est fait sur votre moyen de paiement.</p>
+                    {% elif order.status == 'pending' %}
+                    <p class="mb-3">Le paiement de cette commande n'a pas été finalisé.</p>
+                    {% else %}
+                    <div class="tracking-steps">
+                        {% for code, icon, label in steps %}
+                        <div class="tracking-step {{ 'done' if loop.index <= reached }}"><i class="fas {{ icon }}"></i>{{ label }}</div>
+                        {% endfor %}
+                    </div>
+                    {% endif %}
+                    <dl class="tracking-details">
+                        <dt>Passée le</dt>
+                        <dd>{{ order.created_at.strftime('%d/%m/%Y') }}</dd>
+                        {% if order.shipped_at %}
+                        <dt>Expédiée le</dt>
+                        <dd>{{ order.shipped_at.strftime('%d/%m/%Y') }}</dd>
+                        {% endif %}
+                        {% if order.cj_tracking_number %}
+                        <dt>Numéro de suivi{% if order.cj_logistics_name %} ({{ order.cj_logistics_name }}){% endif %}</dt>
+                        <dd>
+                            {{ order.cj_tracking_number }}<br>
+                            <a href="https://t.17track.net/fr#nums={{ order.cj_tracking_number|urlencode }}" target="_blank" rel="noopener">Suivre le colis <i class="fas fa-arrow-up-right-from-square"></i></a>
+                        </dd>
+                        {% elif order.status in ('paid', 'processing') %}
+                        <dt>Numéro de suivi</dt>
+                        <dd>Il vous sera envoyé par e-mail dès l'expédition, en général sous quelques jours.</dd>
+                        {% endif %}
+                        <dt>Livraison à</dt>
+                        <dd>{{ order.shipping_first_name }} {{ order.shipping_last_name }}, {{ order.shipping_city }}</dd>
+                    </dl>
+                    <p class="mb-0 small">Une question ? Écrivez-nous à <a href="mailto:{{ seller.email }}">{{ seller.email }}</a> en indiquant ce numéro de commande.</p>
+                </div>
+            </div>
+            {% endif %}
+
+            <div class="card-modern">
+                <div class="card-modern-header">
+                    <i class="fas fa-magnifying-glass"></i> {{ 'Suivre une autre commande' if order else 'Retrouver ma commande' }}
+                </div>
+                <div class="card-modern-body">
+                    <form method="post" action="{{ url_for('main.order_tracking') }}">
+                        <div class="form-group-modern">
+                            <label class="form-label-modern" for="order_number"><i class="fas fa-hashtag"></i> Numéro de commande</label>
+                            <input type="text" class="form-control-modern" id="order_number" name="order_number" placeholder="ORD-20261028-XXXXXXXX" required>
+                        </div>
+                        <div class="form-group-modern">
+                            <label class="form-label-modern" for="email"><i class="fas fa-envelope"></i> E-mail utilisé pour la commande</label>
+                            <input type="email" class="form-control-modern" id="email" name="email" autocomplete="email" required>
+                        </div>
+                        <button type="submit" class="btn-modern btn-modern-primary btn-modern-lg w-100">
+                            <i class="fas fa-truck-fast"></i> Voir le suivi
+                        </button>
+                    </form>
+                    <p class="small mt-3 mb-0">Le numéro de commande figure dans l'e-mail de confirmation.{% if not current_user.is_authenticated %} Vous avez un compte ? <a href="{{ url_for('auth.login') }}">Connectez-vous</a> pour voir toutes vos commandes.{% endif %}</p>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

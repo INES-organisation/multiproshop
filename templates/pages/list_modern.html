@@ -1,4 +1,7 @@
 {% extends 'layout.html' %}
+{% block canonical %}{{ site_url }}{{ url_for('products.list_products', category=current_category, page=products.page if products and products.page > 1 else None) }}{% endblock %}
+
+{% block title %}{% set cat = (categories|selectattr('id', 'equalto', current_category)|first) if current_category else None %}{{ (cat.name_fr or cat.name) if cat else 'Tous les produits' }}{% if products and products.page > 1 %} (page {{ products.page }}){% endif %} | MultiProShop{% endblock %}
 
 {% block extra_css %}
 <link rel="stylesheet" href="{{ url_for('static', filename='css/pages_modern.css') }}">
@@ -490,12 +493,11 @@
                 </div>
                 <div class="d-flex gap-2 align-items-center">
                     <label for="sort" class="mb-0">Trier par:</label>
-                    <select id="sort" class="form-control-modern form-select-modern" style="width: auto;">
-                        <option>Pertinence</option>
-                        <option>Prix croissant</option>
-                        <option>Prix décroissant</option>
-                        <option>Nouveautés</option>
-                        <option>Meilleures ventes</option>
+                    <select id="sort" class="form-control-modern form-select-modern" style="width: auto;"
+                            onchange="const u = new URL(location.href); u.searchParams.set('sort', this.value); u.searchParams.delete('page'); location.href = u;">
+                        {% for value, label in [('name', 'Nom (A-Z)'), ('bestsellers', 'Meilleures ventes'), ('newest', 'Nouveautés'), ('price_asc', 'Prix croissant'), ('price_desc', 'Prix décroissant')] %}
+                        <option value="{{ value }}" {{ 'selected' if current_sort == value }}>{{ label }}</option>
+                        {% endfor %}
                     </select>
                 </div>
             </div>
@@ -530,17 +532,6 @@
                             </a>
                         </h3>
                         
-                        <div class="product-rating-modern">
-                            <span>
-                                <i class="fas fa-star"></i>
-                                <i class="fas fa-star"></i>
-                                <i class="fas fa-star"></i>
-                                <i class="fas fa-star"></i>
-                                <i class="fas fa-star-half-alt"></i>
-                            </span>
-                            <span class="rating-count">(4.5)</span>
-                        </div>
-                        
                         <div class="product-price-modern">
                             {% if product.promotion %}
                             <span class="price-current">{{ "%.2f"|format(product.price * (1 - product.promotion.discount_percentage / 100)) }}€</span>
@@ -551,13 +542,11 @@
                         </div>
                         
                         <div class="product-actions">
-                            <button class="btn-add-cart-modern" onclick="addToCart({{ product.id }})">
+                            <button class="btn-add-cart-modern" onclick="addToCart({{ product.id }}, 1, null, {name: {{ product.name|tojson|forceescape }}, price: {{ product.price }}})">
                                 <i class="fas fa-shopping-cart"></i>
                                 Ajouter
                             </button>
-                            <button class="btn-wishlist" onclick="addToWishlist({{ product.id }})">
-                                <i class="far fa-heart"></i>
-                            </button>
+
                         </div>
                     </div>
                 </div>
@@ -705,10 +694,5 @@ function toggleN4(categoryId) {
 
 // addToCart est maintenant dans cart.js
 
-function addToWishlist(productId) {
-    // TODO: Implémenter l'ajout aux favoris
-    console.log('Ajout aux favoris:', productId);
-    alert('Produit ajouté aux favoris !');
-}
 </script>
 {% endblock %}

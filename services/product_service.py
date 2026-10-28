@@ -3,7 +3,7 @@ Service de gestion des produits
 """
 from models.product import Product
 from models.category import Category
-from sqlalchemy import or_
+from sqlalchemy import or_, select
 from sqlalchemy.orm import joinedload
 
 
@@ -30,7 +30,7 @@ class ProductService:
         Args:
             page: Numéro de page
             per_page: Nombre de produits par page
-            sort_by: Critère de tri ('name', 'price_asc', 'price_desc')
+            sort_by: Critère de tri ('name', 'price_asc', 'price_desc', 'newest', 'bestsellers')
             category_id: ID de catégorie pour filtrer (optionnel)
             
         Returns:
@@ -51,6 +51,10 @@ class ProductService:
             query = query.order_by(Product.price.asc())
         elif sort_by == 'price_desc':
             query = query.order_by(Product.price.desc())
+        elif sort_by == 'newest':
+            query = query.order_by(Product.created_at.desc(), Product.id.desc())
+        elif sort_by == 'bestsellers':
+            query = query.order_by(Product.sales_count.desc(), Product.views_count.desc(), Product.id.desc())
         else:
             query = query.order_by(Product.name.asc())
         
@@ -109,8 +113,25 @@ class ProductService:
         return Product.query.options(joinedload(Product.category)).filter_by(
             category_id=product.category_id
         ).filter(
-            Product.id != product.id
-        ).limit(limit).all()
+            Product.id != product.id, Product.is_active == True, Product.stock > 0
+        ).order_by(Product.sales_count.desc(), Product.id.desc()).limit(limit).all()
+
+    @staticmethod
+    def get_cart_suggestions(products, limit=4):
+        """« Complétez votre panier » : produits en stock des mêmes catégories que le panier,
+        sans option à choisir (ajout direct), les plus vendus d'abord"""
+        from models.product_variant import ProductVariant
+        if not products:
+            return []
+        in_cart = {p.id for p in products}
+        with_variants = select(ProductVariant.product_id)
+        return Product.query.options(joinedload(Product.category)).filter(
+            Product.category_id.in_({p.category_id for p in products}),
+            Product.id.notin_(in_cart),
+            Product.id.notin_(with_variants),
+            Product.is_active == True,
+            Product.stock > 0,
+        ).order_by(Product.sales_count.desc(), Product.id.desc()).limit(limit).all()
     
     @staticmethod
     def get_products_by_category(category_id, page=1, per_page=12):

@@ -2,13 +2,14 @@
  * Gestion du panier - AJAX
  */
 
-// Ajouter un produit au panier
-function addToCart(productId, quantity = 1, variantId = null) {
+// Ajouter un produit au panier ; renvoie une promesse résolue à true si l'ajout a réussi.
+// item (facultatif) : {name, price} pour la mesure d'audience
+function addToCart(productId, quantity = 1, variantId = null, item = null) {
     const payload = {product_id: productId, quantity: quantity};
     if (variantId) {
         payload.variant_id = variantId;
     }
-    fetch('/cart/add', {
+    return fetch('/cart/add', {
         method: 'POST',
         headers: {
             'Content-Type': 'application/json',
@@ -20,13 +21,23 @@ function addToCart(productId, quantity = 1, variantId = null) {
         if (data.success) {
             showNotification(data.message, 'success');
             updateCartCounter(data.cart_total);
+            if (window.mpsTrack && item) {
+                mpsTrack('add_to_cart', {
+                    value: item.price * quantity,
+                    items: [{item_id: productId, item_name: item.name, item_variant: variantId || undefined, price: item.price, quantity: quantity}]
+                });
+            }
+        } else if (data.needs_variant && data.url) {
+            location.href = data.url;
         } else {
             showNotification(data.message, 'error');
         }
+        return Boolean(data.success);
     })
     .catch(error => {
         console.error('Erreur:', error);
         showNotification('Une erreur est survenue', 'error');
+        return false;
     });
 }
 

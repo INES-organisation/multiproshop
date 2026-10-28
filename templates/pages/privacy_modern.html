@@ -1,5 +1,7 @@
 {% extends 'layout.html' %}
 
+{% block title %}Politique de confidentialité | MultiProShop{% endblock %}
+
 {% block extra_css %}
 <link rel="stylesheet" href="{{ url_for('static', filename='css/pages_modern.css') }}">
 <style>
@@ -359,11 +361,26 @@
             <div class="legal-section" id="cookies">
                 <h2>7. Cookies</h2>
                 <p>
-                    Le site n'utilise aujourd'hui que des cookies nécessaires à son fonctionnement : session, panier et connexion à votre compte. Ils sont exemptés de consentement.
+                    Certains cookies sont nécessaires au fonctionnement du site : session, panier et connexion à votre compte. Ils sont exemptés de consentement.
                 </p>
+                {% if analytics %}
+                <p>
+                    Avec votre accord seulement, nous utilisons aussi des cookies de mesure et publicitaires :
+                </p>
+                <ul>
+                    {% if analytics.ga4 %}<li><strong>Google Analytics 4</strong> (Google Ireland Ltd) : mesure d'audience et des ventes, adresse IP anonymisée.</li>{% endif %}
+                    {% if analytics.meta %}<li><strong>Pixel Meta</strong> (Meta Platforms Ireland Ltd) : mesure et ciblage des publicités Facebook et Instagram.</li>{% endif %}
+                    {% if analytics.tiktok %}<li><strong>Pixel TikTok</strong> (TikTok Technology Ltd) : mesure et ciblage des publicités TikTok.</li>{% endif %}
+                </ul>
+                <p>
+                    Ils sont conservés 13 mois au plus. Votre choix est gardé dans votre navigateur ; vous pouvez le changer à tout moment :
+                    <a href="#" onclick="mpsOpenConsent(); return false;">gérer mes cookies</a>.
+                </p>
+                {% else %}
                 <p>
                     Aucun cookie de mesure d'audience ou publicitaire n'est déposé sans votre accord. S'il en est ajouté, un bandeau vous permettra de les accepter ou de les refuser, et de changer d'avis à tout moment.
                 </p>
+                {% endif %}
             </div>
             
             <!-- Contact -->

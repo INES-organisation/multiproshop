@@ -22,12 +22,18 @@
                         class="search-input" 
                         placeholder="Rechercher des produits..."
                         autocomplete="off"
+                        id="headerSearchInput"
+                        role="combobox"
+                        aria-autocomplete="list"
+                        aria-expanded="false"
+                        aria-controls="searchSuggestions"
                     >
                     <button type="submit" class="search-btn">
                         <span class="btn-text">Rechercher</span>
                         <i class="fas fa-arrow-right btn-icon"></i>
                     </button>
                 </div>
+                <div class="search-suggestions" id="searchSuggestions" role="listbox" hidden></div>
             </form>
         </div>
 
@@ -116,24 +122,17 @@
             <a href="{{ url_for('products.list_products') }}" class="nav-link">
                 <i class="fas fa-th"></i> Tous les produits
             </a>
-            <a href="{{ url_for('main.promotions') }}" class="nav-link promo-link">
-                <i class="fas fa-fire"></i> Promotions et deals
-                <span class="promo-badge">HOT</span>
-            </a>
-            <a href="{{ url_for('main.nouveautes') }}" class="nav-link">
+            <a href="{{ url_for('products.list_products', sort='newest') }}" class="nav-link">
                 <i class="fas fa-star"></i> Nouveautés
             </a>
-            <a href="{{ url_for('main.abonnements') }}" class="nav-link">
-                <i class="fas fa-crown"></i> Abonnements et Services
+            <a href="{{ url_for('products.list_products', sort='bestsellers') }}" class="nav-link">
+                <i class="fas fa-fire"></i> Meilleures ventes
             </a>
-            <a href="{{ url_for('main.encheres') }}" class="nav-link">
-                <i class="fas fa-gavel"></i> Enchères
+            <a href="{{ url_for('main.order_tracking') }}" class="nav-link">
+                <i class="fas fa-truck-fast"></i> Suivi de commande
             </a>
-            <a href="{{ url_for('main.annonces') }}" class="nav-link">
-                <i class="fas fa-bullhorn"></i> Petites Annonces
-            </a>
-            <a href="{{ url_for('main.blog') }}" class="nav-link">
-                <i class="fas fa-newspaper"></i> Blog
+            <a href="{{ url_for('faq.index') }}" class="nav-link">
+                <i class="fas fa-circle-question"></i> Aide
             </a>
         </div>
         
@@ -170,6 +169,43 @@ document.addEventListener('click', function(e) {
         userDropdown?.classList.remove('active');
     }
 });
+
+// Suggestions de produits pendant la frappe
+(function () {
+    const input = document.getElementById('headerSearchInput');
+    const box = document.getElementById('searchSuggestions');
+    if (!input || !box) return;
+    let timer = null, last = '';
+    const hide = () => { box.hidden = true; input.setAttribute('aria-expanded', 'false'); };
+    const escapeHtml = t => String(t).replace(/[&<>"']/g, c => ({'&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'}[c]));
+    input.addEventListener('input', () => {
+        clearTimeout(timer);
+        const q = input.value.trim();
+        if (q.length < 2) { hide(); return; }
+        timer = setTimeout(() => {
+            last = q;
+            fetch('{{ url_for("search.api_suggestions") }}?limit=6&q=' + encodeURIComponent(q))
+                .then(r => r.json())
+                .then(data => {
+                    if (q !== last) return;
+                    const items = data.products || [];
+                    if (!items.length) { hide(); return; }
+                    box.innerHTML = items.map(p =>
+                        '<a class="search-suggestion" role="option" href="' + p.url + '">' +
+                        (p.image ? '<img src="' + escapeHtml(p.image) + '" alt="" loading="lazy">' : '') +
+                        '<span class="search-suggestion-name">' + escapeHtml(p.name) + '</span>' +
+                        '<span class="search-suggestion-price">' + Number(p.price).toFixed(2).replace('.', ',') + ' €</span></a>'
+                    ).join('') +
+                    '<button type="submit" class="search-suggestion-all">Voir tous les résultats pour « ' + escapeHtml(q) + ' »</button>';
+                    box.hidden = false;
+                    input.setAttribute('aria-expanded', 'true');
+                })
+                .catch(hide);
+        }, 250);
+    });
+    input.addEventListener('keydown', e => { if (e.key === 'Escape') hide(); });
+    document.addEventListener('click', e => { if (!box.contains(e.target) && e.target !== input) hide(); });
+})();
 
 // Update cart count
 function updateCartCount() {
