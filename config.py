@@ -37,7 +37,32 @@ class Config:
     
     # Sécurité
     SECRET_KEY = os.getenv('SECRET_KEY', 'votre_clé_secrète_ici')
-    
+
+    # Boutique : une seule source pour ce qui est promis au client (bandeau, fiche, panier,
+    # paiement, CGV) et pour l'identité du vendeur (mentions légales, CGV, pied de page)
+    SITE_URL = os.getenv('SITE_URL', 'https://multiproshop.com').rstrip('/')
+    FREE_SHIPPING_THRESHOLD = float(os.getenv('FREE_SHIPPING_THRESHOLD', '50'))
+    FREE_SHIPPING_COUNTRIES = ('FR',)  # France métropolitaine
+    RETURN_DAYS = 14
+    DELIVERY_DAYS = '7 à 15 jours ouvrés'
+    SELLER = {
+        'company': 'TONY ALPHA 8.0',
+        'trade_name': 'MultiProShop',
+        'owner': 'Anthony Michel Legros',
+        'publisher': 'Anthony Legros',
+        'legal_form': 'Entrepreneur individuel (EI)',
+        'siren': '844 384 198',
+        'address': '8 bis impasse des Jonquilles',
+        'postal_code': '97430',
+        'city': 'Le Tampon',
+        'region': 'La Réunion, France',
+        'phone': '06 93 48 78 17',
+        'phone_link': '+262693487817',
+        'email': os.getenv('CONTACT_EMAIL', 'contact@multiproshop.com'),
+        'vat': 'TVA non applicable, article 293 B du CGI',
+        'hours': 'du lundi au vendredi, 9h-18h (heure de La Réunion)',
+    }
+
     # Base de données : DATABASE_URL (PostgreSQL en production), SQLite local par défaut
     DB_PATH = BASE_DIR / 'instance' / 'multiproshop.db'
     SQLALCHEMY_DATABASE_URI = os.getenv('DATABASE_URL') or f'sqlite:///{DB_PATH}'

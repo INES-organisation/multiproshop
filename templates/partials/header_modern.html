@@ -33,15 +33,6 @@
 
         <!-- Actions utilisateur -->
         <div class="header-right">
-            <!-- Favoris -->
-            <a href="#" class="header-action" title="Favoris">
-                <div class="action-icon">
-                    <i class="far fa-heart"></i>
-                    <span class="action-badge">0</span>
-                </div>
-                <span class="action-label">Favoris</span>
-            </a>
-
             <!-- Panier -->
             <a href="{{ url_for('cart.view_cart') }}" class="header-action" title="Panier">
                 <div class="action-icon">
@@ -91,10 +82,6 @@
                         <a href="{{ url_for('user.orders') }}" class="dropdown-item">
                             <i class="fas fa-box"></i>
                             <span>Mes Commandes</span>
-                        </a>
-                        <a href="#" class="dropdown-item">
-                            <i class="fas fa-heart"></i>
-                            <span>Mes Favoris</span>
                         </a>
                         {% if current_user.role and current_user.role.name == 'admin' %}
                             <div class="dropdown-divider"></div>
@@ -153,8 +140,7 @@
         <!-- Message promo -->
         <div class="promo-banner">
             <i class="fas fa-truck"></i>
-            <span>Livraison gratuite dès 99€ d'achat</span>
-            <span class="promo-highlight">• Profitez-en !</span>
+            <span>Livraison offerte en France dès {{ "%.0f"|format(free_shipping_threshold) }} € d'achat</span>
         </div>
     </div>
 </header>

@@ -123,7 +123,8 @@
                     <i class="fas fa-paper-plane"></i> Envoyez-nous un message
                 </div>
                 <div class="card-modern-body">
-                    <form method="post">
+                    <form method="post" action="{{ url_for('main.contact') }}">
+                        <input type="text" name="website" tabindex="-1" autocomplete="off" style="position:absolute;left:-9999px;" aria-hidden="true">
                         <div class="row g-3">
                             <div class="col-md-6">
                                 <div class="form-group-modern">
@@ -150,7 +151,7 @@
                                 <i class="fas fa-phone"></i>
                                 Téléphone (optionnel)
                             </label>
-                            <input type="tel" class="form-control-modern" name="phone" placeholder="+33 1 23 45 67 89">
+                            <input type="tel" class="form-control-modern" name="phone" placeholder="06 12 34 56 78">
                         </div>
                         
                         <div class="form-group-modern">
@@ -196,7 +197,7 @@
                     </div>
                     <div class="contact-details">
                         <h4>Adresse</h4>
-                        <p>123 Rue du Commerce<br>75000 Paris, France</p>
+                        <p>{{ seller.company }}<br>{{ seller.address }}<br>{{ seller.postal_code }} {{ seller.city }}, {{ seller.region }}</p>
                     </div>
                 </div>
                 
@@ -206,7 +207,7 @@
                     </div>
                     <div class="contact-details">
                         <h4>Téléphone</h4>
-                        <p>+33 1 23 45 67 89<br>Lun-Ven: 9h-18h</p>
+                        <p><a href="tel:{{ seller.phone_link }}">{{ seller.phone }}</a><br>Du lundi au vendredi, 9h-18h (heure de La Réunion)</p>
                     </div>
                 </div>
                 
@@ -216,7 +217,7 @@
                     </div>
                     <div class="contact-details">
                         <h4>Email</h4>
-                        <p>contact@multiproshop.com<br>support@multiproshop.com</p>
+                        <p><a href="mailto:{{ seller.email }}">{{ seller.email }}</a><br>Réponse sous 48 h ouvrées</p>
                     </div>
                 </div>
                 
@@ -226,28 +227,9 @@
                     </div>
                     <div class="contact-details">
                         <h4>Horaires</h4>
-                        <p>Lundi - Vendredi: 9h - 18h<br>Samedi: 10h - 16h<br>Dimanche: Fermé</p>
+                        <p>Du lundi au vendredi : 9h - 18h<br>(heure de La Réunion, UTC+4)</p>
                     </div>
                 </div>
-            </div>
-        </div>
-    </div>
-    
-    <!-- Map -->
-    <div class="card-modern mb-5">
-        <div class="card-modern-header">
-            <i class="fas fa-map"></i> Notre Localisation
-        </div>
-        <div class="card-modern-body p-0">
-            <div class="map-container">
-                <iframe 
-                    src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d2624.9914406081493!2d2.292292615674!3d48.85837007928746!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x47e66fec70fb1d8f%3A0x40b82c3688c9460!2sTour%20Eiffel!5e0!3m2!1sfr!2sfr!4v1234567890"
-                    width="100%" 
-                    height="400" 
-                    style="border:0;" 
-                    allowfullscreen="" 
-                    loading="lazy">
-                </iframe>
             </div>
         </div>
     </div>
@@ -289,7 +271,7 @@
                 </div>
                 <div class="faq-answer">
                     <p style="color: #666; line-height: 1.8;">
-                        Vous disposez de 90 jours pour retourner un produit. Contactez notre service client pour obtenir une étiquette de retour gratuite. Le produit doit être dans son emballage d'origine et en parfait état.
+                        Vous disposez de {{ return_days }} jours après réception pour nous signaler votre retour par e-mail à {{ seller.email }}. Le produit doit être non utilisé, dans son emballage d'origine. Les frais de retour sont à votre charge, sauf produit défectueux ou non conforme.
                     </p>
                 </div>
             </div>
@@ -316,8 +298,8 @@
                     <div class="feature-icon-wrapper">
                         <i class="fas fa-headset"></i>
                     </div>
-                    <h6 class="feature-title">Support 24/7</h6>
-                    <p class="feature-description">Assistance dédiée</p>
+                    <h6 class="feature-title">Service client</h6>
+                    <p class="feature-description">Réponse sous 48 h ouvrées</p>
                 </div>
             </div>
         </div>
@@ -338,8 +320,8 @@
                     <div class="feature-icon-wrapper">
                         <i class="fas fa-comments"></i>
                     </div>
-                    <h6 class="feature-title">Chat en Direct</h6>
-                    <p class="feature-description">Disponible</p>
+                    <h6 class="feature-title">Formulaire</h6>
+                    <p class="feature-description">Sur cette page</p>
                 </div>
             </div>
         </div>

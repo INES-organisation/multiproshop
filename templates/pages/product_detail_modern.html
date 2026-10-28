@@ -289,18 +289,20 @@
                 <h1 class="product-title">{{ product.name }}</h1>
                 
                 <!-- Rating -->
+                {% set review_count = product.reviews_count %}
+                {% if review_count %}
+                {% set avg = product.average_rating %}
                 <div class="product-rating-modern mb-3">
                     <span>
-                        <i class="fas fa-star"></i>
-                        <i class="fas fa-star"></i>
-                        <i class="fas fa-star"></i>
-                        <i class="fas fa-star"></i>
-                        <i class="fas fa-star-half-alt"></i>
+                        {% for i in range(1, 6) %}
+                        <i class="{% if avg >= i %}fas fa-star{% elif avg >= i - 0.5 %}fas fa-star-half-alt{% else %}far fa-star{% endif %}"></i>
+                        {% endfor %}
                     </span>
-                    <span class="rating-count">(4.5 / 5)</span>
+                    <span class="rating-count">({{ avg }} / 5)</span>
                     <span class="ms-2 text-muted">|</span>
-                    <span class="ms-2 text-muted">127 avis</span>
+                    <span class="ms-2 text-muted">{{ review_count }} avis</span>
                 </div>
+                {% endif %}
                 
                 <!-- Stock Status -->
                 {% if product.stock > 10 %}
@@ -489,7 +491,7 @@
                     </div>
                     
                     <p class="price-info">
-                        <i class="fas fa-info-circle"></i> TVA incluse • Livraison gratuite dès 50€
+                        <i class="fas fa-info-circle"></i> {{ seller.vat }} • Livraison offerte en France dès {{ "%.0f"|format(free_shipping_threshold) }} €
                     </p>
                 </div>
                 
@@ -514,9 +516,6 @@
                         Rupture de stock
                     </button>
                     {% endif %}
-                    <button class="btn-modern btn-modern-outline" onclick="addToWishlist({{ product.id }})">
-                        <i class="far fa-heart"></i>
-                    </button>
                 </div>
                 
                 <!-- Features -->
@@ -527,8 +526,8 @@
                                 <i class="fas fa-truck"></i>
                             </div>
                             <div>
-                                <strong>Livraison rapide</strong>
-                                <p class="mb-0 text-muted feature-text">Expédition sous 24-48h</p>
+                                <strong>Livraison suivie</strong>
+                                <p class="mb-0 text-muted feature-text">Livraison suivie en {{ delivery_days }}</p>
                             </div>
                         </div>
                         <div class="d-flex align-items-center gap-3 mb-3">
@@ -536,8 +535,8 @@
                                 <i class="fas fa-shield-alt"></i>
                             </div>
                             <div>
-                                <strong>Garantie 2 ans</strong>
-                                <p class="mb-0 text-muted feature-text">Garantie constructeur</p>
+                                <strong>Garantie légale 2 ans</strong>
+                                <p class="mb-0 text-muted feature-text">Garantie légale de conformité</p>
                             </div>
                         </div>
                         <div class="d-flex align-items-center gap-3">
@@ -545,8 +544,8 @@
                                 <i class="fas fa-undo"></i>
                             </div>
                             <div>
-                                <strong>Retour gratuit</strong>
-                                <p class="mb-0 text-muted feature-text">90 jours pour changer d'avis</p>
+                                <strong>Retours {{ return_days }} jours</strong>
+                                <p class="mb-0 text-muted feature-text">{{ return_days }} jours pour changer d'avis</p>
                             </div>
                         </div>
                     </div>
@@ -564,7 +563,7 @@
             <i class="fas fa-list"></i> Caractéristiques
         </div>
         <div class="tab-modern" onclick="switchTab(2)">
-            <i class="fas fa-star"></i> Avis (127)
+            <i class="fas fa-star"></i> Avis ({{ review_count }})
         </div>
     </div>
     
@@ -869,7 +868,12 @@ function switchTab(index) {
 
 function addToCartDetail(productId) {
     const quantity = parseInt(document.getElementById('quantity').value) || 1;
-    addToCart(productId, quantity);
+    const variantInput = document.getElementById('selected-variant-id');
+    if (variantInput && !variantInput.value) {
+        showNotification('Choisissez une option avant d\'ajouter au panier', 'error');
+        return;
+    }
+    addToCart(productId, quantity, variantInput ? variantInput.value : null);
 }
 
 function addToWishlist(productId) {

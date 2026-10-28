@@ -124,12 +124,8 @@
                     <td colspan="2"><strong>Livraison</strong></td>
                     <td><strong>{{ "%.2f"|format(order.shipping_cost) }}€</strong></td>
                 </tr>
-                <tr>
-                    <td colspan="2"><strong>TVA (20%)</strong></td>
-                    <td><strong>{{ "%.2f"|format(order.tax) }}€</strong></td>
-                </tr>
                 <tr class="total-row">
-                    <td colspan="2">TOTAL TTC</td>
+                    <td colspan="2">TOTAL (TVA non applicable, art. 293 B du CGI)</td>
                     <td>{{ "%.2f"|format(order.total_price) }}€</td>
                 </tr>
             </tbody>
@@ -145,7 +141,7 @@
             </p>
         </div>
         
-        <p>Votre commande sera expédiée sous 24-48h. Vous recevrez un email de confirmation dès son expédition.</p>
+        <p>Votre commande est transmise à notre fournisseur. La livraison suivie prend en général 7 à 15 jours ouvrés : vous recevrez un e-mail avec le numéro de suivi dès l'expédition.</p>
         
         <center>
             <a href="http://multiproshop.local/user/orders/{{ order.id }}" class="button">Suivre ma commande</a>

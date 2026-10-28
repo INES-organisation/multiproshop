@@ -39,7 +39,7 @@ class ProductService:
         # Eager loading optimisé : joinedload pour many-to-one
         query = Product.query.options(
             joinedload(Product.category)
-        )
+        ).filter(Product.is_active == True)
         
         # Filtrer par catégorie si spécifié (inclut les sous-catégories)
         if category_id:
@@ -192,7 +192,7 @@ class ProductService:
         Returns:
             list: Liste de produits en vedette
         """
-        return Product.query.options(joinedload(Product.category)).limit(limit).all()
+        return Product.query.options(joinedload(Product.category)).filter(Product.is_active == True, Product.stock > 0).limit(limit).all()
     
     @staticmethod
     def get_deals_of_the_day(limit=8):
@@ -205,7 +205,7 @@ class ProductService:
         Returns:
             list: Liste de produits en promotion
         """
-        return Product.query.options(joinedload(Product.category)).order_by(Product.id.desc()).limit(limit).all()
+        return Product.query.options(joinedload(Product.category)).filter(Product.is_active == True, Product.stock > 0).order_by(Product.id.desc()).limit(limit).all()
     
     @staticmethod
     def get_suggestions(limit=8):
@@ -231,4 +231,4 @@ class ProductService:
         Returns:
             list: Liste des nouveaux produits
         """
-        return Product.query.options(joinedload(Product.category)).order_by(Product.created_at.desc()).limit(limit).all()
+        return Product.query.options(joinedload(Product.category)).filter(Product.is_active == True, Product.stock > 0).order_by(Product.created_at.desc()).limit(limit).all()

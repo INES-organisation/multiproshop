@@ -174,7 +174,7 @@
                                         <i class="fas fa-user"></i>
                                         Prénom
                                     </label>
-                                    <input type="text" class="form-control-modern" name="first_name" required>
+                                    <input type="text" class="form-control-modern" name="first_name" autocomplete="given-name" required>
                                 </div>
                             </div>
                             <div class="col-md-6">
@@ -183,7 +183,7 @@
                                         <i class="fas fa-user"></i>
                                         Nom
                                     </label>
-                                    <input type="text" class="form-control-modern" name="last_name" required>
+                                    <input type="text" class="form-control-modern" name="last_name" autocomplete="family-name" required>
                                 </div>
                             </div>
                         </div>
@@ -193,7 +193,7 @@
                                 <i class="fas fa-envelope"></i>
                                 Email
                             </label>
-                            <input type="email" class="form-control-modern" name="email" required>
+                            <input type="email" class="form-control-modern" name="email" autocomplete="email" required>
                         </div>
                         
                         <div class="form-group-modern">
@@ -201,7 +201,7 @@
                                 <i class="fas fa-phone"></i>
                                 Téléphone
                             </label>
-                            <input type="tel" class="form-control-modern" name="phone" required>
+                            <input type="tel" class="form-control-modern" name="phone" autocomplete="tel" required>
                         </div>
                         
                         <div class="form-group-modern">
@@ -209,7 +209,7 @@
                                 <i class="fas fa-home"></i>
                                 Adresse
                             </label>
-                            <input type="text" class="form-control-modern" name="address" placeholder="Numéro et nom de rue" required>
+                            <input type="text" class="form-control-modern" name="address" autocomplete="street-address" placeholder="Numéro et nom de rue" required>
                         </div>
                         
                         <div class="row g-3">
@@ -219,7 +219,7 @@
                                         <i class="fas fa-map-pin"></i>
                                         Code Postal
                                     </label>
-                                    <input type="text" class="form-control-modern" name="postal_code" required>
+                                    <input type="text" class="form-control-modern" name="postal_code" autocomplete="postal-code" required>
                                 </div>
                             </div>
                             <div class="col-md-8">
@@ -228,7 +228,7 @@
                                         <i class="fas fa-city"></i>
                                         Ville
                                     </label>
-                                    <input type="text" class="form-control-modern" name="city" required>
+                                    <input type="text" class="form-control-modern" name="city" autocomplete="address-level2" required>
                                 </div>
                             </div>
                         </div>
@@ -238,7 +238,7 @@
                                 <i class="fas fa-flag"></i>
                                 Pays
                             </label>
-                            <select class="form-control-modern form-select-modern" name="country" required>
+                            <select class="form-control-modern form-select-modern" name="country" autocomplete="country" required>
                                 <optgroup label="Europe de l'Ouest">
                                     <option value="FR" selected>France</option>
                                     <option value="BE">Belgique</option>
@@ -618,27 +618,31 @@
                     
                     
                     <div class="order-summary-item" style="padding-top: 1.5rem; margin-top: 1rem; border-top: 2px solid var(--border-color);">
-                        <span style="font-size: 1.2rem; font-weight: 700;">Total TTC</span>
+                        <span style="font-size: 1.2rem; font-weight: 700;">Total</span>
                         <span class="order-total" id="summary-total">
                             <i class="fas fa-spinner fa-spin"></i>
                         </span>
                     </div>
                     <p class="text-muted mb-0" style="font-size: 0.85rem; text-align: right;">
-                        dont TVA (20 %) : <span id="summary-tax">–</span>
+                        {{ seller.vat }}
                     </p>
 
                     
                     <!-- Place Order -->
                     <button type="submit" form="checkoutForm" class="btn-modern btn-modern-primary w-100 btn-modern-lg mt-3">
                         <i class="fas fa-lock"></i>
-                        Payer <span id="pay-total"></span>
+                        Commander avec obligation de paiement <span id="pay-total"></span>
                     </button>
+                    <p class="text-muted mt-2 mb-0" style="font-size: 0.8rem; text-align: center;">
+                        En commandant, vous acceptez nos <a href="{{ url_for('main.terms') }}" target="_blank">conditions générales de vente</a>
+                        et notre <a href="{{ url_for('main.privacy') }}" target="_blank">politique de confidentialité</a>.
+                    </p>
                     
                     <!-- Security Info -->
                     <div class="alert-modern alert-info mt-3">
                         <i class="fas fa-shield-alt"></i>
                         <div>
-                            <small>Paiement 100% sécurisé et crypté SSL</small>
+                            <small>Paiement sécurisé par Stripe, connexion chiffrée</small>
                         </div>
                     </div>
                     
@@ -646,7 +650,6 @@
                     <div style="display: flex; justify-content: center; gap: 1rem; margin-top: 1.5rem; padding-top: 1.5rem; border-top: 1px solid var(--border-color);">
                         <i class="fab fa-cc-visa" style="font-size: 2rem; color: #1A1F71;"></i>
                         <i class="fab fa-cc-mastercard" style="font-size: 2rem; color: #EB001B;"></i>
-                        <i class="fab fa-cc-paypal" style="font-size: 2rem; color: #003087;"></i>
                         <i class="fas fa-lock" style="font-size: 2rem; color: var(--success-color);"></i>
                     </div>
                 </div>
@@ -663,7 +666,7 @@
                         <i class="fas fa-shield-alt"></i>
                     </div>
                     <h6 class="feature-title">Paiement Sécurisé</h6>
-                    <p class="feature-description">SSL & Cryptage</p>
+                    <p class="feature-description">Par Stripe</p>
                 </div>
             </div>
         </div>
@@ -673,8 +676,8 @@
                     <div class="feature-icon-wrapper">
                         <i class="fas fa-undo"></i>
                     </div>
-                    <h6 class="feature-title">Retour Gratuit</h6>
-                    <p class="feature-description">90 jours</p>
+                    <h6 class="feature-title">Retours</h6>
+                    <p class="feature-description">{{ return_days }} jours pour changer d'avis</p>
                 </div>
             </div>
         </div>
@@ -684,8 +687,8 @@
                     <div class="feature-icon-wrapper">
                         <i class="fas fa-truck"></i>
                     </div>
-                    <h6 class="feature-title">Livraison Rapide</h6>
-                    <p class="feature-description">3-5 jours</p>
+                    <h6 class="feature-title">Livraison suivie</h6>
+                    <p class="feature-description">{{ delivery_days }}</p>
                 </div>
             </div>
         </div>
@@ -695,8 +698,8 @@
                     <div class="feature-icon-wrapper">
                         <i class="fas fa-headset"></i>
                     </div>
-                    <h6 class="feature-title">Support 24/7</h6>
-                    <p class="feature-description">Assistance</p>
+                    <h6 class="feature-title">Service client</h6>
+                    <p class="feature-description">Réponse sous 48 h ouvrées</p>
                 </div>
             </div>
         </div>
@@ -707,7 +710,6 @@
 {% block extra_js %}
 <script>
 const SUBTOTAL = {{ total }};
-const VAT_RATE = {{ vat_rate }};
 
 function selectShippingMethod(element, code, price) {
     document.querySelectorAll('#shipping-methods-list .shipping-option').forEach(m => m.classList.remove('active'));
@@ -719,9 +721,7 @@ function selectShippingMethod(element, code, price) {
 
 function updateSummary(shippingCost) {
     const shipping = parseFloat(shippingCost) || 0;
-    // Prix TTC : la TVA est incluse, seulement indiquée
     const total = SUBTOTAL + shipping;
-    const tax = total - total / (1 + VAT_RATE);
     
     const shippingEl = document.getElementById('summary-shipping');
     if (shipping === 0) {
@@ -730,7 +730,6 @@ function updateSummary(shippingCost) {
         shippingEl.textContent = shipping.toFixed(2) + '€';
     }
     
-    document.getElementById('summary-tax').textContent = tax.toFixed(2) + '€';
     document.getElementById('summary-total').textContent = total.toFixed(2) + '€';
     document.getElementById('pay-total').textContent = total.toFixed(2) + '€';
 }
@@ -773,9 +772,7 @@ function loadShippingMethods() {
                        : method.code === 'EXPRESS' ? 'fa-shipping-fast' 
                        : 'fa-truck';
             
-            const sourceTag = source === 'cj' 
-                ? '<span class="badge bg-success" style="font-size:0.7rem;margin-left:0.5rem;">CJ</span>' 
-                : '';
+            const sourceTag = '';
             
             html += '<div class="shipping-option payment-method' + (isFirst ? ' active' : '') + '" '
                   + 'onclick="selectShippingMethod(this, \'' + method.code.replace(/'/g, "\\'") + '\', ' + method.price + ')">'
