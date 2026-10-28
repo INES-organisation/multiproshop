@@ -340,6 +340,7 @@ def sync_products(provider_id):
 
 def _sync_products_background(provider_id, sync_log_id):
     """Synchronisation en arrière-plan"""
+    from app import app
     with app.app_context():
         try:
             provider = ApiProvider.query.get(provider_id)

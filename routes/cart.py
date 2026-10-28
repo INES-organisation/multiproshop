@@ -1,4 +1,4 @@
-from flask import Blueprint, render_template, request, redirect, url_for, flash, jsonify
+from flask import Blueprint, render_template, request, redirect, url_for, flash, jsonify, session, current_app
 from flask_login import login_required, current_user
 from models.cart import Cart
 from models.product import Product
@@ -206,7 +206,7 @@ def get_checkout_shipping():
             shipping_items.append({
                 'product_id': product.id,
                 'cj_pid': product.cj_pid,
-                'cj_vid': item.get('variant_cj_vid'),
+                'cj_vid': item['variant'].cj_vid if item['variant'] is not None else None,
                 'quantity': item['quantity'],
                 'product': product
             })
@@ -224,339 +224,194 @@ def get_checkout_shipping():
             'message': str(e)
         }), 500
 
+# Prix affichés TTC : la TVA est incluse, seulement indiquée sur le récapitulatif
+VAT_RATE = 0.20
+REQUIRED_FIELDS = {
+    'first_name': 'prénom', 'last_name': 'nom', 'email': 'e-mail', 'phone': 'téléphone',
+    'address': 'adresse', 'city': 'ville', 'postal_code': 'code postal',
+}
+
+
+def vat_included(amount_ttc):
+    return round(amount_ttc - amount_ttc / (1 + VAT_RATE), 2)
+
+
+def _shipping_price(items, country, method_code):
+    """Prix de la méthode de livraison choisie, recalculé ici (jamais celui envoyé par le navigateur)."""
+    from services.shipping_service import ShippingService
+    shipping_items = [{
+        'product_id': item['product'].id,
+        'cj_pid': item['product'].cj_pid,
+        'cj_vid': item['variant'].cj_vid if item['variant'] is not None else None,
+        'quantity': item['quantity'],
+        'product': item['product'],
+    } for item in items]
+    result = ShippingService().calculate_shipping(shipping_items, country)
+    for method in result.get('methods', []):
+        if method.get('code') == method_code:
+            return round(float(method['price']), 2)
+    return None
+
+
+def _remember_order(order_id):
+    """Un invité ne peut voir que les commandes passées depuis son navigateur."""
+    ids = session.get('my_orders', [])
+    if order_id not in ids:
+        session['my_orders'] = (ids + [order_id])[-20:]
+
+
 @cart_bp.route('/checkout', methods=['GET', 'POST'])
 def checkout():
-    """Page de checkout"""
+    """Page de commande : adresse et livraison, puis paiement sur la page sécurisée Stripe."""
+    from services import ines_payment
+
     cart = Cart()
     items = cart.get_items_with_products()
-    
-    # Vérifier que le panier n'est pas vide
+
     if cart.is_empty():
         flash('Votre panier est vide', 'warning')
         return redirect(url_for('products.list_products'))
-    
-    # Valider le stock
+
     stock_errors = cart.validate_stock()
     if stock_errors:
         for error in stock_errors:
             flash(error, 'error')
         return redirect(url_for('cart.view_cart'))
-    
+
     total = cart.get_total_price()
-    
+
     if request.method == 'POST':
+        from models.order import Order, OrderItem
+        from extensions import db
+
+        form = {k: (request.form.get(k) or '').strip() for k in list(REQUIRED_FIELDS) + ['country', 'notes', 'shipping_method']}
+        missing = [label for field, label in REQUIRED_FIELDS.items() if not form[field]]
+        if missing:
+            flash('Champs manquants : ' + ', '.join(missing), 'error')
+            return redirect(url_for('cart.checkout'))
+        if not form['shipping_method']:
+            flash('Veuillez sélectionner une méthode de livraison', 'error')
+            return redirect(url_for('cart.checkout'))
+        if not ines_payment.enabled():
+            current_app.logger.error("Paiement indisponible : INES_API_KEY absente")
+            flash('Le paiement est momentanément indisponible. Merci de réessayer dans quelques minutes.', 'error')
+            return redirect(url_for('cart.checkout'))
+
+        country = form['country'] or 'FR'
+        shipping_cost = _shipping_price(items, country, form['shipping_method'])
+        if shipping_cost is None:
+            flash("Cette méthode de livraison n'est plus disponible, merci d'en choisir une autre.", 'error')
+            return redirect(url_for('cart.checkout'))
+
         try:
-            from models.order import Order, OrderItem
-            from extensions import db
-            
-            # Récupérer les données du formulaire
-            first_name = request.form.get('first_name')
-            last_name = request.form.get('last_name')
-            email = request.form.get('email')
-            phone = request.form.get('phone')
-            address = request.form.get('address')
-            city = request.form.get('city')
-            postal_code = request.form.get('postal_code')
-            country = request.form.get('country', 'FR')
-            notes = request.form.get('notes', '')
-            
-            # Récupérer les frais de livraison depuis le formulaire
-            shipping_method = request.form.get('shipping_method', '').strip()
-            if not shipping_method:
-                flash('Veuillez sélectionner une méthode de livraison', 'error')
-                return redirect(url_for('cart.checkout'))
-            
-            try:
-                shipping_cost = float(request.form.get('shipping_cost', 0))
-            except (ValueError, TypeError):
-                shipping_cost = 0
-            
-            tax = total * 0.2  # TVA 20%
-            total_with_tax = total + shipping_cost + tax
-            
-            # Créer la commande
             order = Order(
                 user_id=current_user.id if current_user.is_authenticated else None,
                 status='pending',
                 payment_status='pending',
-                payment_method='card',  # Par défaut
+                payment_method='card',
                 subtotal=total,
                 shipping_cost=shipping_cost,
-                tax=tax,
-                total_price=total_with_tax,
-                customer_email=email,
-                customer_phone=phone,
-                shipping_first_name=first_name,
-                shipping_last_name=last_name,
-                shipping_address=address,
-                shipping_city=city,
-                shipping_postal_code=postal_code,
+                tax=vat_included(total + shipping_cost),
+                total_price=round(total + shipping_cost, 2),
+                customer_email=form['email'],
+                customer_phone=form['phone'],
+                shipping_first_name=form['first_name'],
+                shipping_last_name=form['last_name'],
+                shipping_address=form['address'],
+                shipping_city=form['city'],
+                shipping_postal_code=form['postal_code'],
                 shipping_country=country,
-                shipping_method=shipping_method,
-                customer_notes=notes
+                shipping_method=form['shipping_method'],
+                customer_notes=form['notes'],
             )
-            
             db.session.add(order)
-            db.session.flush()  # Pour obtenir l'ID de la commande
-            
-            # Créer les items de commande
+            db.session.flush()
             for item in items:
-                order_item = OrderItem(
+                db.session.add(OrderItem(
                     order_id=order.id,
                     product_id=item['product'].id,
-                    variant_id=item.get('variant_id'),  # Support des variantes
+                    variant_id=item['variant'].id if item['variant'] is not None else None,
                     quantity=item['quantity'],
-                    price=item['product'].price
-                )
-                db.session.add(order_item)
-                
-                # Réduire le stock (variante ou produit)
-                if item.get('variant_id'):
-                    from models.product_variant import ProductVariant
-                    variant = ProductVariant.query.get(item['variant_id'])
-                    if variant:
-                        variant.stock -= item['quantity']
-                else:
-                    item['product'].reduce_stock(item['quantity'])
-            
+                    price=item['price'],
+                ))
             db.session.commit()
-            
-            # Envoyer l'email de confirmation
-            try:
-                from utils.email import send_order_confirmation_email
-                send_order_confirmation_email(order)
-            except Exception as e:
-                print(f"Erreur envoi email: {e}")
-            
-            # Vider le panier
-            cart.clear()
-            
-            flash(f'Commande {order.order_number} créée avec succès !', 'success')
-            return redirect(url_for('cart.order_confirmation', order_id=order.id))
-            
-        except Exception as e:
-            db.session.rollback()
-            flash(f'Erreur lors de la création de la commande: {str(e)}', 'error')
+            _remember_order(order.id)
+
+            # Le stock et le panier ne bougent qu'une fois le paiement confirmé (fulfill)
+            checkout_session = ines_payment.create_checkout(
+                order,
+                success_url=url_for('cart.payment_success', _external=True),
+                cancel_url=url_for('cart.payment_cancel', _external=True),
+            )
+            return redirect(checkout_session['url'], code=303)
+        except ines_payment.PaymentError as e:
+            current_app.logger.error("Session de paiement non créée : %s", e)
+            flash("Le paiement n'a pas pu démarrer. Merci de réessayer dans quelques minutes.", 'error')
             return redirect(url_for('cart.checkout'))
-    
-    return render_template('pages/checkout.html', cart_items=items, total=total)
+        except Exception:
+            db.session.rollback()
+            current_app.logger.exception("Commande non créée")
+            flash('Une erreur est survenue, votre commande n\'a pas été enregistrée. Merci de réessayer.', 'error')
+            return redirect(url_for('cart.checkout'))
+
+    return render_template('pages/checkout.html', cart_items=items, total=total,
+                           vat_rate=VAT_RATE, payment_enabled=ines_payment.enabled())
+
 
 @cart_bp.route('/order/<int:order_id>')
 def order_confirmation(order_id):
     """Page de confirmation de commande"""
     from models.order import Order
-    
+
     order = Order.query.get_or_404(order_id)
-    
-    # Vérifier que l'utilisateur peut voir cette commande
-    if current_user.is_authenticated:
-        if order.user_id != current_user.id and not current_user.role == 'admin':
-            flash('Accès non autorisé', 'error')
-            return redirect(url_for('main.index'))
-    
+
+    if current_user.is_authenticated and (order.user_id == current_user.id or current_user.role == 'admin'):
+        allowed = True
+    else:
+        allowed = order_id in session.get('my_orders', [])
+    if not allowed:
+        flash('Accès non autorisé', 'error')
+        return redirect(url_for('main.index'))
+
     return render_template('pages/order_confirmation.html', order=order)
 
 # ============================================================================
-# ROUTES STRIPE PAYMENT
+# RETOUR DU PAIEMENT (Stripe d'INES)
 # ============================================================================
-
-@cart_bp.route('/create-checkout-session', methods=['POST'])
-def create_checkout_session():
-    """Créer une session de paiement Stripe"""
-    import stripe
-    from flask import current_app
-    
-    stripe.api_key = current_app.config['STRIPE_SECRET_KEY']
-    
-    try:
-        cart = Cart()
-        items = cart.get_items_with_products()
-        
-        if cart.is_empty():
-            return jsonify({'error': 'Panier vide'}), 400
-        
-        # Créer les line items pour Stripe
-        line_items = []
-        for item in items:
-            line_items.append({
-                'price_data': {
-                    'currency': 'eur',
-                    'product_data': {
-                        'name': item['product'].name,
-                        'images': [item['product'].image_url] if item['product'].image_url else [],
-                    },
-                    'unit_amount': int(item['product'].price * 100),  # Stripe utilise les centimes
-                },
-                'quantity': item['quantity'],
-            })
-        
-        # Créer la session Stripe
-        checkout_session = stripe.checkout.Session.create(
-            payment_method_types=['card'],
-            line_items=line_items,
-            mode='payment',
-            success_url=request.host_url + 'cart/payment-success?session_id={CHECKOUT_SESSION_ID}',
-            cancel_url=request.host_url + 'cart/payment-cancel',
-            metadata={
-                'user_id': current_user.id if current_user.is_authenticated else None,
-            }
-        )
-        
-        return jsonify({'id': checkout_session.id})
-        
-    except Exception as e:
-        return jsonify({'error': str(e)}), 403
 
 @cart_bp.route('/payment-success')
 def payment_success():
-    """Page de succès après paiement Stripe"""
-    import stripe
-    from flask import current_app
-    
-    stripe.api_key = current_app.config['STRIPE_SECRET_KEY']
-    session_id = request.args.get('session_id')
-    
-    if not session_id:
+    """Retour de la page de paiement : la commande est validée si Stripe confirme le paiement."""
+    from models.order import Order
+    from services import ines_payment
+
+    session_id = request.args.get('session_id', '')
+    order = Order.query.filter_by(stripe_session_id=session_id).first() if session_id else None
+    if not order:
         flash('Session de paiement invalide', 'error')
         return redirect(url_for('cart.view_cart'))
-    
-    try:
-        # Récupérer la session Stripe
-        session = stripe.checkout.Session.retrieve(session_id)
-        
-        # Créer la commande si le paiement est réussi
-        if session.payment_status == 'paid':
-            from models.order import Order, OrderItem
-            from extensions import db
-            from datetime import datetime
-            
-            cart = Cart()
-            items = cart.get_items_with_products()
-            
-            # Calculer les totaux
-            subtotal = sum(item['subtotal'] for item in items)
-            shipping_cost = 5.99 if subtotal < 50 else 0
-            tax = (subtotal + shipping_cost) * 0.20
-            total = subtotal + shipping_cost + tax
-            
-            # Créer la commande
-            order = Order(
-                user_id=current_user.id if current_user.is_authenticated else None,
-                order_number=f"CMD-{datetime.now().strftime('%Y%m%d')}-{Order.query.count() + 1:04d}",
-                customer_email=session.customer_details.email if session.customer_details else '',
-                customer_phone='',
-                shipping_first_name=session.customer_details.name.split()[0] if session.customer_details and session.customer_details.name else '',
-                shipping_last_name=' '.join(session.customer_details.name.split()[1:]) if session.customer_details and session.customer_details.name else '',
-                shipping_address='',
-                shipping_city='',
-                shipping_postal_code='',
-                shipping_country='FR',
-                subtotal=subtotal,
-                shipping_cost=shipping_cost,
-                tax=tax,
-                total_price=total,
-                payment_method='card',
-                payment_status='paid',
-                status='paid',
-                stripe_session_id=session_id,
-                paid_at=datetime.utcnow()
-            )
-            
-            db.session.add(order)
-            db.session.flush()
-            
-            # Ajouter les items
-            for item in items:
-                order_item = OrderItem(
-                    order_id=order.id,
-                    product_id=item['product'].id,
-                    variant_id=item.get('variant_id'),  # Support des variantes
-                    quantity=item['quantity'],
-                    price=item['product'].price
-                )
-                db.session.add(order_item)
-                
-                # Décrémenter le stock (variante ou produit)
-                if item.get('variant_id'):
-                    from models.product_variant import ProductVariant
-                    variant = ProductVariant.query.get(item['variant_id'])
-                    if variant:
-                        variant.stock -= item['quantity']
-                else:
-                    item['product'].stock -= item['quantity']
-            
-            db.session.commit()
-            
-            # Créer la commande sur CJ Dropshipping automatiquement
-            try:
-                from models.api_provider import ApiProvider
-                from services.api_providers.cj_dropshipping_optimized import CJDropshippingProvider
-                from services.cj_order_service import CjOrderService
-                
-                provider = ApiProvider.query.filter_by(name='CJ Dropshipping', active=True).first()
-                if provider:
-                    cj_api = CJDropshippingProvider(provider)
-                    cj_service = CjOrderService(cj_api)
-                    
-                    # Créer la commande sur CJ
-                    cj_result = cj_service.create_cj_order(order.id)
-                    
-                    if cj_result.get('success'):
-                        print(f"✅ Commande CJ créée: {cj_result.get('cj_order_id')}")
-                    else:
-                        print(f"⚠️ Erreur création commande CJ: {cj_result.get('message')}")
-                        # Ne pas bloquer la commande si CJ échoue
-            except Exception as e:
-                print(f"⚠️ Exception lors de la création commande CJ: {e}")
-                # Ne pas bloquer la commande
-            
-            cart.clear()
-            
-            flash(f'Paiement réussi ! Commande {order.order_number} créée.', 'success')
-            return redirect(url_for('cart.order_confirmation', order_id=order.id))
-        else:
-            flash('Le paiement n\'a pas été complété', 'warning')
+
+    if order.payment_status != 'paid':
+        try:
+            stripe_session = ines_payment.get_session(session_id)
+        except ines_payment.PaymentError as e:
+            current_app.logger.error("Vérification du paiement impossible (%s) : %s", session_id, e)
+            flash('Votre paiement est en cours de vérification : vous recevrez un e-mail de confirmation.', 'info')
+            return redirect(url_for('main.index'))
+        ines_payment.fulfill(order.id, stripe_session)
+        db_order = Order.query.get(order.id)
+        if db_order.payment_status != 'paid':
+            flash("Le paiement n'a pas été confirmé. Vous pouvez réessayer.", 'warning')
             return redirect(url_for('cart.checkout'))
-            
-    except Exception as e:
-        flash(f'Erreur lors de la vérification du paiement: {str(e)}', 'error')
-        return redirect(url_for('cart.checkout'))
+
+    Cart().clear()
+    _remember_order(order.id)
+    flash(f'Paiement reçu, merci ! Commande {order.order_number} confirmée.', 'success')
+    return redirect(url_for('cart.order_confirmation', order_id=order.id))
+
 
 @cart_bp.route('/payment-cancel')
 def payment_cancel():
-    """Page d'annulation de paiement"""
-    flash('Paiement annulé. Vous pouvez réessayer quand vous voulez.', 'info')
+    """Paiement abandonné : le panier est conservé."""
+    flash('Paiement annulé : votre panier est conservé, vous pouvez réessayer quand vous voulez.', 'info')
     return redirect(url_for('cart.checkout'))
-
-@cart_bp.route('/webhook', methods=['POST'])
-def stripe_webhook():
-    """Webhook Stripe pour les événements de paiement"""
-    import stripe
-    from flask import current_app
-    
-    stripe.api_key = current_app.config['STRIPE_SECRET_KEY']
-    endpoint_secret = current_app.config['STRIPE_WEBHOOK_SECRET']
-    
-    payload = request.get_data()
-    sig_header = request.headers.get('Stripe-Signature')
-    
-    try:
-        event = stripe.Webhook.construct_event(
-            payload, sig_header, endpoint_secret
-        )
-    except ValueError:
-        return jsonify({'error': 'Invalid payload'}), 400
-    except stripe.error.SignatureVerificationError:
-        return jsonify({'error': 'Invalid signature'}), 400
-    
-    # Gérer les événements
-    if event['type'] == 'checkout.session.completed':
-        session = event['data']['object']
-        # Traiter la commande (déjà fait dans payment_success)
-        print(f"✅ Paiement complété: {session['id']}")
-    
-    elif event['type'] == 'payment_intent.succeeded':
-        payment_intent = event['data']['object']
-        print(f"✅ Payment Intent réussi: {payment_intent['id']}")
-    
-    return jsonify({'status': 'success'})

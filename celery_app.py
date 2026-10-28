@@ -16,16 +16,19 @@ def make_celery(app_name=__name__):
     
     # Configuration Redis
     redis_url = os.getenv('REDIS_URL', 'redis://localhost:6379/0')
+    # En production, Celery a sa propre base Redis, séparée du cache
+    broker_url = os.getenv('CELERY_BROKER_URL', redis_url)
     
     celery = Celery(
         app_name,
-        broker=redis_url,
-        backend=redis_url,
+        broker=broker_url,
+        backend=broker_url,
         include=[
             'tasks.cj_sync_tasks',
             'tasks.email_tasks',
             'tasks.analytics_tasks',
-            'tasks.variant_sync_tasks'  # Nouvelles tâches de synchronisation variantes
+            'tasks.variant_sync_tasks',  # Nouvelles tâches de synchronisation variantes
+            'tasks.payment_tasks',
         ]
     )
     
@@ -90,6 +93,11 @@ def make_celery(app_name=__name__):
             'sync-cj-orders-every-30min': {
                 'task': 'tasks.cj_sync_tasks.sync_orders_task',
                 'schedule': 1800.0,  # Toutes les 30 minutes (inchangé)
+            },
+            
+            'reconcile-pending-payments-15min': {
+                'task': 'tasks.payment_tasks.reconcile_pending_orders',
+                'schedule': 900.0,  # Commandes payées sans retour du client sur le site
             },
             
             'cleanup-old-webhooks-weekly': {

@@ -3,6 +3,7 @@ Service de synchronisation CJ Dropshipping
 Inspiré de TonyAlpha80/src/Services/CjSyncService.php
 Gère la synchronisation des catégories, produits et variantes entre CJ et la BDD locale
 """
+import json
 from typing import List, Dict, Optional
 from datetime import datetime
 from extensions import db

@@ -1,0 +1,16 @@
+.git
+.env
+.env.*
+deploy/.env
+**/__pycache__
+*.pyc
+instance/*.db
+instance/*.db.backup
+logs
+celerybeat-schedule*
+static/gen
+static/.webassets-cache
+tests
+docs
+Amélios
+*.md

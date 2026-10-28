@@ -1,0 +1,31 @@
+# Secrets : chaque environnement a son propre fichier, jamais versionné
+.env
+.env.*
+!.env.example
+deploy/.env
+
+# Python
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+.pytest_cache/
+.coverage
+htmlcov/
+
+# Données locales (bases SQLite, sauvegardes, journaux)
+instance/*.db
+instance/*.db.backup
+*.db-shm
+*.db-wal
+logs/
+*.log
+
+# Celery beat
+celerybeat-schedule*
+
+# Assets générés par Flask-Assets
+static/gen/
+static/.webassets-cache/
+
+.DS_Store

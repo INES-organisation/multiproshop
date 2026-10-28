@@ -4,6 +4,7 @@ Inspirée du projet TonyAlpha80 avec cache token et rate limiting
 Documentation: https://developers.cjdropshipping.com/
 """
 from typing import List, Dict, Optional
+import os
 import requests
 import time
 from datetime import datetime, timedelta
@@ -47,9 +48,11 @@ class CJDropshippingApiOptimized:
         # Support pour les deux modes d'initialisation
         if provider is not None:
             # Mode provider : CJDropshippingApiOptimized(provider=provider)
-            self.email = provider.api_key  # email stocké dans api_key
-            self.password = provider.api_secret  # password stocké dans api_secret
-            self.dev_key = getattr(provider, 'dev_key', None)
+            # Clés gérées dans INES (chargées dans l'environnement par config.py) prioritaires
+            # sur celles enregistrées en base pour le fournisseur
+            self.email = os.getenv('CJ_EMAIL') or provider.api_key  # email stocké dans api_key
+            self.password = os.getenv('CJ_PASSWORD') or provider.api_secret  # password stocké dans api_secret
+            self.dev_key = os.getenv('CJ_DEV_KEY') or getattr(provider, 'dev_key', None)
         else:
             # Mode direct : CJDropshippingApiOptimized(email=..., password=...)
             self.email = email

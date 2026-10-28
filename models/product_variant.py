@@ -23,8 +23,8 @@ class ProductVariant(db.Model):
     variant_key = db.Column(db.String(100), nullable=True)  # Ex: "White-S"
     
     # Options
-    color = db.Column(db.String(50), nullable=True)  # Couleur
-    size = db.Column(db.String(50), nullable=True)   # Taille
+    color = db.Column(db.String(150), nullable=True)  # Couleur
+    size = db.Column(db.String(150), nullable=True)   # Taille
     
     # Prix et stock spécifiques à la variante
     price = db.Column(db.Float, nullable=True)

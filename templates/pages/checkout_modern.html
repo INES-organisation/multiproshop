@@ -543,70 +543,26 @@
             <!-- Payment Method -->
             <div class="card-modern mb-4">
                 <div class="card-modern-header">
-                    <i class="fas fa-credit-card"></i> Méthode de Paiement
+                    <i class="fas fa-credit-card"></i> Paiement
                 </div>
-                <div class="card-modern-body" id="payment-methods-section">
-                    <div class="payment-method active" onclick="selectPayment(this)">
+                <div class="card-modern-body">
+                    <div class="payment-method active">
                         <div class="payment-icon">
-                            <i class="fas fa-credit-card"></i>
+                            <i class="fas fa-lock"></i>
                         </div>
                         <div style="flex: 1;">
-                            <strong>Carte Bancaire</strong>
-                            <p class="mb-0 text-muted" style="font-size: 0.9rem;">Visa, Mastercard, Amex</p>
+                            <strong>Carte bancaire, Apple Pay, Google Pay</strong>
+                            <p class="mb-0 text-muted" style="font-size: 0.9rem;">
+                                Vous serez redirigé vers la page de paiement sécurisée Stripe. Vos coordonnées bancaires ne transitent pas par notre site.
+                            </p>
                         </div>
                     </div>
-                    
-                    <div class="payment-method" onclick="selectPayment(this)">
-                        <div class="payment-icon">
-                            <i class="fab fa-paypal"></i>
-                        </div>
-                        <div style="flex: 1;">
-                            <strong>PayPal</strong>
-                            <p class="mb-0 text-muted" style="font-size: 0.9rem;">Paiement sécurisé via PayPal</p>
-                        </div>
+                    {% if not payment_enabled %}
+                    <div class="alert-modern alert-warning mt-3">
+                        <i class="fas fa-exclamation-triangle"></i>
+                        <div><small>Le paiement est momentanément indisponible.</small></div>
                     </div>
-                    
-                    <div class="payment-method" onclick="selectPayment(this)">
-                        <div class="payment-icon">
-                            <i class="fas fa-university"></i>
-                        </div>
-                        <div style="flex: 1;">
-                            <strong>Virement Bancaire</strong>
-                            <p class="mb-0 text-muted" style="font-size: 0.9rem;">Paiement par virement</p>
-                        </div>
-                    </div>
-                    
-                    <!-- Card Details (shown when card is selected) -->
-                    <div id="cardDetails" style="margin-top: 2rem;">
-                        <div class="form-group-modern">
-                            <label class="form-label-modern">
-                                <i class="fas fa-credit-card"></i>
-                                Numéro de Carte
-                            </label>
-                            <input type="text" class="form-control-modern" placeholder="1234 5678 9012 3456" maxlength="19">
-                        </div>
-                        
-                        <div class="row g-3">
-                            <div class="col-md-6">
-                                <div class="form-group-modern">
-                                    <label class="form-label-modern">
-                                        <i class="fas fa-calendar"></i>
-                                        Date d'Expiration
-                                    </label>
-                                    <input type="text" class="form-control-modern" placeholder="MM/AA" maxlength="5">
-                                </div>
-                            </div>
-                            <div class="col-md-6">
-                                <div class="form-group-modern">
-                                    <label class="form-label-modern">
-                                        <i class="fas fa-lock"></i>
-                                        CVV
-                                    </label>
-                                    <input type="text" class="form-control-modern" placeholder="123" maxlength="3">
-                                </div>
-                            </div>
-                        </div>
-                    </div>
+                    {% endif %}
                 </div>
             </div>
             
@@ -642,7 +598,7 @@
                                 <strong style="font-size: 0.9rem;">{{ item.product.name }}</strong>
                                 <p class="mb-0 text-muted" style="font-size: 0.85rem;">Quantité: {{ item.quantity }}</p>
                             </div>
-                            <div style="font-weight: 700;">{{ "%.2f"|format(item.product.price * item.quantity) }}€</div>
+                            <div style="font-weight: 700;">{{ "%.2f"|format(item.subtotal) }}€</div>
                         </div>
                         {% endfor %}
                     </div>
@@ -660,36 +616,22 @@
                         </strong>
                     </div>
                     
-                    <div class="order-summary-item">
-                        <span>TVA (20%)</span>
-                        <strong id="summary-tax">{{ "%.2f"|format(total * 0.2) }}€</strong>
-                    </div>
                     
                     <div class="order-summary-item" style="padding-top: 1.5rem; margin-top: 1rem; border-top: 2px solid var(--border-color);">
-                        <span style="font-size: 1.2rem; font-weight: 700;">Total</span>
+                        <span style="font-size: 1.2rem; font-weight: 700;">Total TTC</span>
                         <span class="order-total" id="summary-total">
                             <i class="fas fa-spinner fa-spin"></i>
                         </span>
                     </div>
-                    
-                    <!-- Promo Code -->
-                    <div style="margin-top: 1.5rem;">
-                        <div class="form-group-modern">
-                            <label class="form-label-modern">
-                                <i class="fas fa-tag"></i>
-                                Code Promo
-                            </label>
-                            <div style="display: flex; gap: 0.5rem;">
-                                <input type="text" class="form-control-modern" placeholder="Code">
-                                <button class="btn-modern btn-modern-outline" style="white-space: nowrap;">Appliquer</button>
-                            </div>
-                        </div>
-                    </div>
+                    <p class="text-muted mb-0" style="font-size: 0.85rem; text-align: right;">
+                        dont TVA (20 %) : <span id="summary-tax">–</span>
+                    </p>
+
                     
                     <!-- Place Order -->
                     <button type="submit" form="checkoutForm" class="btn-modern btn-modern-primary w-100 btn-modern-lg mt-3">
                         <i class="fas fa-lock"></i>
-                        Passer la Commande
+                        Payer <span id="pay-total"></span>
                     </button>
                     
                     <!-- Security Info -->
@@ -765,11 +707,7 @@
 {% block extra_js %}
 <script>
 const SUBTOTAL = {{ total }};
-
-function selectPayment(element) {
-    document.querySelectorAll('#payment-methods-section .payment-method').forEach(m => m.classList.remove('active'));
-    element.classList.add('active');
-}
+const VAT_RATE = {{ vat_rate }};
 
 function selectShippingMethod(element, code, price) {
     document.querySelectorAll('#shipping-methods-list .shipping-option').forEach(m => m.classList.remove('active'));
@@ -781,8 +719,9 @@ function selectShippingMethod(element, code, price) {
 
 function updateSummary(shippingCost) {
     const shipping = parseFloat(shippingCost) || 0;
-    const tax = SUBTOTAL * 0.2;
-    const total = SUBTOTAL + shipping + tax;
+    // Prix TTC : la TVA est incluse, seulement indiquée
+    const total = SUBTOTAL + shipping;
+    const tax = total - total / (1 + VAT_RATE);
     
     const shippingEl = document.getElementById('summary-shipping');
     if (shipping === 0) {
@@ -793,6 +732,7 @@ function updateSummary(shippingCost) {
     
     document.getElementById('summary-tax').textContent = tax.toFixed(2) + '€';
     document.getElementById('summary-total').textContent = total.toFixed(2) + '€';
+    document.getElementById('pay-total').textContent = total.toFixed(2) + '€';
 }
 
 function loadShippingMethods() {

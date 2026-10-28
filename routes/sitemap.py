@@ -41,7 +41,7 @@ def sitemap():
     for category in categories:
         urls.append({
             'loc': f'/products/category/{category.id}',
-            'lastmod': category.updated_at.strftime('%Y-%m-%d') if category.updated_at else datetime.utcnow().strftime('%Y-%m-%d'),
+            'lastmod': category.updated_at.strftime('%Y-%m-%d') if getattr(category, 'updated_at', None) else datetime.utcnow().strftime('%Y-%m-%d'),
             'changefreq': 'weekly',
             'priority': '0.8'
         })

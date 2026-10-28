@@ -22,11 +22,18 @@ def create_app(config_name='development'):
     
     # Charger la configuration
     app.config.from_object(config[config_name])
+    if config_name == 'production' and app.config['SECRET_KEY'] == 'votre_clé_secrète_ici':
+        raise RuntimeError("SECRET_KEY manquante : la définir dans l'environnement de production")
+    if config_name == 'production':
+        # Derrière ines-nginx : schéma https et IP client réels pour url_for(_external=True)
+        from werkzeug.middleware.proxy_fix import ProxyFix
+        app.wsgi_app = ProxyFix(app.wsgi_app, x_for=1, x_proto=1, x_host=1)
     
     # Afficher info DB au démarrage
     print(f"\n{'='*70}")
     print(f"MULTIPROSHOP - MODE: {config_name.upper()}")
-    print(f"Base de donnees: {app.config['SQLALCHEMY_DATABASE_URI']}")
+    from sqlalchemy.engine import make_url
+    print(f"Base de donnees: {make_url(app.config['SQLALCHEMY_DATABASE_URI']).render_as_string(hide_password=True)}")
     print(f"Cache: {app.config['CACHE_TYPE']}")
     print(f"{'='*70}\n")
     
@@ -74,6 +81,8 @@ def create_app(config_name='development'):
     # Créer les tables
     with app.app_context():
         db.create_all()
+        # gunicorn --preload : ne pas partager les connexions du processus maître avec les workers
+        db.engine.dispose()
     
     # Context processor - recharge les catégories à chaque requête pour éviter les instances détachées
     @app.context_processor

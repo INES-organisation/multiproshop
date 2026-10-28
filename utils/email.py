@@ -1,32 +1,53 @@
 """
 Utilitaires pour l'envoi d'emails
+
+Plus de SMTP propre à la boutique : l'envoi passe par le fournisseur e-mail d'INES
+(POST /api/v1/emails/transactional, même circuit que Digita). Sans INES_API_KEY, l'e-mail est
+seulement journalisé et l'appelant continue. MAIL_FROM (facultatif) : expéditeur, à déclarer chez
+le fournisseur d'INES ; sinon l'adresse par défaut d'INES avec le nom « MultiProShop ».
 """
-from flask import render_template, current_app
-from flask_mail import Message
-from extensions import mail
+import logging
+import os
+from html import escape
 from threading import Thread
 
-def send_async_email(app, msg):
-    """Envoyer un email de manière asynchrone"""
-    with app.app_context():
-        mail.send(msg)
+import requests
+from flask import render_template
 
-def send_email(subject, recipients, text_body=None, html_body=None):
+logger = logging.getLogger(__name__)
+
+FROM_NAME = 'MultiProShop'
+
+
+def _send_via_ines(to, subject, html):
+    if not os.getenv('INES_API_KEY'):
+        logger.warning("INES non configuré, e-mail non envoyé : %s → %s", subject, to)
+        return False
+    url = os.getenv('INES_API_URL', 'http://ines-backend:8000').rstrip('/') + '/api/v1/emails/transactional'
+    body = {'to': to, 'subject': subject, 'html': html, 'from_name': FROM_NAME,
+            'from_address': os.getenv('MAIL_FROM') or None}
+    try:
+        requests.post(url, json=body, headers={'Authorization': 'Bearer ' + os.getenv('INES_API_KEY', '')},
+                      timeout=30).raise_for_status()
+        return True
+    except requests.RequestException as e:
+        logger.error("E-mail non envoyé par INES à %s (%s) : %s", to, subject, e)
+        return False
+
+
+def send_email(subject=None, recipients=None, text_body=None, html_body=None, to=None, html=None, text=None):
     """
-    Envoyer un email
-    
-    Args:
-        subject: Sujet de l'email
-        recipients: Liste des destinataires
-        text_body: Corps du message en texte brut
-        html_body: Corps du message en HTML
+    Envoyer un email (en arrière-plan)
+
+    Deux formes acceptées, toutes deux utilisées dans le code :
+        send_email(subject, recipients, text_body, html_body)
+        send_email(to=..., subject=..., html=..., text=...)
     """
-    msg = Message(subject, recipients=recipients)
-    msg.body = text_body
-    msg.html = html_body
-    
-    # Envoyer de manière asynchrone
-    Thread(target=send_async_email, args=(current_app._get_current_object(), msg)).start()
+    if to:
+        recipients = [to] if isinstance(to, str) else list(to)
+    html_body = html_body or html or ('<pre>%s</pre>' % escape(text_body or text or ''))
+    for recipient in recipients or []:
+        Thread(target=_send_via_ines, args=(recipient, subject, html_body), daemon=True).start()
 
 def send_order_confirmation_email(order):
     """

@@ -8,6 +8,27 @@ from dotenv import load_dotenv
 # Charger les variables d'environnement AVANT la classe Config
 load_dotenv()
 
+
+def load_ines_site_config():
+    """Clés de la boutique gérées dans INES (/admin/integrations, préfixe MULTIPROSHOP_, ex.
+    MULTIPROSHOP_CJ_DEV_KEY) : lues au démarrage et prioritaires sur l'environnement. Une clé
+    modifiée dans INES est prise en compte au redémarrage des conteneurs. INES injoignable :
+    on garde l'environnement (deploy/.env) et on le signale."""
+    if not os.getenv('INES_API_KEY'):
+        return
+    import logging
+    import requests
+    url = os.getenv('INES_API_URL', 'http://ines-backend:8000').rstrip('/') + '/api/v1/external/site-config/multiproshop'
+    try:
+        r = requests.get(url, headers={'Authorization': 'Bearer ' + os.environ['INES_API_KEY']}, timeout=5)
+        r.raise_for_status()
+        os.environ.update({k: str(v) for k, v in r.json().items()})
+    except Exception as e:  # noqa: BLE001 — le site doit démarrer même si INES est en panne
+        logging.getLogger(__name__).error("Configuration INES non chargée (%s) : clés de deploy/.env utilisées", e)
+
+
+load_ines_site_config()
+
 # Chemin de base du projet
 BASE_DIR = Path(__file__).parent.absolute()
 
@@ -17,21 +38,32 @@ class Config:
     # Sécurité
     SECRET_KEY = os.getenv('SECRET_KEY', 'votre_clé_secrète_ici')
     
-    # Base de données
+    # Base de données : DATABASE_URL (PostgreSQL en production), SQLite local par défaut
     DB_PATH = BASE_DIR / 'instance' / 'multiproshop.db'
-    SQLALCHEMY_DATABASE_URI = f'sqlite:///{DB_PATH}'
+    SQLALCHEMY_DATABASE_URI = os.getenv('DATABASE_URL') or f'sqlite:///{DB_PATH}'
+    if SQLALCHEMY_DATABASE_URI.startswith('postgres://'):
+        SQLALCHEMY_DATABASE_URI = SQLALCHEMY_DATABASE_URI.replace('postgres://', 'postgresql://', 1)
     SQLALCHEMY_TRACK_MODIFICATIONS = False
     SQLALCHEMY_POOL_RECYCLE = 280
-    SQLALCHEMY_ENGINE_OPTIONS = {
-        'pool_size': 10,              # Nombre de connexions dans le pool
-        'max_overflow': 20,            # Connexions supplémentaires autorisées
-        'pool_timeout': 30,            # Timeout pour obtenir une connexion (secondes)
-        'pool_pre_ping': True,         # Vérifier la connexion avant utilisation
-        'connect_args': {
-            'check_same_thread': False,  # Nécessaire pour SQLite multi-thread
-            'timeout': 30                # Timeout pour les opérations DB
+    if SQLALCHEMY_DATABASE_URI.startswith('sqlite'):
+        SQLALCHEMY_ENGINE_OPTIONS = {
+            'pool_size': 10,              # Nombre de connexions dans le pool
+            'max_overflow': 20,            # Connexions supplémentaires autorisées
+            'pool_timeout': 30,            # Timeout pour obtenir une connexion (secondes)
+            'pool_pre_ping': True,         # Vérifier la connexion avant utilisation
+            'connect_args': {
+                'check_same_thread': False,  # Nécessaire pour SQLite multi-thread
+                'timeout': 30                # Timeout pour les opérations DB
+            }
         }
-    }
+    else:
+        # PostgreSQL partagé avec INES : peu de connexions par processus
+        SQLALCHEMY_ENGINE_OPTIONS = {
+            'pool_size': 5,
+            'max_overflow': 5,
+            'pool_timeout': 30,
+            'pool_pre_ping': True,
+        }
     
     # Cache Redis (activé pour performance maximale)
     CACHE_TYPE = 'RedisCache'
@@ -114,6 +146,9 @@ class TestingConfig(Config):
     """Configuration tests"""
     TESTING = True
     SQLALCHEMY_DATABASE_URI = 'sqlite:///:memory:'
+    SQLALCHEMY_ENGINE_OPTIONS = {}
+    CACHE_TYPE = 'SimpleCache'
+    CACHE_OPTIONS = {}
     WTF_CSRF_ENABLED = False
 
 

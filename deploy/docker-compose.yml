@@ -1,0 +1,55 @@
+# MultiProShop sur le VPS INES — projet compose séparé, branché sur le réseau d'INES (même
+# méthode que Digita). Sur le VPS :
+#   cd /opt/multiproshop && git pull && docker compose -f deploy/docker-compose.yml --env-file deploy/.env up -d --build
+#
+# - Base : base « multiproshop » dans le conteneur ines-postgres existant (pas de nouveau serveur SQL).
+# - Redis : celui d'INES (ines-redis), bases 10 (cache) et 11 (Celery) — INES utilise 0 à 5.
+# - Exposition : uniquement via ines-nginx (server_name multiproshop.com), aucun port publié.
+x-app: &app
+  build:
+    context: ..
+    dockerfile: Dockerfile
+  image: multiproshop-web:${MULTIPROSHOP_IMAGE_TAG:-latest}
+  env_file: .env
+  environment:
+    - FLASK_ENV=production
+  networks:
+    - ines
+  restart: unless-stopped
+  mem_limit: 384m
+  logging:
+    driver: json-file
+    options:
+      max-size: "10m"
+      max-file: "3"
+
+services:
+  multiproshop-web:
+    <<: *app
+    container_name: multiproshop-web
+    volumes:
+      # Images envoyées depuis l'admin : conservées entre deux images
+      - multiproshop-uploads:/app/static/uploads
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request;urllib.request.urlopen('http://127.0.0.1:8000/health')"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+
+  # Synchronisations CJ (produits, stock, commandes) et e-mails ; -B lance aussi le planificateur
+  # dans ce même conteneur (un seul beat, pas de conteneur de plus).
+  multiproshop-worker:
+    <<: *app
+    container_name: multiproshop-worker
+    command: celery -A celery_app:celery worker -B --concurrency 2 --loglevel info -s /tmp/celerybeat-schedule
+    volumes:
+      - multiproshop-uploads:/app/static/uploads
+
+volumes:
+  multiproshop-uploads:
+
+networks:
+  ines:
+    external: true
+    # Nom du réseau créé par le compose d'INES (projet « ines ») — vérifier avec `docker network ls`.
+    name: ${INES_NETWORK:-ines_ines-network}
