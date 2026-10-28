@@ -42,6 +42,7 @@ services:
     <<: *app
     container_name: multiproshop-worker
     command: celery -A celery_app:celery worker -B --concurrency 2 --loglevel info -s /tmp/celerybeat-schedule
+    mem_limit: 768m  # 384m dépassé dès le démarrage (2 workers + beat)
     volumes:
       - multiproshop-uploads:/app/static/uploads
 

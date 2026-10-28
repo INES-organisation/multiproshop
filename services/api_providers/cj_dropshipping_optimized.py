@@ -46,6 +46,8 @@ class CJDropshippingApiOptimized:
             provider: Objet ApiProvider (alternative aux paramètres individuels)
         """
         # Support pour les deux modes d'initialisation
+        if provider is None and email is not None and not isinstance(email, str):
+            provider, email = email, None  # appel historique CJDropshippingProvider(provider)
         if provider is not None:
             # Mode provider : CJDropshippingApiOptimized(provider=provider)
             # Clés gérées dans INES (chargées dans l'environnement par config.py) prioritaires
