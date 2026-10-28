@@ -133,9 +133,9 @@ def fulfill(order_id, session):
         from services.api_providers.cj_dropshipping_optimized import CJDropshippingProvider
         from services.cj_order_service import CjOrderService
 
-        provider = ApiProvider.query.filter_by(name='CJ Dropshipping', active=True).first()
+        provider = ApiProvider.query.filter_by(name='CJ Dropshipping', is_active=True).first()
         if provider:
-            result = CjOrderService(CJDropshippingProvider(provider)).create_cj_order(order.id)
+            result = CjOrderService(CJDropshippingProvider(provider=provider)).create_cj_order(order.id)
             if not result.get('success'):
                 logger.error("Commande CJ non créée pour %s : %s", order.order_number, result.get('message'))
     except Exception as e:  # noqa: BLE001 — la commande reste payée, à passer à la main sur CJ

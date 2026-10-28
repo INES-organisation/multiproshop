@@ -8,6 +8,27 @@ from dotenv import load_dotenv
 # Charger les variables d'environnement AVANT la classe Config
 load_dotenv()
 
+
+def load_ines_site_config():
+    """Clés de la boutique gérées dans INES (/admin/integrations, préfixe MULTIPROSHOP_, ex.
+    MULTIPROSHOP_CJ_DEV_KEY) : lues au démarrage et prioritaires sur l'environnement. Une clé
+    modifiée dans INES est prise en compte au redémarrage des conteneurs. INES injoignable :
+    on garde l'environnement (deploy/.env) et on le signale."""
+    if not os.getenv('INES_API_KEY'):
+        return
+    import logging
+    import requests
+    url = os.getenv('INES_API_URL', 'http://ines-backend:8000').rstrip('/') + '/api/v1/external/site-config/multiproshop'
+    try:
+        r = requests.get(url, headers={'Authorization': 'Bearer ' + os.environ['INES_API_KEY']}, timeout=5)
+        r.raise_for_status()
+        os.environ.update({k: str(v) for k, v in r.json().items()})
+    except Exception as e:  # noqa: BLE001 — le site doit démarrer même si INES est en panne
+        logging.getLogger(__name__).error("Configuration INES non chargée (%s) : clés de deploy/.env utilisées", e)
+
+
+load_ines_site_config()
+
 # Chemin de base du projet
 BASE_DIR = Path(__file__).parent.absolute()
 
