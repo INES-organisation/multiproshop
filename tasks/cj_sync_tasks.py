@@ -16,6 +16,7 @@ from services.admin_notifications import AdminNotificationService
 from extensions import db
 import logging
 import time
+import redis
 
 logger = logging.getLogger(__name__)
 
@@ -80,6 +81,21 @@ def sync_products_task(self, category_id=None, limit=100, scheduled=False):
         raise self.retry(exc=e, countdown=60 * (2 ** self.request.retries))
 
 
+def _claim_run(name, seconds):
+    """Vrai si la tâche n'a pas tourné depuis `seconds` (verrou Redis), pour qu'une file Celery
+    en retard ne rejoue pas la même synchronisation à la chaîne et n'épuise pas les points CJ"""
+    try:
+        client = redis.Redis.from_url(os.getenv('REDIS_URL', 'redis://localhost:6379/0'))
+        return bool(client.set(f'multiproshop:last-run:{name}', int(time.time()), nx=True, ex=seconds))
+    except redis.RedisError as e:
+        logger.warning(f"[Celery] Verrou {name} indisponible ({e}) : exécution quand même")
+        return True
+
+
+def _is_quota_error(message):
+    return 'Insufficient API points' in str(message) or '16900500' in str(message)
+
+
 @celery.task(name='tasks.cj_sync_tasks.sync_stock_task', bind=True, max_retries=3)
 def sync_stock_task(self, product_ids=None):
     """
@@ -88,6 +104,9 @@ def sync_stock_task(self, product_ids=None):
     Args:
         product_ids: Liste IDs produits (optionnel, sinon tous)
     """
+    if not product_ids and self.request.retries == 0 and not _claim_run('cj-stock-sync', 50 * 60):
+        logger.info("[Celery] Sync stock déjà faite il y a moins de 50 min : ignorée")
+        return {'status': 'skipped', 'reason': 'recent_run'}
     try:
         with app.app_context():
             logger.info(f"[Celery] Début sync stock (products={len(product_ids) if product_ids else 'all'})")
@@ -116,6 +135,9 @@ def sync_stock_task(self, product_ids=None):
             else:
                 error_msg = result.get('message', 'Erreur inconnue')
                 logger.error(f"[Celery] ❌ Erreur sync stock: {error_msg}")
+                if _is_quota_error(error_msg):
+                    # Réessayer ne ferait que consommer des points : on attend le prochain passage
+                    return {'status': 'skipped', 'reason': 'cj_quota'}
                 
                 # Notifier admin
                 AdminNotificationService.notify_cj_sync_failure(
