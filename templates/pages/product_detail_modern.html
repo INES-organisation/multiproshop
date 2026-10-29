@@ -705,7 +705,7 @@
             <div class="col-lg-8">
                 <!-- Reviews List -->
                 {% if product.reviews_count > 0 %}
-                    {% for review in product.reviews.filter_by(is_approved=True).order_by(product_review.review_date.desc()).limit(10) %}
+                    {% for review in product.latest_reviews %}
                     <div class="review-item">
                         <div class="review-header">
                             <div>
@@ -737,11 +737,12 @@
                         {% endif %}
                     </div>
                     {% endfor %}
+                    <p class="text-muted small mt-3"><i class="fas fa-shield-alt"></i> Avis déposés uniquement par des clients ayant commandé ce produit sur MultiProShop, publiés sans modification, y compris les avis négatifs.</p>
                 {% else %}
                     <div class="text-center py-5">
                         <i class="fas fa-comment-slash no-reviews-icon"></i>
                         <p class="no-reviews-text">Aucun avis pour le moment.</p>
-                        <p class="no-reviews-subtext">Soyez le premier à donner votre avis sur ce produit !</p>
+                        <p class="no-reviews-subtext">Les avis de nos clients apparaîtront ici après leurs premières livraisons.</p>
                     </div>
                 {% endif %}
             </div>
@@ -767,7 +768,7 @@
                         <p class="text-muted mb-0">Basé sur {{ product.reviews_count }} avis</p>
                         {% else %}
                         <div class="no-rating-display">Pas encore d'avis</div>
-                        <p class="text-muted mb-0">Soyez le premier !</p>
+                        <p class="text-muted mb-0">Pas encore d'avis</p>
                         {% endif %}
                     </div>
                 </div>
