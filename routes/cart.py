@@ -77,10 +77,12 @@ def add_to_cart():
                     'message': 'Cette variante n\'est plus disponible'
                 }), 400
             
-            if variant.stock < quantity:
+            # Même règle que la fiche produit : sans stock connu pour la variante, celui du produit
+            stock = variant.stock if variant.stock > 0 else product.stock
+            if stock < quantity:
                 return jsonify({
                     'success': False,
-                    'message': f'Stock insuffisant. Seulement {variant.stock} disponible(s)'
+                    'message': f'Stock insuffisant. Seulement {stock} disponible(s)'
                 }), 400
             
             message = f'{product.name} ({variant.display_name}) ajouté au panier'
