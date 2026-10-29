@@ -399,8 +399,11 @@ class CjSyncService:
                     # Récupérer les détails depuis l'API
                     details = self.cj_api.get_product_details(product.cj_pid)
                     
-                    if details:
-                        product.stock = details.get('stock', 0)
+                    # product/query ne donne pas le stock : il faut l'interroger variante par variante.
+                    # Stock inconnu (CJ ne répond pas) → on garde l'ancien plutôt que d'écrire 0.
+                    stock = self.cj_api.get_stock(details['variants']) if details else None
+                    if stock is not None:
+                        product.stock = stock['total']
                         product.synced_at = datetime.utcnow()
                         updated += 1
                         

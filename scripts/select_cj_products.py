@@ -16,7 +16,8 @@ Usage (sur le VPS, dans un conteneur qui a les clés CJ) :
   ... python scripts/select_cj_products.py --per-category 20 --out instance/selection_cj
 
 Budget API : CJ compte en points (50 000 par jour pour tout le compte, 50 points par liste).
-Compter 2 requêtes de liste par sous-catégorie et 1 par produit détaillé ; --max-details
+Compter 2 requêtes de liste par sous-catégorie, puis par produit détaillé 1 requête de détail
+et 1 à 3 de stock (product/query ne donne pas le stock) ; --max-details
 plafonne le total. Le script s'arrête net, en gardant ce qu'il a déjà retenu, si les points
 du jour sont épuisés.
 """
@@ -32,6 +33,7 @@ import time
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 
 import config  # noqa: E402,F401 — charge les clés CJ depuis INES dans l'environnement
+from services.api_providers import cj_dropshipping_optimized as cj  # noqa: E402
 from services.api_providers.cj_dropshipping_optimized import CJDropshippingApiOptimized  # noqa: E402
 
 # Familles du futur catalogue → mots qui repèrent leurs catégories CJ de niveau 1
@@ -137,6 +139,8 @@ def main():
     args = parser.parse_args()
 
     coefficients = [(10, 2.5), (30, 2.0), (float('inf'), 1.6)]
+    # CJ limite à 1 requête/s pour tout le compte, worker compris : on garde de la marge
+    cj._memory_cache['min_interval'] = max(cj._memory_cache['min_interval'], 2.0)
     api = CJDropshippingApiOptimized(email=os.getenv('CJ_EMAIL'), password=os.getenv('CJ_PASSWORD'),
                                      dev_key=os.getenv('CJ_DEV_KEY'))
     categories = api.get_categories()
@@ -174,7 +178,7 @@ def main():
                     known['stock_fr'] = known['stock_fr'] or p['stock_fr']
             # Stock en France d'abord, puis popularité
             ranked = sorted(candidates.values(), key=lambda p: (p['stock_fr'], p['listed']), reverse=True)
-            kept = 0
+            kept, rejected = 0, {}
             for p in ranked:
                 if kept >= args.per_category or details_used >= args.max_details:
                     break
@@ -189,9 +193,16 @@ def main():
                     reasons.append('photos')
                 if weight > args.max_weight:
                     reasons.append('poids')
-                if d.get('stock', 0) < args.min_stock:
-                    reasons.append('stock')
+                stock = None
+                if not reasons:  # le stock coûte 1 requête par variante : seulement si le reste passe
+                    stock = api.get_stock(d['variants'], enough=args.min_stock, max_variants=3)
+                    if stock is None:
+                        reasons.append('stock inconnu')
+                    elif stock['total'] < args.min_stock:
+                        reasons.append('stock')
                 if reasons:
+                    for r in reasons:
+                        rejected[r] = rejected.get(r, 0) + 1
                     continue
                 cost_eur = round(d['price'] * args.usd_eur, 2)
                 price = selling_price(cost_eur, coefficients)
@@ -204,8 +215,8 @@ def main():
                     'photos': len(d['images']),
                     'variantes': len(d['variants']),
                     'poids_g': round(weight),
-                    'stock': d['stock'],
-                    'stock_france': 'oui' if p['stock_fr'] else 'non',
+                    'stock': stock['total'],
+                    'stock_france': 'oui' if p['stock_fr'] or stock['france'] else 'non',
                     'boutiques_cj': p['listed'],
                     'cout_usd': d['price'],
                     'cout_eur': cost_eur,
@@ -213,7 +224,8 @@ def main():
                     'marge_eur': round(price - cost_eur, 2),
                 })
                 kept += 1
-            print(f"  {family:20} | {cat['path'][:60]:60} | {kept} retenus ({len(candidates)} candidats)")
+            print(f"  {family:20} | {cat['path'][:60]:60} | {kept} retenus ({len(candidates)} candidats)"
+                  + (f" | écartés : {', '.join(f'{r} {n}' for r, n in rejected.items())}" if rejected else ''))
             if details_used >= args.max_details:
                 print(f"Plafond de {args.max_details} détails atteint : arrêt (relancer avec --families pour la suite)")
                 break

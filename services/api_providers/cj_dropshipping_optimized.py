@@ -569,6 +569,37 @@ class CJDropshippingApiOptimized:
             logger.error(f"[CJ API] Erreur get_product_variants pour {pid}: {e}")
             return None
     
+    def get_variant_inventory(self, vid: str) -> Optional[List[Dict]]:
+        """
+        Stock d'une variante par entrepôt (product/stock/queryByVid).
+        product/query ne renvoie pas le stock (inventories et inventoryNum valent None) : c'est la seule source.
+        """
+        response = self._make_request('GET', 'product/stock/queryByVid', params={'vid': vid})
+        if not response or response.get('result') is False:
+            return None
+        return [
+            {'country': w.get('countryCode', ''), 'total': int(w.get('totalInventoryNum') or 0)}
+            for w in (response.get('data') or [])
+        ]
+
+    def get_stock(self, variants: List[Dict], enough: int = None, max_variants: int = 10) -> Optional[Dict]:
+        """
+        Stock d'un produit = somme du stock de ses variantes, tous entrepôts, dont la part en France.
+        S'arrête dès que `enough` est atteint (un appel par variante). None si aucune réponse de CJ :
+        stock inconnu, à ne pas confondre avec un stock nul.
+        """
+        total, france, answered = 0, 0, False
+        for variant in [v for v in variants if v.get('vid')][:max_variants]:
+            warehouses = self.get_variant_inventory(variant['vid'])
+            if warehouses is None:
+                continue
+            answered = True
+            total += sum(w['total'] for w in warehouses)
+            france += sum(w['total'] for w in warehouses if w['country'] == 'FR')
+            if enough is not None and total >= enough:
+                break
+        return {'total': total, 'france': france} if answered else None
+
     def calculate_shipping(self, products: List[Dict], country_code: str = 'FR') -> Optional[Dict]:
         """
         Calculer les frais de port CJ
