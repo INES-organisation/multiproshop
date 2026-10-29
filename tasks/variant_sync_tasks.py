@@ -76,7 +76,15 @@ def sync_product_variants(self, product_id):
                     cj_vid=vid
                 ).first()
                 
-                stock = variant_data.get('variantStock') or variant_data.get('inventoryNum', 0)
+                stock = variant_data.get('variantStock') or variant_data.get('inventoryNum')
+                if stock is None:
+                    # La liste des variantes ne donne pas le stock : on l'interroge, et s'il reste
+                    # inconnu on garde l'ancien plutôt que de passer la variante en rupture.
+                    warehouses = cj_api.get_variant_inventory(vid)
+                    if warehouses is not None:
+                        stock = sum(w['total'] for w in warehouses)
+                    elif existing_variant:
+                        stock = existing_variant.stock
                 
                 if existing_variant:
                     # Mettre à jour
