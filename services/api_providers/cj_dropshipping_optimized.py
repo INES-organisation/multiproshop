@@ -10,6 +10,7 @@ import time
 from datetime import datetime, timedelta
 from flask import session, has_request_context
 import logging
+import re
 import random
 
 logger = logging.getLogger(__name__)
@@ -710,13 +711,9 @@ class CJDropshippingApiOptimized:
         def parse_price(price_value):
             if not price_value:
                 return 0.0
-            price_str = str(price_value).strip()
-            if '--' in price_str:
-                price_str = price_str.split('--')[0].strip()
-            try:
-                return float(price_str)
-            except:
-                return 0.0
+            # Plage entre variantes : « 3.62 -- 7.16 » ou « 3.62-7.16 » → borne basse, comme avant
+            numbers = re.findall(r'\d+(?:\.\d+)?', str(price_value))
+            return float(numbers[0]) if numbers else 0.0
         
         # Images
         images = []

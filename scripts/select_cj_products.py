@@ -193,6 +193,10 @@ def main():
                     reasons.append('photos')
                 if weight > args.max_weight:
                     reasons.append('poids')
+                # Coût = la variante la plus chère, pour ne pas surestimer la marge
+                cost_usd = max([v['price'] for v in d['variants'] if v.get('price')] or [d['price']])
+                if cost_usd <= 0:
+                    reasons.append('prix')
                 stock = None
                 if not reasons:  # le stock coûte 1 requête par variante : seulement si le reste passe
                     stock = api.get_stock(d['variants'], enough=args.min_stock, max_variants=3)
@@ -204,7 +208,7 @@ def main():
                     for r in reasons:
                         rejected[r] = rejected.get(r, 0) + 1
                     continue
-                cost_eur = round(d['price'] * args.usd_eur, 2)
+                cost_eur = round(cost_usd * args.usd_eur, 2)
                 price = selling_price(cost_eur, coefficients)
                 selected.append({
                     'famille': family,
@@ -218,7 +222,7 @@ def main():
                     'stock': stock['total'],
                     'stock_france': 'oui' if p['stock_fr'] or stock['france'] else 'non',
                     'boutiques_cj': p['listed'],
-                    'cout_usd': d['price'],
+                    'cout_usd': cost_usd,
                     'cout_eur': cost_eur,
                     'prix_vente_eur': price,
                     'marge_eur': round(price - cost_eur, 2),
