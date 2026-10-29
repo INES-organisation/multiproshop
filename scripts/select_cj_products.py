@@ -15,8 +15,10 @@ Usage (sur le VPS, dans un conteneur qui a les clés CJ) :
     python scripts/select_cj_products.py --list-categories
   ... python scripts/select_cj_products.py --per-category 20 --out instance/selection_cj
 
-Budget API : CJ limite à 1 000 requêtes par jour. Compter 2 requêtes par sous-catégorie et
-1 par produit détaillé ; --max-details plafonne le total.
+Budget API : CJ compte en points (50 000 par jour pour tout le compte, 50 points par liste).
+Compter 2 requêtes de liste par sous-catégorie et 1 par produit détaillé ; --max-details
+plafonne le total. Le script s'arrête net, en gardant ce qu'il a déjà retenu, si les points
+du jour sont épuisés.
 """
 import argparse
 import csv
@@ -35,7 +37,7 @@ from services.api_providers.cj_dropshipping_optimized import CJDropshippingApiOp
 # Familles du futur catalogue → mots qui repèrent leurs catégories CJ de niveau 1
 FAMILIES = {
     'Maison & déco': ['home, garden', 'home & garden', 'furniture', 'home improvement'],
-    'Cuisine': ['kitchen'],
+    'Cuisine': ['kitchen'],  # chez CJ, sous-catégorie de Home : repérée au niveau 2
     'High-tech': ['consumer electronics', 'phones', 'computer', 'electronic'],
     'Beauté & bien-être': ['health, beauty', 'beauty', 'hair'],
     'Sport & plein air': ['sports', 'outdoor'],
@@ -79,6 +81,20 @@ def family_of(level1_name):
     return None
 
 
+class QuotaExhausted(Exception):
+    pass
+
+
+def cj_call(api, endpoint, params):
+    """Requête CJ qui lève QuotaExhausted si les points du jour sont épuisés"""
+    response = api._make_request('GET', endpoint, params=params)
+    if response and (response.get('code') == 16900500 or 'Insufficient API points' in str(response.get('message'))):
+        info = response.get('pointsInfo') or {}
+        raise QuotaExhausted(f"points CJ épuisés (utilisés : {info.get('usedToday', '?')}, "
+                             f"restants : {info.get('remaining', '?')} sur {info.get('total', '?')})")
+    return response
+
+
 def list_products(api, category_id, args, country=None):
     """Produits d'une sous-catégorie, les plus listés d'abord (product/listV2)"""
     params = {
@@ -88,7 +104,7 @@ def list_products(api, category_id, args, country=None):
     }
     if country:
         params['countryCode'] = country
-    response = api._make_request('GET', 'product/listV2', params=params)
+    response = cj_call(api, 'product/listV2', params)
     if not response or response.get('result') is False:
         return []
     products = []
@@ -134,6 +150,8 @@ def main():
         if c['level'] != 2:
             continue
         family = family_of(level1.get(c['parent_id'], {}).get('name', ''))
+        if family and 'kitchen' in c['name'].lower():
+            family = 'Cuisine'
         if family in wanted:
             targets.append((family, c))
 
@@ -145,58 +163,62 @@ def main():
 
     print(f"{len(targets)} sous-catégories, jusqu'à {args.max_details} détails ; compter ~{(2 * len(targets) + args.max_details) * 1.5 / 60:.0f} min")
     selected, details_used, started = [], 0, time.time()
-    for family, cat in targets:
-        candidates = {}
-        for country in (None, 'FR'):
-            for p in list_products(api, cat['id'], args, country):
-                if EXCLUDED.search(p['name_en']):
+    try:
+        for family, cat in targets:
+            candidates = {}
+            for country in (None, 'FR'):
+                for p in list_products(api, cat['id'], args, country):
+                    if EXCLUDED.search(p['name_en']):
+                        continue
+                    known = candidates.setdefault(p['pid'], p)
+                    known['stock_fr'] = known['stock_fr'] or p['stock_fr']
+            # Stock en France d'abord, puis popularité
+            ranked = sorted(candidates.values(), key=lambda p: (p['stock_fr'], p['listed']), reverse=True)
+            kept = 0
+            for p in ranked:
+                if kept >= args.per_category or details_used >= args.max_details:
+                    break
+                details_used += 1
+                response = cj_call(api, 'product/query', {'pid': p['pid']})
+                if not response or response.get('result') is False or not response.get('data'):
                     continue
-                known = candidates.setdefault(p['pid'], p)
-                known['stock_fr'] = known['stock_fr'] or p['stock_fr']
-        # Stock en France d'abord, puis popularité
-        ranked = sorted(candidates.values(), key=lambda p: (p['stock_fr'], p['listed']), reverse=True)
-        kept = 0
-        for p in ranked:
-            if kept >= args.per_category or details_used >= args.max_details:
+                d = api._format_product(response['data'])
+                weight = parse_weight_g(d.get('weight'))
+                reasons = []
+                if len(d.get('images') or []) < args.min_images:
+                    reasons.append('photos')
+                if weight > args.max_weight:
+                    reasons.append('poids')
+                if d.get('stock', 0) < args.min_stock:
+                    reasons.append('stock')
+                if reasons:
+                    continue
+                cost_eur = round(d['price'] * args.usd_eur, 2)
+                price = selling_price(cost_eur, coefficients)
+                selected.append({
+                    'famille': family,
+                    'categorie_cj': cat['path'],
+                    'pid': p['pid'],
+                    'nom_en': d['name_en'] or p['name_en'],
+                    'image': d['image'] or p['image'],
+                    'photos': len(d['images']),
+                    'variantes': len(d['variants']),
+                    'poids_g': round(weight),
+                    'stock': d['stock'],
+                    'stock_france': 'oui' if p['stock_fr'] else 'non',
+                    'boutiques_cj': p['listed'],
+                    'cout_usd': d['price'],
+                    'cout_eur': cost_eur,
+                    'prix_vente_eur': price,
+                    'marge_eur': round(price - cost_eur, 2),
+                })
+                kept += 1
+            print(f"  {family:20} | {cat['path'][:60]:60} | {kept} retenus ({len(candidates)} candidats)")
+            if details_used >= args.max_details:
+                print(f"Plafond de {args.max_details} détails atteint : arrêt (relancer avec --families pour la suite)")
                 break
-            details_used += 1
-            d = api.get_product_details(p['pid'])
-            if not d:
-                continue
-            weight = parse_weight_g(d.get('weight'))
-            reasons = []
-            if len(d.get('images') or []) < args.min_images:
-                reasons.append('photos')
-            if weight > args.max_weight:
-                reasons.append('poids')
-            if d.get('stock', 0) < args.min_stock:
-                reasons.append('stock')
-            if reasons:
-                continue
-            cost_eur = round(d['price'] * args.usd_eur, 2)
-            price = selling_price(cost_eur, coefficients)
-            selected.append({
-                'famille': family,
-                'categorie_cj': cat['path'],
-                'pid': p['pid'],
-                'nom_en': d['name_en'] or p['name_en'],
-                'image': d['image'] or p['image'],
-                'photos': len(d['images']),
-                'variantes': len(d['variants']),
-                'poids_g': round(weight),
-                'stock': d['stock'],
-                'stock_france': 'oui' if p['stock_fr'] else 'non',
-                'boutiques_cj': p['listed'],
-                'cout_usd': d['price'],
-                'cout_eur': cost_eur,
-                'prix_vente_eur': price,
-                'marge_eur': round(price - cost_eur, 2),
-            })
-            kept += 1
-        print(f"  {family:20} | {cat['path'][:60]:60} | {kept} retenus ({len(candidates)} candidats)")
-        if details_used >= args.max_details:
-            print(f"Plafond de {args.max_details} détails atteint : arrêt (relancer avec --families pour la suite)")
-            break
+    except QuotaExhausted as e:
+        print(f"\nArrêt : {e}. Relancer après la remise à zéro du quota (le lendemain).")
 
     os.makedirs(os.path.dirname(args.out) or '.', exist_ok=True)
     with open(args.out + '.json', 'w', encoding='utf-8') as f:

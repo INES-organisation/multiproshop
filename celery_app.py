@@ -86,6 +86,7 @@ def make_celery(app_name=__name__):
             'sync-cj-stock-hourly': {
                 'task': 'tasks.cj_sync_tasks.sync_stock_task',
                 'schedule': crontab(minute=30),  # XX:30 - Décalé de TonyAlpha (XX:00)
+                'options': {'expires': 50 * 60},  # une file en retard ne rejoue pas les passages manqués
             },
             
             # ========================================
