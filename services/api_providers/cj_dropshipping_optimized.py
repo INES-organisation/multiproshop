@@ -8,7 +8,7 @@ import os
 import requests
 import time
 from datetime import datetime, timedelta
-from flask import session, has_request_context
+from flask import has_app_context, has_request_context
 import logging
 import re
 import random
@@ -24,6 +24,27 @@ _memory_cache = {
     'min_interval': 1.5,         # intervalle minimum entre appels (Free CJ = 1 req/s)
     'last_auth_call': 0,         # timestamp du dernier appel auth
 }
+
+
+def _shared_get(key):
+    """Cache de l'app (Redis en production), partagé par les processus web et Celery"""
+    if not has_app_context():
+        return None
+    try:
+        from extensions import cache
+        return cache.get(key)
+    except Exception:
+        return None
+
+
+def _shared_set(key, value, timeout):
+    if not has_app_context():
+        return
+    try:
+        from extensions import cache
+        cache.set(key, value, timeout=max(int(timeout), 1))
+    except Exception:
+        pass
 
 
 class CJDropshippingApiOptimized:
@@ -63,178 +84,98 @@ class CJDropshippingApiOptimized:
             self.dev_key = dev_key
         
         self.base_url = 'https://developers.cjdropshipping.com/api2.0/v1'
-        self.timeout = 30
+        # Pendant une requête web, on échoue vite plutôt que de faire attendre le client
+        self.fail_fast = has_request_context()
+        self.timeout = 10 if self.fail_fast else 30
         self.verify_ssl = False
-        self.use_session = has_request_context()
         
     def get_access_token(self) -> Optional[str]:
         """
-        Obtenir un access token CJ avec cache en session ou mémoire
-        Inspiré de TonyAlpha80/src/Api/v1/Services/CjDropshippingApi.php
+        Token CJ partagé entre tous les processus (cache Redis de l'app), sinon mémoire du processus.
+        CJ n'accepte qu'une authentification toutes les 5 minutes : pendant une requête web on
+        n'attend jamais (le client verrait une page bloquée puis une 504), on renvoie None tout de suite.
         """
-        # Utiliser session Flask si disponible, sinon cache mémoire
-        if self.use_session:
-            # Vérifier rate limiting - attendre au lieu de retourner None
-            if 'cj_rate_limit_until' in session:
-                wait = session['cj_rate_limit_until'] - time.time()
-                if wait > 0:
-                    logger.warning(f"[CJ API] Rate limit actif - attente {wait:.0f}s...")
-                    time.sleep(wait)
-                    del session['cj_rate_limit_until']
-            
-            # Vérifier token en cache
-            if 'cj_access_token' in session and 'cj_token_expires_at' in session:
-                if session['cj_token_expires_at'] > time.time():
-                    return session['cj_access_token']
-        else:
-            # Utiliser cache mémoire - attendre au lieu de retourner None
-            wait = _memory_cache['rate_limit_until'] - time.time()
-            if wait > 0:
-                logger.warning(f"[CJ API] Rate limit actif - attente {wait:.0f}s...")
-                time.sleep(wait)
-                _memory_cache['rate_limit_until'] = 0
-            
-            if _memory_cache['access_token'] and _memory_cache['token_expires_at'] > time.time():
-                return _memory_cache['access_token']
-        
-        # Obtenir nouveau token - respecter limite 1x/5min
+        now = time.time()
+        shared = _shared_get('cj:access_token')
+        if shared and shared.get('expires', 0) > now:
+            _memory_cache['access_token'], _memory_cache['token_expires_at'] = shared['token'], shared['expires']
+            return shared['token']
+        if _memory_cache['access_token'] and _memory_cache['token_expires_at'] > now:
+            return _memory_cache['access_token']
+
+        last_auth = max(_memory_cache['last_auth_call'], _shared_get('cj:last_auth') or 0)
+        blocked_until = max(_memory_cache['rate_limit_until'], _shared_get('cj:rate_limit_until') or 0,
+                            last_auth + 300 if last_auth else 0)
+        if blocked_until > now:
+            if self.fail_fast:
+                logger.warning(f"[CJ API] Authentification CJ indisponible encore {blocked_until - now:.0f}s - abandon")
+                return None
+            logger.warning(f"[CJ API] Auth limitée à 1x/5min - attente {blocked_until - now:.0f}s...")
+            time.sleep(blocked_until - now)
+            shared = _shared_get('cj:access_token')  # un autre processus a pu s'authentifier entre-temps
+            if shared and shared.get('expires', 0) > time.time():
+                return shared['token']
+
         try:
-            # Vérifier si on a fait un appel auth récemment (< 5 min)
-            since_last_auth = time.time() - _memory_cache['last_auth_call']
-            if since_last_auth < 300 and _memory_cache['last_auth_call'] > 0:
-                wait = 300 - since_last_auth
-                logger.warning(f"[CJ API] Auth limitée à 1x/5min - attente {wait:.0f}s...")
-                time.sleep(wait)
-            
             logger.info(f"[CJ API] Authentification avec email: {self.email}")
             _memory_cache['last_auth_call'] = time.time()
-            
+            _shared_set('cj:last_auth', _memory_cache['last_auth_call'], 300)
+
             url = f"{self.base_url}/authentication/getAccessToken"
-            
-            headers = {
-                'Content-Type': 'application/json'
-            }
-            
             # NOTE: Ne PAS envoyer CJ-DEV-KEY lors de l'authentification
             # CJ rejette avec "APIkey is wrong" si présent
-            
-            auth_data = {
-                'email': self.email,
-                'password': self.password
-            }
-            
-            response = requests.post(
-                url,
-                json=auth_data,
-                headers=headers,
-                verify=self.verify_ssl,
-                timeout=self.timeout
-            )
-            
+            auth_data = {'email': self.email, 'password': self.password}
+            response = requests.post(url, json=auth_data, headers={'Content-Type': 'application/json'},
+                                     verify=self.verify_ssl, timeout=self.timeout)
             logger.info(f"[CJ API] Réponse HTTP: {response.status_code}")
-            
-            # Gestion rate limiting (429) - Avant de parser JSON
+
             if response.status_code == 429:
-                wait_time = 300
-                logger.warning(f"[CJ API] Rate limit 429 sur auth - attente {wait_time // 60} min...")
-                time.sleep(wait_time)
-                # Retenter une fois après l'attente
-                response = requests.post(url, json=auth_data, headers=headers, verify=self.verify_ssl, timeout=self.timeout)
-                if response.status_code == 429:
-                    logger.error("[CJ API] Rate limit 429 persistant après 5 min - attente 5 min supplémentaires")
-                    if self.use_session:
-                        session['cj_rate_limit_until'] = time.time() + 300
-                    else:
-                        _memory_cache['rate_limit_until'] = time.time() + 300
-                    return None
-            
+                logger.warning("[CJ API] Rate limit 429 sur auth - nouvel essai dans 5 min")
+                self._block(300)
+                return None
+
             if response.status_code == 200:
                 data = response.json()
-                
                 if data.get('result') is False:
                     logger.error(f"[CJ API] Erreur: {data.get('message')}")
-                    
-                    # Gestion rate limiting via code erreur
                     if data.get('code') == 1600200:
-                        logger.warning("[CJ API] Rate limit code 1600200 détecté - attente 60s")
-                        if self.use_session:
-                            session['cj_rate_limit_until'] = time.time() + 60
-                        else:
-                            _memory_cache['rate_limit_until'] = time.time() + 60
-                    
+                        logger.warning("[CJ API] Rate limit code 1600200 détecté - pause 60s")
+                        self._block(60)
                     return None
-                
+
                 if 'data' in data and 'accessToken' in data['data']:
                     token = data['data']['accessToken']
                     expiry_date = data['data'].get('accessTokenExpiryDate')
-                    
                     # Calculer expiration (avec marge de 60s)
                     if expiry_date:
                         expiry_timestamp = datetime.fromisoformat(expiry_date.replace('Z', '+00:00')).timestamp() - 60
                     else:
                         expiry_timestamp = time.time() + (14 * 24 * 3600)  # 14 jours par défaut
-                    
-                    # Stocker en session ou mémoire selon le contexte
-                    if self.use_session:
-                        session['cj_access_token'] = token
-                        session['cj_token_expires_at'] = expiry_timestamp
-                        
-                        if 'refreshToken' in data['data']:
-                            session['cj_refresh_token'] = data['data']['refreshToken']
-                    else:
-                        _memory_cache['access_token'] = token
-                        _memory_cache['token_expires_at'] = expiry_timestamp
-                    
+                    _memory_cache['access_token'] = token
+                    _memory_cache['token_expires_at'] = expiry_timestamp
+                    _shared_set('cj:access_token', {'token': token, 'expires': expiry_timestamp},
+                                int(expiry_timestamp - time.time()))
                     # Synchroniser le rate limiter global après auth
                     _memory_cache['last_api_call'] = time.time()
                     logger.info("[CJ API] Authentification réussie !")
                     return token
-            
+
             logger.error(f"[CJ API] Échec authentification: {response.status_code}")
             return None
-            
+
         except Exception as e:
             logger.error(f"[CJ API] Exception getAccessToken: {e}")
             return None
-    
+
+    def _block(self, seconds: int):
+        """Pause imposée par CJ, partagée entre processus"""
+        _memory_cache['rate_limit_until'] = time.time() + seconds
+        _shared_set('cj:rate_limit_until', _memory_cache['rate_limit_until'], seconds)
+
     def refresh_access_token(self) -> Optional[str]:
         """Rafraîchir le token d'accès"""
-        if 'cj_refresh_token' not in session:
-            return self.get_access_token()
-        
-        try:
-            url = f"{self.base_url}/authentication/refreshAccessToken"
-            
-            response = requests.post(
-                url,
-                json={'refreshToken': session['cj_refresh_token']},
-                headers={'Content-Type': 'application/json'},
-                verify=self.verify_ssl,
-                timeout=self.timeout
-            )
-            
-            if response.status_code == 200:
-                data = response.json()
-                if 'data' in data and 'accessToken' in data['data']:
-                    token = data['data']['accessToken']
-                    expiry_date = data['data'].get('accessTokenExpiryDate')
-                    
-                    if expiry_date:
-                        expiry_timestamp = datetime.fromisoformat(expiry_date.replace('Z', '+00:00')).timestamp() - 60
-                    else:
-                        expiry_timestamp = time.time() + (14 * 24 * 3600)
-                    
-                    session['cj_access_token'] = token
-                    session['cj_token_expires_at'] = expiry_timestamp
-                    
-                    return token
-            
-            return self.get_access_token()
-            
-        except Exception as e:
-            logger.error(f"[CJ API] Erreur refresh token: {e}")
-            return self.get_access_token()
-    
+        return self.get_access_token()
+
     def _make_request(self, method: str, endpoint: str, max_retries: int = 2, **kwargs) -> Optional[Dict]:
         """
         Effectuer une requête API avec retry et backoff exponentiel
@@ -251,7 +192,9 @@ class CJDropshippingApiOptimized:
         token = self.get_access_token()
         if not token:
             return None
-        
+        if self.fail_fast:
+            max_retries = 1  # requête web : une seule tentative, le client n'attend pas
+
         url = f"{self.base_url}/{endpoint}"
         
         if 'headers' not in kwargs:
@@ -286,6 +229,9 @@ class CJDropshippingApiOptimized:
                 # Gérer rate limiting (429)
                 if response.status_code == 429:
                     logger.warning(f"[CJ API] 429 body: {response.text[:300]}")
+                    if self.fail_fast:
+                        self._block(60)
+                        return None
                     if attempt < max_retries - 1:
                         # Attente longue fixe de 10 min - chaque retry court relance le compteur CJ
                         wait_time = 600
@@ -319,6 +265,9 @@ class CJDropshippingApiOptimized:
                 # Vérifier si CJ retourne une erreur dans le JSON
                 if isinstance(data, dict) and data.get('code') == 1600200:
                     # Code 1600200 = rate limit dans la réponse JSON
+                    if self.fail_fast:
+                        self._block(60)
+                        return None
                     if attempt < max_retries - 1:
                         wait_time = 600
                         logger.warning(f"[CJ API] Rate limit code 1600200 - attente {wait_time // 60} min (retry {attempt + 1}/{max_retries})")
