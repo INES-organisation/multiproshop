@@ -146,12 +146,15 @@ def edit_user(user_id):
 def delete_user(user_id):
     from models.user import User
     user = User.query.get_or_404(user_id)
+    if user.id == current_user.id:
+        flash('Vous ne pouvez pas supprimer votre propre compte.', 'error')
+        return redirect(url_for('admin.users'))
     if request.method == 'POST':
         db.session.delete(user)
         db.session.commit()
         flash('Utilisateur supprimé.')
         return redirect(url_for('admin.users'))
-    return render_template('pages/admin/user_delete.html', user=user)
+    return render_template('admin/user_delete.html', user=user)
 
 @admin_bp.route('/products/export')
 @login_required
@@ -160,20 +163,24 @@ def export_products():
     from models.product import Product
     import csv
     from flask import Response
-    products = Product.query.all()
-    def generate():
-        data = [['ID', 'Nom', 'Catégorie', 'Prix', 'Stock']]
-        for product in products:
-            data.append([
-                product.id,
-                product.name,
-                product.category.name if product.category else '',
-                f"{product.price:.2f}",
-                product.stock
-            ])
-        for row in data:
-            yield ','.join(str(cell) for cell in row) + '\n'
-    return Response(generate(), mimetype='text/csv', headers={"Content-Disposition": "attachment;filename=produits.csv"})
+    import io
+    from sqlalchemy.orm import joinedload
+    # Construit en mémoire dans la requête : un générateur paresseux perdait la session SQLAlchemy
+    out = io.StringIO()
+    writer = csv.writer(out, delimiter=';')  # point-virgule : ouverture directe dans Excel en français
+    writer.writerow(['ID', 'Nom', 'Catégorie', 'Prix de vente', 'Coût CJ', 'Marge', 'Marge %', 'Stock',
+                     'Actif', 'Sélection', 'Réf. CJ', 'Lien'])
+    for product in Product.query.options(joinedload(Product.category)).order_by(Product.id):
+        margin = round(product.price - product.cost_price, 2) if product.cost_price else ''
+        writer.writerow([
+            product.id, product.name, product.category.name if product.category else '',
+            f"{product.price:.2f}", f"{product.cost_price:.2f}" if product.cost_price else '', margin,
+            f"{margin / product.price * 100:.0f}" if margin != '' and product.price else '',
+            product.stock, 'oui' if product.is_active else 'non', 'oui' if product.published_at else 'non',
+            product.cj_pid or '', url_for('products.product_detail', product_id=product.id, _external=True),
+        ])
+    return Response('\ufeff' + out.getvalue(), mimetype='text/csv; charset=utf-8',
+                    headers={"Content-Disposition": "attachment;filename=produits.csv"})
 
 # Anciennes routes produits supprimées - voir nouvelles routes en bas du fichier
 
