@@ -1,0 +1,66 @@
+{% extends 'layout.html' %}
+
+{% block robots %}<meta name="robots" content="noindex, nofollow">{% endblock %}
+
+{% block title %}Donner mon avis | MultiProShop{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/pages_modern.css') }}">
+<style>
+.review-item { display: flex; gap: 1rem; align-items: flex-start; padding: 1rem 0; border-bottom: 1px solid #e5e7eb; }
+.review-item:last-of-type { border-bottom: 0; }
+.review-item img { width: 72px; height: 72px; object-fit: cover; border-radius: 8px; flex-shrink: 0; }
+.star-input { display: inline-flex; flex-direction: row-reverse; gap: .15rem; }
+.star-input input { position: absolute; opacity: 0; width: 1px; height: 1px; }
+.star-input label { font-size: 1.8rem; color: #d1d5db; cursor: pointer; line-height: 1; }
+.star-input input:checked ~ label, .star-input label:hover, .star-input label:hover ~ label { color: #f59e0b; }
+.star-input input:focus-visible + label { outline: 2px solid #2563eb; outline-offset: 2px; }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <div class="container">
+        <h1 class="page-title"><i class="fas fa-star"></i> Donner mon avis</h1>
+        <p class="page-subtitle">Commande {{ request_.order.order_number }}</p>
+    </div>
+</div>
+
+<div class="container page-container">
+    <div class="row justify-content-center">
+        <div class="col-lg-8">
+            <div class="card-modern">
+                <div class="card-modern-body">
+                    {% if items and not request_.completed_at %}
+                    <form method="post">
+                        {% for item in items %}
+                        <div class="review-item">
+                            {% if item.product.image_url %}<img src="{{ item.product.image_url }}" alt="">{% endif %}
+                            <div class="flex-grow-1">
+                                <p class="mb-1"><strong>{{ item.product.name }}</strong></p>
+                                <div class="star-input" role="radiogroup" aria-label="Note pour {{ item.product.name }}">
+                                    {% for n in [5, 4, 3, 2, 1] %}
+                                    <input type="radio" id="r{{ item.product_id }}-{{ n }}" name="rating_{{ item.product_id }}" value="{{ n }}">
+                                    <label for="r{{ item.product_id }}-{{ n }}" title="{{ n }} étoile{{ 's' if n > 1 }}">★</label>
+                                    {% endfor %}
+                                </div>
+                                <input type="text" class="form-control-modern mt-2" name="title_{{ item.product_id }}" maxlength="200" placeholder="Titre (facultatif)">
+                                <textarea class="form-control-modern mt-2" name="comment_{{ item.product_id }}" rows="3" maxlength="2000" placeholder="Qu'en avez-vous pensé ? Qualité, taille, livraison…"></textarea>
+                            </div>
+                        </div>
+                        {% endfor %}
+                        <p class="text-muted small mt-3">Votre avis sera publié avec votre prénom et l'initiale de votre nom, sans modification, qu'il soit positif ou négatif. Laissez vide un article que vous ne souhaitez pas noter.</p>
+                        <button type="submit" class="btn-modern btn-modern-primary btn-modern-lg w-100">
+                            <i class="fas fa-paper-plane"></i> Publier mon avis
+                        </button>
+                    </form>
+                    {% else %}
+                    <p class="mb-3">Merci, il n'y a plus d'article à noter pour cette commande.</p>
+                    <a href="{{ url_for('products.list_products') }}" class="btn-modern btn-modern-primary">Voir le catalogue</a>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

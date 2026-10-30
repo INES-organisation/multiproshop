@@ -90,6 +90,38 @@ def order_tracking():
             flash("Aucune commande ne correspond à ce numéro et à cet e-mail.", 'error')
     return render_template('pages/order_tracking.html', order=order)
 
+@main.route('/avis/<token>', methods=['GET', 'POST'])
+def leave_review(token):
+    """Formulaire d'avis reçu par e-mail après la livraison : un avis par article commandé"""
+    from models.review_request import ReviewRequest
+    from services import review_requests
+    request_ = ReviewRequest.query.filter_by(token=token).first_or_404()
+    if request.method == 'POST':
+        created = review_requests.save_reviews(request_, request.form)
+        if created:
+            cache.clear()  # fiches produits en cache : l'avis doit apparaître tout de suite
+            flash(f"Merci ! Votre avis est publié." if created == 1 else f"Merci ! Vos {created} avis sont publiés.", 'success')
+        else:
+            flash("Choisissez une note de 1 à 5 étoiles pour au moins un article.", 'error')
+        return redirect(url_for('main.leave_review', token=token))
+    return render_template('pages/review_form.html', request_=request_,
+                           items=review_requests.reviewable_items(request_))
+
+
+@main.route('/avis/<token>/non-merci')
+def decline_review(token):
+    """Lien « ne plus me demander » de l'e-mail de demande d'avis"""
+    from datetime import datetime
+    from extensions import db
+    from models.review_request import ReviewRequest
+    request_ = ReviewRequest.query.filter_by(token=token).first_or_404()
+    if not request_.completed_at:
+        request_.completed_at = datetime.utcnow()
+        db.session.commit()
+    flash("C'est noté : nous ne vous redemanderons pas d'avis pour cette commande.", 'info')
+    return redirect(url_for('main.index'))
+
+
 # Anciennes pages de démonstration (contenu fictif) : redirigées vers le catalogue
 @main.route('/promotions')
 @main.route('/abonnements')

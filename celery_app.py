@@ -30,6 +30,7 @@ def make_celery(app_name=__name__):
             'tasks.variant_sync_tasks',  # Nouvelles tâches de synchronisation variantes
             'tasks.payment_tasks',
             'tasks.cart_reminder_tasks',
+            'tasks.review_request_tasks',
         ]
     )
     
@@ -106,6 +107,11 @@ def make_celery(app_name=__name__):
             'send-cart-reminders-15min': {
                 'task': 'tasks.cart_reminder_tasks.send_cart_reminders',
                 'schedule': 900.0,  # Relances de panier abandonné (1 h, 24 h, 72 h)
+            },
+
+            'send-review-requests-daily': {
+                'task': 'tasks.review_request_tasks.send_review_requests',
+                'schedule': crontab(hour=9, minute=0),  # Demande d'avis 7 jours après la livraison
             },
             
             'cleanup-old-webhooks-weekly': {

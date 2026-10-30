@@ -78,6 +78,7 @@ def create_app(config_name='development'):
     from models import Role, User, Category, Product, Order, OrderItem
     from models.product_variant import ProductVariant
     from models.cart_reminder import CartReminder
+    from models.review_request import ReviewRequest
     
     # Créer les tables
     with app.app_context():
