@@ -28,7 +28,10 @@
    =================================== */
 .page-container {
     min-height: calc(100vh - 200px);
-    padding: 2rem 0;
+    /* padding vertical seulement : le padding horizontal du .container compense les marges
+       négatives des .row (sinon débordement de 12 px sur mobile) */
+    padding-top: 2rem;
+    padding-bottom: 2rem;
 }
 
 .page-header {
@@ -61,9 +64,27 @@
     background: transparent;
     padding: 0;
     margin: 1rem 0 0 0;
+    list-style: none;  /* sinon les numéros de la liste s'affichent et chevauchent les liens */
     display: flex;
     flex-wrap: wrap;
     gap: 0.5rem;
+}
+
+/* Mobile : fil d'Ariane sur une ligne, défilable, dernier élément tronqué */
+@media (max-width: 576px) {
+    .breadcrumb-modern {
+        flex-wrap: nowrap;
+        overflow-x: auto;
+        white-space: nowrap;
+        font-size: .85rem;
+        scrollbar-width: none;
+    }
+
+    .breadcrumb-modern .breadcrumb-item.active {
+        overflow: hidden;
+        text-overflow: ellipsis;
+        min-width: 0;
+    }
 }
 
 .breadcrumb-modern .breadcrumb-item {
@@ -124,6 +145,7 @@
    BOUTONS MODERNES
    =================================== */
 .btn-modern {
+    box-sizing: border-box;  /* width: 100% sur mobile sans déborder du padding */
     padding: 0.8rem 2rem;
     border-radius: 50px;
     font-weight: 700;

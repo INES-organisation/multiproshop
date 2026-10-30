@@ -4,7 +4,7 @@
 {% block title %}{% set cat = (categories|selectattr('id', 'equalto', current_category)|first) if current_category else None %}{{ (cat.name_fr or cat.name) if cat else 'Tous les produits' }}{% if products and products.page > 1 %} (page {{ products.page }}){% endif %} | MultiProShop{% endblock %}
 
 {% block extra_css %}
-<link rel="stylesheet" href="{{ url_for('static', filename='css/pages_modern.css') }}">
+<link rel="stylesheet" href="{{ url_for('static', filename='css/pages_modern.css') }}?v=2">
 <style>
 /* Pleine largeur avec padding */
 .container-fluid.page-container {
