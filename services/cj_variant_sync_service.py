@@ -212,7 +212,7 @@ class CjVariantSyncService:
             variant.variant_key = variant_data.get('variant_key') or variant.variant_key
             variant.color = variant_data.get('color') or variant.color
             variant.size = variant_data.get('size') or variant.size
-            variant.price = variant_data.get('price') or variant.price
+            # variant_data['price'] est le coût CJ : on ne l'écrit pas comme prix de vente
             variant.stock = variant_data.get('stock', 0)
             variant.image_url = variant_data.get('image_url') or variant.image_url
             variant.weight = variant_data.get('weight') or variant.weight
@@ -228,7 +228,7 @@ class CjVariantSyncService:
                 variant_key=variant_data.get('variant_key'),
                 color=variant_data.get('color'),
                 size=variant_data.get('size'),
-                price=variant_data.get('price', product.price),
+                price=None,  # coût CJ dans variant_data : le prix de vente du produit s'applique
                 suggested_price=product.compare_price,
                 stock=variant_data.get('stock', 0),
                 image_url=variant_data.get('image_url') or product.image_url,

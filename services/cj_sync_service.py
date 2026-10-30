@@ -369,7 +369,7 @@ class CjSyncService:
                 variant_key=variant_key,
                 color=color,
                 size=size,
-                price=variant_data.get('price'),
+                price=None,  # variant_data['price'] est le coût CJ, pas un prix de vente : celui du produit s'applique
                 suggested_price=variant_data.get('suggested_price'),
                 stock=variant_data.get('stock', 0),
                 image_url=variant_data.get('image'),
