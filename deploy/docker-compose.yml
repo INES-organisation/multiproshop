@@ -30,6 +30,9 @@ services:
     volumes:
       # Images envoyées depuis l'admin : conservées entre deux images
       - multiproshop-uploads:/app/static/uploads
+      # Fichiers de travail (marges par catégorie, listes de sélection publiées) : conservés entre
+      # deux images ; à la création, le volume reprend le contenu de instance/ de l'image
+      - multiproshop-instance:/app/instance
     healthcheck:
       test: ["CMD", "python", "-c", "import urllib.request;urllib.request.urlopen('http://127.0.0.1:8000/health')"]
       interval: 30s
@@ -45,9 +48,11 @@ services:
     mem_limit: 768m  # 384m dépassé dès le démarrage (2 workers + beat)
     volumes:
       - multiproshop-uploads:/app/static/uploads
+      - multiproshop-instance:/app/instance
 
 volumes:
   multiproshop-uploads:
+  multiproshop-instance:
 
 networks:
   ines:
