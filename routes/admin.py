@@ -28,12 +28,52 @@ def admin_required(f):
 @login_required
 @admin_required
 def dashboard():
-    # Récupérer les statistiques
+    from datetime import datetime, timedelta
+    from sqlalchemy import func, or_
     from models.product import Product
     from models.user import User
-    products_count = Product.query.count()
-    users_count = User.query.count()
-    return render_template('admin/dashboard.html', products_count=products_count, users_count=users_count)
+    from models.order import Order, OrderItem
+    from models.cart_reminder import CartReminder
+
+    now = datetime.utcnow()
+    month_start = now.replace(day=1, hour=0, minute=0, second=0, microsecond=0)
+    # Les commandes internes passées au prix coûtant ne comptent pas dans le CA
+    paid = Order.query.filter(Order.payment_status == 'paid').filter(
+        or_(Order.admin_notes.is_(None), ~Order.admin_notes.like('Commande interne admin%')))
+
+    def revenue(q):
+        return q.with_entities(func.coalesce(func.sum(Order.total_price), 0.0)).scalar() or 0.0
+
+    paid_month = paid.filter(Order.created_at >= month_start)
+    stats = {
+        'revenue_total': revenue(paid),
+        'revenue_month': revenue(paid_month),
+        'orders_paid': paid.count(),
+        'orders_month': paid_month.count(),
+        'orders_pending': Order.query.filter(Order.payment_status == 'pending').count(),
+        'to_send_cj': Order.query.filter(Order.payment_status == 'paid', Order.cj_order_id.is_(None),
+                                         Order.status.notin_(['cancelled', 'delivered'])).count(),
+        'products_online': Product.query.filter(Product.is_active == True, Product.published_at.isnot(None)).count(),
+        'products_out': Product.query.filter(Product.is_active == True, Product.published_at.isnot(None),
+                                             Product.stock <= 0).count(),
+        'products_count': Product.query.count(),
+        'users_count': User.query.count(),
+        'users_month': User.query.filter(User.created_at >= month_start).count(),
+        'carts_relaunched': CartReminder.query.filter(CartReminder.steps_sent > 0).count(),
+        'carts_recovered': CartReminder.query.filter(CartReminder.completed_at.isnot(None)).count(),
+    }
+    stats['avg_basket'] = stats['revenue_total'] / stats['orders_paid'] if stats['orders_paid'] else 0.0
+
+    recent_orders = Order.query.order_by(Order.created_at.desc()).limit(8).all()
+    top_products = (db.session.query(Product, func.sum(OrderItem.quantity).label('qty'),
+                                     func.sum(OrderItem.quantity * OrderItem.price).label('ca'))
+                    .join(OrderItem, OrderItem.product_id == Product.id)
+                    .join(Order, Order.id == OrderItem.order_id)
+                    .filter(Order.payment_status == 'paid', Order.created_at >= now - timedelta(days=30))
+                    .group_by(Product.id).order_by(func.sum(OrderItem.quantity).desc()).limit(5).all())
+    return render_template('admin/dashboard.html', stats=stats, recent_orders=recent_orders,
+                           top_products=top_products, products_count=stats['products_count'],
+                           users_count=stats['users_count'])
 
 @admin_bp.route('/users/export')
 @login_required
@@ -654,7 +694,9 @@ def products():
     if category_id:
         query = query.filter_by(category_id=category_id)
     
-    if status == 'active':
+    if status == 'selection':
+        query = query.filter(Product.is_active == True, Product.published_at.isnot(None))
+    elif status == 'active':
         query = query.filter_by(is_active=True)
     elif status == 'inactive':
         query = query.filter_by(is_active=False)
