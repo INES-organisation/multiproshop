@@ -164,6 +164,15 @@ class Product(db.Model):
         """Augmente le stock"""
         self.stock += quantity
     
+    @property
+    def has_price_range(self):
+        """Variantes à des prix différents : le prix affiché est un « à partir de »"""
+        from models.product_variant import ProductVariant
+        prices = {p for (p,) in db.session.query(ProductVariant.price).filter(
+            ProductVariant.product_id == self.id, ProductVariant.active == True,  # noqa: E712
+            ProductVariant.price.isnot(None)).distinct().limit(2)}
+        return len(prices) > 1
+
     def calculate_total_stock_from_variants(self):
         """Calcule le stock total depuis les variantes"""
         from models.product_variant import ProductVariant

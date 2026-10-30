@@ -104,6 +104,12 @@ def publish(item, details, usd_eur):
             image_url=v.get('image'), weight=int(float(v['weight'])) if v.get('weight') else None,
             sku=v.get('sku'), active=True, cj_raw_data=json.dumps(v, ensure_ascii=False, default=str),
         ))
+    db.session.flush()
+    # Prix affiché en catalogue = la variante la moins chère (« à partir de »), pas la plus chère
+    lowest = db.session.query(db.func.min(ProductVariant.price)).filter(
+        ProductVariant.product_id == product.id, ProductVariant.price.isnot(None)).scalar()
+    if lowest:
+        product.price = lowest
     return product
 
 
@@ -151,7 +157,10 @@ def main():
         batch_ids = set(published)
         for other in glob.glob(os.path.join(os.path.dirname(log_path) or '.', '*.publies.json')):
             batch_ids |= set(json.load(open(other, encoding='utf-8')))
-        already = {pid for (pid,) in db.session.query(Product.cj_pid).filter(Product.id.in_(batch_ids))}
+        # published_at n'est renseigné que par ce script : la protection tient même si les
+        # fichiers .publies.json ont disparu avec le conteneur
+        already = {pid for (pid,) in db.session.query(Product.cj_pid).filter(
+            db.or_(Product.id.in_(batch_ids), Product.published_at.isnot(None)))}
         done = 0
         try:
             for item in items:

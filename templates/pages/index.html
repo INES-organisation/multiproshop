@@ -86,7 +86,7 @@
                         <div class="product-info">
                             <h5 class="product-name">{{ product.name }}</h5>
                             <div class="product-price">
-                                <span class="price-current">{{ "%.2f"|format(product.price) }}€</span>
+                                {% if product.has_price_range %}<small class="price-from">à partir de</small> {% endif %}<span class="price-current">{{ "%.2f"|format(product.price) }}€</span>
                             </div>
                             <form method="POST" action="{{ url_for('cart.add_to_cart') }}" class="add-to-cart-form">
                                 <input type="hidden" name="product_id" value="{{ product.id }}">
@@ -153,7 +153,7 @@
                         <div class="product-info">
                             <h5 class="product-name">{{ product.name }}</h5>
                             <div class="product-price">
-                                <span class="price-current">{{ "%.2f"|format(product.price) }}€</span>
+                                {% if product.has_price_range %}<small class="price-from">à partir de</small> {% endif %}<span class="price-current">{{ "%.2f"|format(product.price) }}€</span>
                             </div>
                             <form method="POST" action="{{ url_for('cart.add_to_cart') }}" class="add-to-cart-form">
                                 <input type="hidden" name="product_id" value="{{ product.id }}">

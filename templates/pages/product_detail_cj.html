@@ -513,6 +513,8 @@
                         document.getElementById('selected-variant-id').value = v.id;
                         var priceEl = document.getElementById('product-price');
                         if (priceEl) priceEl.textContent = v.price.toFixed(2) + '€';
+                        var fromEl = document.getElementById('price-from');
+                        if (fromEl) fromEl.remove();  // une variante choisie : son prix exact
                         if (v.image) {
                             var img = document.getElementById('mainImage');
                             if (img) img.src = v.image;
@@ -544,7 +546,7 @@
                         <span class="price-old">{{ "%.2f"|format(product.price) }}€</span>
                         <span class="badge-modern badge-danger ms-2">-{{ product.promotion.discount_percentage }}%</span>
                         {% else %}
-                        <span class="price-current" id="product-price">{{ "%.2f"|format(product.price) }}€</span>
+                        {% if product.has_price_range %}<small class="price-from" id="price-from">à partir de</small> {% endif %}<span class="price-current" id="product-price">{{ "%.2f"|format(product.price) }}€</span>
                         {% endif %}
                     </div>
                     
@@ -1015,6 +1017,8 @@ function selectVariant(element) {
     if (priceElement) {
         priceElement.textContent = variantPrice.toFixed(2) + '€';
     }
+    const fromElement = document.getElementById('price-from');
+    if (fromElement) fromElement.remove();
     
     // Mettre à jour le stock
     const stockIndicator = document.querySelector('.stock-indicator');
