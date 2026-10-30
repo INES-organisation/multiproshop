@@ -104,6 +104,12 @@ def publish(item, details, usd_eur):
             image_url=v.get('image'), weight=int(float(v['weight'])) if v.get('weight') else None,
             sku=v.get('sku'), active=True, cj_raw_data=json.dumps(v, ensure_ascii=False, default=str),
         ))
+    db.session.flush()
+    # Prix affiché en catalogue = la variante la moins chère (« à partir de »), pas la plus chère
+    lowest = db.session.query(db.func.min(ProductVariant.price)).filter(
+        ProductVariant.product_id == product.id, ProductVariant.price.isnot(None)).scalar()
+    if lowest:
+        product.price = lowest
     return product
 
 

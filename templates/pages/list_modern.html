@@ -537,7 +537,7 @@
                             <span class="price-current">{{ "%.2f"|format(product.price * (1 - product.promotion.discount_percentage / 100)) }}€</span>
                             <span class="price-old">{{ "%.2f"|format(product.price) }}€</span>
                             {% else %}
-                            <span class="price-current">{{ "%.2f"|format(product.price) }}€</span>
+                            {% if product.has_price_range %}<small class="price-from">à partir de</small> {% endif %}<span class="price-current">{{ "%.2f"|format(product.price) }}€</span>
                             {% endif %}
                         </div>
                         
