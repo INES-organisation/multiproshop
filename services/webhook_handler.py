@@ -536,8 +536,7 @@ class WebhookHandler:
                         
                         if variant_data:
                             # Mettre à jour la variante
-                            if 'variantPrice' in variant_data:
-                                variant.price = float(variant_data['variantPrice'])
+                            # variantPrice est le coût CJ, pas un prix de vente : on ne le recopie pas
                             if 'variantStock' in variant_data:
                                 variant.stock = int(variant_data['variantStock'])
                             if 'variantImage' in variant_data:
