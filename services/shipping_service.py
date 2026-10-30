@@ -175,7 +175,8 @@ class ShippingService:
         methods = []
         for m in data:
             try:
-                price_usd = float(m.get('logisticPrice'))
+                # totalPostageFee = port + taxes + frais de dédouanement, quand CJ les applique
+                price_usd = float(m.get('totalPostageFee') or m.get('logisticPrice'))
             except (TypeError, ValueError):
                 continue
             methods.append({
