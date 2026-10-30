@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>{% block title %}MultiProShop : maison, high-tech, mode et loisirs livrés chez vous{% endblock %}</title>
-    <meta name="description" content="{% block meta_description %}Des milliers de produits pour la maison, le high-tech, la mode et les loisirs. Paiement sécurisé, livraison suivie, offerte en France dès {{ '%.0f'|format(free_shipping_threshold) }} €, {{ return_days }} jours pour changer d'avis.{% endblock %}">
+    <meta name="description" content="{% block meta_description %}Des milliers de produits pour la maison, le high-tech, la mode et les loisirs. Paiement sécurisé, livraison suivie, offerte en France dès {{ '%.0f'|format(free_shipping_threshold) }} € selon le panier, {{ return_days }} jours pour changer d'avis.{% endblock %}">
     <link rel="canonical" href="{% block canonical %}{{ site_url }}{{ request.path }}{% endblock %}">
     <meta property="og:site_name" content="MultiProShop">
     <meta property="og:locale" content="fr_FR">

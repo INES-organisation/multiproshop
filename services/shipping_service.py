@@ -149,10 +149,10 @@ class ShippingService:
             logger.error(f"[Shipping] Erreur calculate_shipping: {e}")
             return self._fallback_response(cart_items, country_code, error=str(e))
     
-    def _cart_freight(self, cart_items: List[Dict], country_code: str) -> Optional[List[Dict]]:
-        """Tarifs CJ pour tout le panier en un appel (logistic/freightCalculate), mis en cache 6 h.
+    def _cart_freight(self, cart_items: List[Dict], country_code: str, timeout: int = 6 * 3600) -> Optional[List[Dict]]:
+        """Tarifs CJ pour tout le panier en un appel (logistic/freightCalculate), mis en cache.
         [] = CJ ne livre pas ce panier vers ce pays ; None = pas de réponse ou article sans variante CJ,
-        on se rabat alors sur le cache par produit"""
+        on se rabat alors sur le cache par produit. Chaque méthode porte son entrepôt de départ ('from')."""
         from extensions import cache
         lines = []
         for item in cart_items:
@@ -169,9 +169,24 @@ class ShippingService:
         cached = cache.get(key)
         if cached is not None:
             return cached
-        data = self.cj_api.calculate_shipping([{'vid': v, 'quantity': q} for v, q in lines], country_code)
+        products = [{'vid': v, 'quantity': q} for v, q in lines]
+        data = self.cj_api.calculate_shipping(products, country_code)
         if data is None:  # CJ injoignable : pas de mise en cache
             return None
+        methods = self._parse_freight(data, 'CN')
+        if not methods:
+            # Produits stockés hors de Chine (ex. entrepôt France) : aucune route depuis la Chine,
+            # on interroge l'entrepôt où toutes les variantes ont du stock
+            for start in [c for c in self._stock_countries([v for v, _ in lines]) if c != 'CN'][:2]:
+                methods = self._parse_freight(
+                    self.cj_api.calculate_shipping(products, country_code, start_country=start) or [], start)
+                if methods:
+                    break
+        cache.set(key, methods, timeout=timeout)
+        return methods
+
+    @staticmethod
+    def _parse_freight(data, start_country: str) -> List[Dict]:
         methods = []
         for m in data:
             try:
@@ -185,11 +200,50 @@ class ShippingService:
                 'price': round(price_usd * USD_TO_EUR, 2),
                 'price_usd': price_usd,
                 'delivery_time': m.get('logisticAging', 'N/A'),
+                'from': start_country,
                 'source': 'cj'
             })
         methods.sort(key=lambda m: m['price'])
-        cache.set(key, methods, timeout=6 * 3600)
         return methods
+
+    def _stock_countries(self, vids: List[str]) -> List[str]:
+        """Pays d'entrepôt où toutes les variantes ont du stock (stock CJ mis en cache 1 jour)"""
+        from extensions import cache
+        common = None
+        for vid in vids:
+            key = f'cj_stock_countries:{vid}'
+            countries = cache.get(key)
+            if countries is None:
+                warehouses = self.cj_api.get_variant_inventory(vid) if hasattr(self.cj_api, 'get_variant_inventory') else None
+                if warehouses is None:
+                    return []
+                countries = sorted({w['country'] for w in warehouses if w['total'] > 0 and w['country']})
+                cache.set(key, countries, timeout=24 * 3600)
+            common = set(countries) if common is None else common & set(countries)
+        return sorted(common or [])
+
+    def product_estimate(self, product, country_code: str = 'FR') -> Optional[Dict]:
+        """Livraison d'une unité du produit, pour la fiche produit : moins chère et plus rapide.
+        Cache 7 jours pour ne pas consommer le quota CJ à chaque visite. None = inconnu."""
+        methods = self._cart_freight([{'product': product, 'quantity': 1}], country_code, timeout=7 * 24 * 3600)
+        if methods is None:
+            return None
+        if not methods:
+            return {'available': False}
+
+        def days(m):
+            nums = [int(n) for n in str(m.get('delivery_time', '')).replace('–', '-').split('-') if n.strip().isdigit()]
+            return (min(nums), max(nums)) if nums else None
+
+        cheapest = methods[0]
+        timed = [m for m in methods if days(m)]
+        fastest = min(timed, key=lambda m: days(m)[1]) if timed else None
+        return {
+            'available': True,
+            'cheapest': {'name': cheapest['name'], 'price': cheapest['price'], 'days': days(cheapest)},
+            'fastest': {'name': fastest['name'], 'price': fastest['price'], 'days': days(fastest)}
+            if fastest and fastest is not cheapest else None,
+        }
 
     @staticmethod
     def _first_vid(product) -> Optional[str]:

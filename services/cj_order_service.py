@@ -125,6 +125,20 @@ class CjOrderService:
                 'message': f'Exception: {str(e)}'
             }
     
+    @staticmethod
+    def _from_country(order: Order) -> str:
+        """Entrepôt de départ de la méthode choisie au paiement (Chine par défaut)"""
+        from services.shipping_service import ShippingService
+        items = [{'product': item.product, 'quantity': item.quantity,
+                  'cj_vid': item.variant.cj_vid if item.variant is not None else None}
+                 for item in order.order_items if item.product is not None]
+        try:
+            methods = ShippingService()._cart_freight(items, order.shipping_country) or []
+        except Exception as e:
+            logger.warning(f"[CjOrderService] Entrepôt de départ inconnu pour {order.order_number}: {e}")
+            methods = []
+        return next((m.get('from', 'CN') for m in methods if m['code'] == order.shipping_method), 'CN')
+
     def _prepare_order_data(self, order: Order) -> Optional[Dict]:
         """
         Préparer les données de commande pour l'API CJ
@@ -186,6 +200,7 @@ class CjOrderService:
             # Ajouter la méthode de livraison si disponible
             if order.shipping_method:
                 order_data['logisticsName'] = order.shipping_method
+                order_data['fromCountryCode'] = self._from_country(order)
             
             return order_data
             

@@ -141,7 +141,7 @@
             </p>
         </div>
         
-        <p>Votre commande est transmise à notre fournisseur. La livraison suivie prend en général 7 à 15 jours ouvrés : vous recevrez un e-mail avec le numéro de suivi dès l'expédition.</p>
+        <p>Votre commande est transmise à notre fournisseur. Le délai de livraison est celui du transporteur choisi au paiement{% if order.shipping_method %} ({{ order.shipping_method }}){% endif %} : vous recevrez un e-mail avec le numéro de suivi dès l'expédition.</p>
         
         <center>
             <a href="{{ site_url }}/suivi-commande" class="button">Suivre ma commande</a>

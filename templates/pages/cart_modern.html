@@ -110,7 +110,7 @@
                 <div class="alert-modern alert-info" id="free-shipping-alert">
                     <i class="fas fa-truck"></i>
                     <div class="flex-fill">
-                        <strong>Plus que {{ "%.2f"|format(free_shipping_threshold - total) }}€</strong> pour la livraison offerte en France !
+                        <strong>Plus que {{ "%.2f"|format(free_shipping_threshold - total) }}€</strong> pour profiter de la livraison offerte en France, selon le panier
                         <div class="free-shipping-progress" role="progressbar" aria-valuemin="0" aria-valuemax="{{ free_shipping_threshold }}" aria-valuenow="{{ total }}">
                             <span style="width: {{ (100 * total / free_shipping_threshold)|round|int }}%"></span>
                         </div>
@@ -119,7 +119,7 @@
                 {% else %}
                 <div class="alert-modern alert-success">
                     <i class="fas fa-check-circle"></i>
-                    <div>La livraison est offerte en France métropolitaine.</div>
+                    <div>Votre panier peut profiter de la livraison offerte en France métropolitaine : elle s'affiche au choix de la livraison.</div>
                 </div>
                 {% endif %}
                 
