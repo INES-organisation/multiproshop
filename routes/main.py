@@ -12,8 +12,10 @@ def index():
     # Produits en vedette (les 8 premiers)
     featured_products = ProductService.get_featured_products()
     
-    # Toutes les catégories (exclure les catégories CJ)
-    categories = Category.query.filter_by(is_active=True, visible=True).all()
+    # Catégories du menu qui ont des produits en vente (exclure les catégories CJ)
+    categories = Category.query.filter(Category.id.in_(ProductService.menu_category_ids()),
+                                       Category.level == 1, Category.is_active == True, Category.visible == True) \
+        .order_by(Category.order, Category.name).all()
     
     # Deals du jour (produits récents)
     deals_of_the_day = ProductService.get_deals_of_the_day()

@@ -140,12 +140,13 @@ class SearchService:
                 # Priorité aux produits dont le nom contient le premier mot, puis aux meilleures ventes
                 if groups:
                     base_query = base_query.order_by(
+                        Product.published_at.is_(None),  # produits choisis et traduits d'abord
                         or_(*(Product.name.ilike(f'%{term}%') for term in groups[0])).desc(),
                         Product.sales_count.desc(),
                         Product.id.desc()
                     )
                 else:
-                    base_query = base_query.order_by(Product.sales_count.desc(), Product.id.desc())
+                    base_query = base_query.order_by(Product.published_at.is_(None), Product.sales_count.desc(), Product.id.desc())
             
             # Pagination
             pagination = base_query.paginate(
@@ -198,7 +199,7 @@ class SearchService:
             return []
         name_filter = and_(*(or_(*(Product.name.ilike(f'%{term}%') for term in group)) for group in search_terms(query)))
         return Product.query.filter(Product.is_active == True, name_filter) \
-            .order_by((Product.stock > 0).desc(), Product.sales_count.desc(), Product.id.desc()) \
+            .order_by((Product.stock > 0).desc(), Product.published_at.is_(None), Product.sales_count.desc(), Product.id.desc()) \
             .limit(limit).all()
     
     def get_popular_searches(self, limit: int = 10) -> List[str]:

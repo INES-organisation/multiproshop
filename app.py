@@ -93,13 +93,16 @@ def create_app(config_name='development'):
         
         # Récupérer les catégories principales (pas de cache pour éviter DetachedInstanceError)
         # Exclure les catégories CJ (visible=False)
-        main_categories = Category.query.filter_by(
+        from services.product_service import ProductService
+        menu_ids = ProductService.menu_category_ids()
+        main_categories = [c for c in Category.query.filter_by(
             level=1, is_active=True, visible=True
-        ).order_by(Category.order, Category.name).all()
+        ).order_by(Category.order, Category.name).all() if c.id in menu_ids]
         
         return {
             'now': now_naive(),
             'main_categories': main_categories,
+            'menu_ids': menu_ids,
             'site_url': app.config['SITE_URL'],
             'seller': app.config['SELLER'],
             'free_shipping_threshold': app.config['FREE_SHIPPING_THRESHOLD'],

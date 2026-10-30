@@ -356,13 +356,13 @@
                                     </a>
                                 </div>
                                 
-                                {% set active_children = main_cat.children|selectattr('is_active')|selectattr('visible')|sort(attribute='name')|list %}
+                                {% set active_children = main_cat.children|selectattr('is_active')|selectattr('visible')|selectattr('id', 'in', menu_ids)|sort(attribute='name')|list %}
                                 {% if active_children|length > 0 %}
                                 <div class="category-children" id="cat-children-{{ main_cat.id }}" style="display: none;">
                                     {% for sub_cat in active_children %}
                                     <div class="category-sub-filter">
                                         <div class="subcategory-header">
-                                            {% set sub_children = sub_cat.children|selectattr('is_active')|selectattr('visible')|sort(attribute='name')|list %}
+                                            {% set sub_children = sub_cat.children|selectattr('is_active')|selectattr('visible')|selectattr('id', 'in', menu_ids)|sort(attribute='name')|list %}
                                             {% if sub_children|length > 0 %}
                                             <button class="subcategory-toggle" onclick="toggleSubCategory({{ sub_cat.id }})">
                                                 <i class="fas fa-chevron-right toggle-icon-sub" id="icon-sub-{{ sub_cat.id }}"></i>
@@ -382,7 +382,7 @@
                                         {% if sub_children|length > 0 %}
                                         <div class="category-level3" id="cat-level3-{{ sub_cat.id }}" style="display: none;">
                                             {% for item_cat in sub_children[:15] %}
-                                            {% set n4_children = item_cat.children|selectattr('is_active')|selectattr('visible')|sort(attribute='name')|list %}
+                                            {% set n4_children = item_cat.children|selectattr('is_active')|selectattr('visible')|selectattr('id', 'in', menu_ids)|sort(attribute='name')|list %}
                                             <div class="level3-item">
                                                 <div class="level3-header">
                                                     {% if n4_children|length > 0 %}
@@ -495,7 +495,7 @@
                     <label for="sort" class="mb-0">Trier par:</label>
                     <select id="sort" class="form-control-modern form-select-modern" style="width: auto;"
                             onchange="const u = new URL(location.href); u.searchParams.set('sort', this.value); u.searchParams.delete('page'); location.href = u;">
-                        {% for value, label in [('name', 'Nom (A-Z)'), ('bestsellers', 'Meilleures ventes'), ('newest', 'Nouveautés'), ('price_asc', 'Prix croissant'), ('price_desc', 'Prix décroissant')] %}
+                        {% for value, label in [('selection', 'Notre sélection'), ('name', 'Nom (A-Z)'), ('bestsellers', 'Meilleures ventes'), ('newest', 'Nouveautés'), ('price_asc', 'Prix croissant'), ('price_desc', 'Prix décroissant')] %}
                         <option value="{{ value }}" {{ 'selected' if current_sort == value }}>{{ label }}</option>
                         {% endfor %}
                     </select>

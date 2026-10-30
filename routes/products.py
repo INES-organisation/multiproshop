@@ -12,7 +12,7 @@ products = Blueprint('products', __name__)
 def list_products():
     page = request.args.get('page', 1, type=int)
     per_page = 12
-    sort_by = request.args.get('sort', 'name')
+    sort_by = request.args.get('sort', 'selection')
     category_id = request.args.get('category', type=int)
     
     products = ProductService.get_products_paginated(
@@ -24,12 +24,10 @@ def list_products():
     
     # Catégories pour la page (pas de cache memoize pour éviter DetachedInstanceError)
     categories = Category.query.filter_by(is_active=True, visible=True).all()
-    main_categories = Category.query.filter_by(level=1, is_active=True, visible=True).order_by(Category.order, Category.name).all()
     
     return render_template('pages/list.html',
                          products=products,
                          categories=categories,
-                         main_categories=main_categories,
                          current_category=category_id,
                          current_sort=sort_by)
 

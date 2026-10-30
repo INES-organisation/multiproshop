@@ -3,8 +3,9 @@ Service de gestion des produits
 """
 from models.product import Product
 from models.category import Category
-from sqlalchemy import or_, select
+from sqlalchemy import func, or_, select
 from sqlalchemy.orm import joinedload
+from extensions import cache, db
 
 
 class ProductService:
@@ -22,6 +23,28 @@ class ProductService:
             ids.extend(ProductService._get_category_ids_recursive(child.id))
         return ids
     
+    @staticmethod
+    def menu_category_ids():
+        """Catégories qui contiennent au moins un produit en vente, elles ou leurs sous-catégories :
+        le menu n'affiche qu'elles (sinon des centaines de liens vers des pages vides)"""
+        ids = cache.get('menu_category_ids')
+        if ids is None:
+            parents = dict(db.session.query(Category.id, Category.parent_id).all())
+            ids = set()
+            for (category_id,) in db.session.query(Product.category_id).filter(Product.is_active == True).distinct():
+                while category_id and category_id not in ids:
+                    ids.add(category_id)
+                    category_id = parents.get(category_id)
+            cache.set('menu_category_ids', ids, timeout=600)
+        return ids
+
+    @staticmethod
+    def selection_first():
+        """Tri « Notre sélection » : d'abord les produits choisis et traduits (published_at n'est
+        renseigné que par scripts/import_selection.py), les plus vendus puis les plus récents"""
+        return (Product.published_at.is_(None), Product.sales_count.desc(),
+                Product.published_at.desc(), Product.id.desc())
+
     @staticmethod
     def get_products_paginated(page=1, per_page=12, sort_by='name', category_id=None):
         """
@@ -55,8 +78,10 @@ class ProductService:
             query = query.order_by(Product.created_at.desc(), Product.id.desc())
         elif sort_by == 'bestsellers':
             query = query.order_by(Product.sales_count.desc(), Product.views_count.desc(), Product.id.desc())
-        else:
+        elif sort_by == 'name':
             query = query.order_by(Product.name.asc())
+        else:
+            query = query.order_by(*ProductService.selection_first())
         
         return query.paginate(page=page, per_page=per_page)
     
@@ -114,7 +139,7 @@ class ProductService:
             category_id=product.category_id
         ).filter(
             Product.id != product.id, Product.is_active == True, Product.stock > 0
-        ).order_by(Product.sales_count.desc(), Product.id.desc()).limit(limit).all()
+        ).order_by(*ProductService.selection_first()).limit(limit).all()
 
     @staticmethod
     def get_cart_suggestions(products, limit=4):
@@ -149,8 +174,8 @@ class ProductService:
         # Inclure les produits des sous-catégories
         all_ids = ProductService._get_category_ids_recursive(category_id)
         query = Product.query.options(joinedload(Product.category)).filter(
-            Product.category_id.in_(all_ids)
-        )
+            Product.category_id.in_(all_ids), Product.is_active == True
+        ).order_by(*ProductService.selection_first())
         
         # Si page=None, retourner tous les produits (compatibilité)
         if page is None:
@@ -213,7 +238,12 @@ class ProductService:
         Returns:
             list: Liste de produits en vedette
         """
-        return Product.query.options(joinedload(Product.category)).filter(Product.is_active == True, Product.stock > 0).limit(limit).all()
+        # Produits choisis entre 15 et 60 €, tirés au hasard (la page d'accueil est en cache 5 min)
+        query = Product.query.options(joinedload(Product.category)).filter(
+            Product.is_active == True, Product.stock > 0)
+        featured = query.filter(Product.published_at.isnot(None), Product.price.between(15, 60)) \
+            .order_by(func.random()).limit(limit).all()
+        return featured or query.order_by(*ProductService.selection_first()).limit(limit).all()
     
     @staticmethod
     def get_deals_of_the_day(limit=8):
@@ -226,7 +256,9 @@ class ProductService:
         Returns:
             list: Liste de produits en promotion
         """
-        return Product.query.options(joinedload(Product.category)).filter(Product.is_active == True, Product.stock > 0).order_by(Product.id.desc()).limit(limit).all()
+        # Derniers produits choisis mis en ligne
+        return Product.query.options(joinedload(Product.category)).filter(Product.is_active == True, Product.stock > 0) \
+            .order_by(Product.published_at.is_(None), Product.published_at.desc(), Product.id.desc()).limit(limit).all()
     
     @staticmethod
     def get_suggestions(limit=8):
@@ -239,7 +271,8 @@ class ProductService:
         Returns:
             list: Liste de produits suggérés
         """
-        return Product.query.options(joinedload(Product.category)).order_by(Product.id.asc()).limit(limit).all()
+        return Product.query.options(joinedload(Product.category)).filter(Product.is_active == True, Product.stock > 0) \
+            .order_by(Product.published_at.is_(None), func.random()).limit(limit).all()
     
     @staticmethod
     def get_new_arrivals(limit=4):
@@ -252,4 +285,5 @@ class ProductService:
         Returns:
             list: Liste des nouveaux produits
         """
-        return Product.query.options(joinedload(Product.category)).filter(Product.is_active == True, Product.stock > 0).order_by(Product.created_at.desc()).limit(limit).all()
+        return Product.query.options(joinedload(Product.category)).filter(Product.is_active == True, Product.stock > 0) \
+            .order_by(Product.published_at.is_(None), Product.published_at.desc(), Product.created_at.desc()).limit(limit).all()

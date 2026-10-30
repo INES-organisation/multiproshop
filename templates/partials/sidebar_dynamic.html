@@ -10,7 +10,7 @@
         {% if main_categories %}
             {% for category in main_categories %}
             {# Filtrer les enfants actifs en Python pour éviter les requêtes N+1 #}
-            {% set active_children = category.children|selectattr('is_active')|selectattr('visible')|list %}
+            {% set active_children = category.children|selectattr('is_active')|selectattr('visible')|selectattr('id', 'in', menu_ids)|list %}
             <div class="sidebar-category">
                 <a href="{{ url_for('products.by_category', category_id=category.id) }}" class="category-main">
                     {% if category.icon %}
@@ -28,7 +28,7 @@
                 <div class="subcategories">
                     {% for subcategory in active_children|sort(attribute='name') %}
                     {# Filtrer les sous-enfants actifs #}
-                    {% set active_subchildren = subcategory.children|selectattr('is_active')|selectattr('visible')|list %}
+                    {% set active_subchildren = subcategory.children|selectattr('is_active')|selectattr('visible')|selectattr('id', 'in', menu_ids)|list %}
                     <div class="subcategory-item">
                         <a href="{{ url_for('products.by_category', category_id=subcategory.id) }}" class="subcategory-link">
                             <i class="fas fa-angle-right"></i>
@@ -41,7 +41,7 @@
                         {% if active_subchildren|length > 0 %}
                         <div class="sub-subcategories">
                             {% for item in (active_subchildren|sort(attribute='name'))[:15] %}
-                            {% set active_n4 = item.children|selectattr('is_active')|selectattr('visible')|list %}
+                            {% set active_n4 = item.children|selectattr('is_active')|selectattr('visible')|selectattr('id', 'in', menu_ids)|list %}
                             <div class="sub-subcategory-item">
                                 <a href="{{ url_for('products.by_category', category_id=item.id) }}" class="sub-subcategory-link">
                                     <i class="fas fa-tag"></i>
