@@ -1,6 +1,6 @@
 from flask import Blueprint, render_template, request, redirect, url_for, flash, jsonify, session, current_app
 from flask_login import login_required, current_user
-from models.cart import Cart
+from models.cart import Cart, admin_cost_mode
 from models.product import Product
 
 cart_bp = Blueprint('cart', __name__, url_prefix='/cart')
@@ -31,7 +31,7 @@ def _wants_json():
 
 def _with_free_shipping(methods, subtotal, country):
     """Livraison offerte en France dès le seuil affiché sur le site : la méthode la moins chère passe à 0 €."""
-    if not methods or country not in current_app.config['FREE_SHIPPING_COUNTRIES'] \
+    if not methods or admin_cost_mode() or country not in current_app.config['FREE_SHIPPING_COUNTRIES'] \
             or subtotal < current_app.config['FREE_SHIPPING_THRESHOLD']:
         return methods
     methods = [dict(m) for m in methods]
@@ -396,6 +396,7 @@ def checkout():
                 shipping_country=country,
                 shipping_method=form['shipping_method'],
                 customer_notes=form['notes'],
+                admin_notes='Commande interne admin, au prix coûtant CJ' if admin_cost_mode() else None,
             )
             db.session.add(order)
             db.session.flush()

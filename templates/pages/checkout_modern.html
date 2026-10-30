@@ -4,7 +4,7 @@
 {% block robots %}<meta name="robots" content="noindex, follow">{% endblock %}
 
 {% block extra_css %}
-<link rel="stylesheet" href="{{ url_for('static', filename='css/pages_modern.css') }}">
+<link rel="stylesheet" href="{{ url_for('static', filename='css/pages_modern.css') }}?v=2">
 <style>
 .checkout-steps {
     display: flex;
@@ -261,6 +261,13 @@
                                     <option value="JE">Jersey</option>
                                     <option value="IM">Île de Man</option>
                                 </optgroup>
+                                <optgroup label="France d'outre-mer">
+                                    <option value="RE">La Réunion</option>
+                                    <option value="GP">Guadeloupe</option>
+                                    <option value="MQ">Martinique</option>
+                                    <option value="GF">Guyane</option>
+                                    <option value="YT">Mayotte</option>
+                                </optgroup>
                                 <optgroup label="Europe du Sud">
                                     <option value="ES">Espagne</option>
                                     <option value="PT">Portugal</option>
@@ -335,8 +342,6 @@
                                     <option value="AW">Aruba</option>
                                     <option value="KY">Îles Caïmans</option>
                                     <option value="CW">Curaçao</option>
-                                    <option value="GP">Guadeloupe</option>
-                                    <option value="MQ">Martinique</option>
                                     <option value="MS">Montserrat</option>
                                     <option value="PR">Porto Rico</option>
                                     <option value="BQ">Bonaire, Saint-Eustache et Saba</option>
@@ -360,7 +365,6 @@
                                     <option value="VE">Venezuela</option>
                                     <option value="GY">Guyane</option>
                                     <option value="SR">Suriname</option>
-                                    <option value="GF">Guyane française</option>
                                     <option value="FK">Îles Falkland</option>
                                 </optgroup>
                                 <optgroup label="Asie de l'Est">
@@ -466,8 +470,6 @@
                                     <option value="MU">Maurice</option>
                                     <option value="SC">Seychelles</option>
                                     <option value="KM">Comores</option>
-                                    <option value="RE">Réunion</option>
-                                    <option value="YT">Mayotte</option>
                                 </optgroup>
                                 <optgroup label="Afrique australe et centrale">
                                     <option value="ZA">Afrique du Sud</option>
@@ -589,6 +591,9 @@
                     <i class="fas fa-shopping-bag"></i> Récapitulatif
                 </div>
                 <div class="card-modern-body">
+{% if current_user.is_authenticated and current_user.is_admin %}
+<div class="alert alert-info mb-3"><i class="fas fa-user-shield"></i> Mode admin : prix coûtant CJ, sans marge ni livraison offerte. La commande sera marquée « interne ».</div>
+{% endif %}
                     <!-- Products -->
                     <div style="margin-bottom: 1.5rem;">
                         {% for item in cart_items %}
@@ -765,7 +770,9 @@ function loadShippingMethods() {
         loading.style.display = 'none';
         
         if (!data.methods || data.methods.length === 0) {
-            list.innerHTML = '<div class="alert-modern alert-warning"><i class="fas fa-exclamation-triangle"></i> Aucune méthode de livraison disponible</div>';
+            list.innerHTML = '<div class="alert-modern alert-warning"><i class="fas fa-exclamation-triangle"></i> '
+                + 'Livraison indisponible vers ce pays pour ce panier. Essayez un autre pays ou retirez un article.</div>';
+            document.getElementById('shipping-method-input').value = '';
             updateSummary(0);
             return;
         }

@@ -25,7 +25,9 @@
    HEADER MODERNE
    =================================== */
 .modern-header {
-    position: fixed;
+    /* sticky et non fixed : la hauteur réelle de l'en-tête (variable sur mobile) pousse le contenu,
+       au lieu d'un padding-top fixe qui laissait le titre des pages sous l'en-tête */
+    position: sticky;
     top: 0;
     left: 0;
     right: 0;
@@ -196,6 +198,7 @@
 
 .search-input {
     flex: 1;
+    min-width: 0;  /* laisse le champ rétrécir sur mobile au lieu de pousser le bouton hors écran */
     border: none;
     background: transparent;
     font-size: 1rem;
@@ -1186,9 +1189,61 @@
     }
 }
 
-/* Body Padding for Fixed Header */
-body {
-    padding-top: 127px
+/* Mobile : en-tête compact (logo, recherche, panier) ; les liens de navigation passent dans le menu */
+@media (max-width: 768px) {
+    .header-container {
+        padding: .5rem .75rem;
+        gap: .5rem;
+    }
+
+    .header-nav .nav-container {
+        display: none;
+    }
+
+    .header-container,
+    .promo-banner {
+        box-sizing: border-box;
+    }
+
+    .header-center {
+        margin: 0 !important;
+    }
+
+    .header-container {
+        gap: .5rem !important;
+    }
+
+    .header-right {
+        gap: .25rem !important;
+        margin-left: auto;
+    }
+
+    .logo-img {
+        height: 40px;
+    }
+
+    .search-wrapper {
+        padding: .25rem .25rem .25rem 1rem;
+    }
+
+    .search-icon {
+        display: none;
+    }
+
+    .search-btn {
+        padding: .55rem .9rem;
+    }
+
+    .header-nav {
+        padding: 0;
+        gap: 0;
+    }
+
+    .promo-banner {
+        font-size: .8rem;
+        padding: .3rem .75rem;
+        border-radius: 0;
+    }
 }
 
 /* ===================================

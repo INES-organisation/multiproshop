@@ -92,6 +92,18 @@ class ShippingService:
             
             if not product_ids:
                 return self._fallback_response(cart_items, country_code)
+
+            # 0. Tarif CJ du panier entier, tel que CJ le facturera (un seul colis)
+            cart_methods = self._cart_freight(cart_items, country_code)
+            if cart_methods == []:  # CJ ne livre pas ce panier vers ce pays
+                return self._fallback_response(cart_items, country_code)
+            if cart_methods:
+                return {
+                    'success': True,
+                    'methods': cart_methods,
+                    'total_weight': self._calculate_total_weight(cart_items),
+                    'source': 'cj'
+                }
             
             # 1. Lire le cache DB
             cached_rates = ShippingRate.get_for_products(product_ids, country_code)
@@ -137,6 +149,55 @@ class ShippingService:
             logger.error(f"[Shipping] Erreur calculate_shipping: {e}")
             return self._fallback_response(cart_items, country_code, error=str(e))
     
+    def _cart_freight(self, cart_items: List[Dict], country_code: str) -> Optional[List[Dict]]:
+        """Tarifs CJ pour tout le panier en un appel (logistic/freightCalculate), mis en cache 6 h.
+        [] = CJ ne livre pas ce panier vers ce pays ; None = pas de réponse ou article sans variante CJ,
+        on se rabat alors sur le cache par produit"""
+        from extensions import cache
+        lines = []
+        for item in cart_items:
+            vid = item.get('cj_vid')
+            if not vid:
+                product = item.get('product')
+                vid = self._first_vid(product) if product is not None and not isinstance(product, dict) else None
+            if not vid:
+                return None
+            lines.append((vid, int(item.get('quantity', 1))))
+        if not lines or not self.cj_api:
+            return None
+        key = 'freight:%s:%s' % (country_code, ','.join(f'{v}x{q}' for v, q in sorted(lines)))
+        cached = cache.get(key)
+        if cached is not None:
+            return cached
+        data = self.cj_api.calculate_shipping([{'vid': v, 'quantity': q} for v, q in lines], country_code)
+        if data is None:  # CJ injoignable : pas de mise en cache
+            return None
+        methods = []
+        for m in data:
+            try:
+                # totalPostageFee = port + taxes + frais de dédouanement, quand CJ les applique
+                price_usd = float(m.get('totalPostageFee') or m.get('logisticPrice'))
+            except (TypeError, ValueError):
+                continue
+            methods.append({
+                'code': m.get('logisticName', 'UNKNOWN'),
+                'name': m.get('logisticName', 'Méthode inconnue'),
+                'price': round(price_usd * USD_TO_EUR, 2),
+                'price_usd': price_usd,
+                'delivery_time': m.get('logisticAging', 'N/A'),
+                'source': 'cj'
+            })
+        methods.sort(key=lambda m: m['price'])
+        cache.set(key, methods, timeout=6 * 3600)
+        return methods
+
+    @staticmethod
+    def _first_vid(product) -> Optional[str]:
+        from models.product_variant import ProductVariant
+        variant = ProductVariant.query.filter_by(product_id=product.id, active=True) \
+            .filter(ProductVariant.cj_vid.isnot(None)).first()
+        return variant.cj_vid if variant else None
+
     def _get_sku_for_product(self, product) -> Optional[str]:
         """Récupérer le SKU CJ de la première variante active d'un produit"""
         from models.product_variant import ProductVariant
@@ -236,8 +297,8 @@ class ShippingService:
                 method_names &= names  # Intersection
         
         if not method_names:
-            # Pas de méthode commune → retourner les méthodes du 1er produit
-            return methods_per_product[0]
+            # Aucun transporteur ne prend tout le panier : ne pas facturer le port d'un seul produit
+            return []
         
         # Calculer le prix total par méthode commune
         merged = {}
@@ -264,13 +325,15 @@ class ShippingService:
         return result
     
     def _fallback_response(self, cart_items, country_code, error=None):
-        """Retourner une réponse fallback"""
-        logger.info("[Shipping] Utilisation des méthodes de livraison par défaut")
+        """Pas de tarif CJ : aucune méthode proposée. Des tarifs inventés feraient payer un port
+        qui ne correspond à rien, voire vers un pays que CJ ne dessert pas"""
+        logger.info(f"[Shipping] Aucun tarif CJ vers {country_code}")
         resp = {
-            'success': True,
-            'methods': self._get_fallback_methods(cart_items, country_code),
+            'success': False,
+            'methods': [],
             'total_weight': self._calculate_total_weight(cart_items),
-            'source': 'fallback'
+            'source': 'none',
+            'message': 'Livraison indisponible vers ce pays pour ce panier'
         }
         if error:
             resp['error'] = error

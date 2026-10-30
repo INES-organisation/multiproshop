@@ -3,7 +3,7 @@
 {% block title %}Contact | MultiProShop{% endblock %}
 
 {% block extra_css %}
-<link rel="stylesheet" href="{{ url_for('static', filename='css/pages_modern.css') }}">
+<link rel="stylesheet" href="{{ url_for('static', filename='css/pages_modern.css') }}?v=2">
 <style>
 .contact-info-card {
     background: linear-gradient(135deg, var(--primary-color), var(--primary-dark));
@@ -39,6 +39,11 @@
 .contact-details h4 {
     font-weight: 700;
     margin-bottom: 0.5rem;
+}
+
+.contact-details {
+    min-width: 0;
+    overflow-wrap: anywhere;  /* e-mail et adresse longs sur mobile */
 }
 
 .contact-details p {

@@ -1,6 +1,32 @@
+import json
+
 from flask import session
+from flask_login import current_user
 from models.product import Product
 from models.product_variant import ProductVariant
+
+USD_TO_EUR = 0.92
+
+
+def admin_cost_mode():
+    """Un admin connecté achète au prix coûtant CJ (commandes de test ou pour son usage)"""
+    try:
+        return bool(current_user.is_authenticated and current_user.is_admin)
+    except Exception:  # hors requête
+        return False
+
+
+def cost_price(product, variant=None):
+    """Coût d'achat CJ en euros : celui de la variante si CJ le donne, sinon celui du produit"""
+    if variant is not None and variant.cj_raw_data:
+        try:
+            raw = json.loads(variant.cj_raw_data)
+            usd = float(raw.get('price') or raw.get('variantSellPrice') or 0)
+        except (ValueError, TypeError, AttributeError):
+            usd = 0
+        if usd > 0:
+            return round(usd * USD_TO_EUR, 2)
+    return product.cost_price or None
 
 class Cart:
     """Classe pour gérer le panier en session avec support des variantes"""
@@ -95,6 +121,9 @@ class Cart:
                     if variant and variant.price:
                         price = variant.price
                 
+                if admin_cost_mode():
+                    price = cost_price(product, variant) or price
+
                 items.append({
                     'cart_key': cart_key,
                     'product': product,

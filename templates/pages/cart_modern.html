@@ -4,7 +4,7 @@
 {% block robots %}<meta name="robots" content="noindex, follow">{% endblock %}
 
 {% block extra_css %}
-<link rel="stylesheet" href="{{ url_for('static', filename='css/pages_modern.css') }}">
+<link rel="stylesheet" href="{{ url_for('static', filename='css/pages_modern.css') }}?v=2">
 <style>
 .free-shipping-progress { height: 8px; background: rgba(0,0,0,.08); border-radius: 4px; margin-top: .5rem; overflow: hidden; }
 .free-shipping-progress span { display: block; height: 100%; background: var(--success-color, #10b981); border-radius: 4px; }
@@ -27,6 +27,9 @@
             Mon Panier
         </h1>
         <p class="page-subtitle">{{ cart_items|length if cart_items else 0 }} article(s) dans votre panier</p>
+{% if current_user.is_authenticated and current_user.is_admin %}
+<div class="alert alert-info mb-3"><i class="fas fa-user-shield"></i> Mode admin : prix coûtant CJ, sans marge ni livraison offerte. La commande sera marquée « interne ».</div>
+{% endif %}
     </div>
 </div>
 

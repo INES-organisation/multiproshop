@@ -7,6 +7,14 @@
     </div>
     
     <nav class="sidebar-nav">
+        {# Raccourcis de l'en-tête, masqués de l'en-tête sur mobile #}
+        <div class="sidebar-shortcuts">
+            <a href="{{ url_for('products.list_products') }}"><i class="fas fa-th"></i> Tous les produits</a>
+            <a href="{{ url_for('products.list_products', sort='newest') }}"><i class="fas fa-star"></i> Nouveautés</a>
+            <a href="{{ url_for('products.list_products', sort='bestsellers') }}"><i class="fas fa-fire"></i> Meilleures ventes</a>
+            <a href="{{ url_for('main.order_tracking') }}"><i class="fas fa-truck-fast"></i> Suivi de commande</a>
+            <a href="{{ url_for('faq.index') }}"><i class="fas fa-circle-question"></i> Aide</a>
+        </div>
         {% if main_categories %}
             {% for category in main_categories %}
             {# Filtrer les enfants actifs en Python pour éviter les requêtes N+1 #}
@@ -90,6 +98,9 @@
 </aside>
 
 <style>
+.sidebar-shortcuts { display: none; padding: .5rem 0; border-bottom: 1px solid #eee; }
+.sidebar-shortcuts a { display: flex; gap: .75rem; align-items: center; padding: .6rem 1.5rem; color: #1f2937; text-decoration: none; font-weight: 600; }
+@media (max-width: 768px) { .sidebar-shortcuts { display: block; } }
 /* Sidebar rétractable en overlay */
 .sidebar-modern {
     position: fixed;

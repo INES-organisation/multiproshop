@@ -59,7 +59,7 @@
     .mobile-buy-price { font-weight: 700; font-size: 1.15rem; white-space: nowrap; }
 }
 </style>
-<link rel="stylesheet" href="{{ url_for('static', filename='css/pages_modern.css') }}">
+<link rel="stylesheet" href="{{ url_for('static', filename='css/pages_modern.css') }}?v=2">
 <link rel="stylesheet" href="{{ url_for('static', filename='css/product_detail.css') }}">
 <link rel="stylesheet" href="{{ url_for('static', filename='css/product_variants.css') }}">
 <style>
@@ -126,6 +126,25 @@
     display: flex;
     gap: 2rem;
     margin: 3rem 0 2rem 0;
+}
+
+/* Mobile : boutons d'achat l'un sous l'autre, onglets défilables */
+@media (max-width: 576px) {
+    .tabs-modern {
+        gap: 1.25rem;
+        overflow-x: auto;
+        white-space: nowrap;
+        scrollbar-width: none;
+    }
+
+    #add-to-cart-btn, #buy-now-btn {
+        padding-left: 1rem;
+        padding-right: 1rem;
+    }
+
+    .d-flex.gap-2.mb-3:has(#add-to-cart-btn) {
+        flex-direction: column;
+    }
 }
 
 .tab-modern {
