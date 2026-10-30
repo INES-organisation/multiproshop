@@ -3,269 +3,135 @@
 {% block title %}Dashboard Admin{% endblock %}
 
 {% block content %}
-<div class="d-flex justify-content-between align-items-center mb-4">
+<div class="d-flex justify-content-between align-items-center flex-wrap gap-2 mb-4">
     <div>
         <h1 style="font-weight: 800; margin-bottom: 0.5rem;">
             <i class="fas fa-chart-line"></i> Dashboard
         </h1>
-        <p style="color: #999; margin: 0;">Vue d'ensemble de votre boutique</p>
+        <p style="color: #999; margin: 0;">Chiffres réels de la boutique (hors commandes internes admin)</p>
     </div>
-    <div>
-        <a href="{{ url_for('admin_celery.dashboard') }}" class="admin-btn admin-btn-info" style="text-decoration: none; margin-right: 10px;">
-            <i class="fas fa-tasks"></i>
-            Dashboard Celery
+    <div class="d-flex flex-wrap gap-2">
+        <a href="{{ url_for('admin.export_orders') }}" class="admin-btn admin-btn-primary" style="text-decoration: none;">
+            <i class="fas fa-download"></i> Export commandes
         </a>
-        <button class="admin-btn admin-btn-primary">
-            <i class="fas fa-download"></i>
-            Exporter les Données
-        </button>
+        <a href="{{ url_for('admin.export_products') }}" class="admin-btn admin-btn-info" style="text-decoration: none;">
+            <i class="fas fa-file-csv"></i> Export produits
+        </a>
+        <a href="{{ url_for('admin_celery.dashboard') }}" class="admin-btn admin-btn-info" style="text-decoration: none;">
+            <i class="fas fa-tasks"></i> Tâches
+        </a>
     </div>
 </div>
 
-<!-- Stats Cards -->
 <div class="admin-stats-grid">
     <div class="admin-stat-card">
-        <div class="admin-stat-icon primary">
-            <i class="fas fa-euro-sign"></i>
-        </div>
+        <div class="admin-stat-icon primary"><i class="fas fa-euro-sign"></i></div>
         <div class="admin-stat-content">
-            <div class="admin-stat-label">Chiffre d'Affaires</div>
-            <div class="admin-stat-value">24,580€</div>
-            <div class="admin-stat-change up">
-                <i class="fas fa-arrow-up"></i> +12.5% ce mois
-            </div>
+            <div class="admin-stat-label">Chiffre d'affaires payé</div>
+            <div class="admin-stat-value">{{ "%.2f"|format(stats.revenue_total) }} €</div>
+            <div class="admin-stat-change">Ce mois : {{ "%.2f"|format(stats.revenue_month) }} €</div>
         </div>
     </div>
-    
     <div class="admin-stat-card">
-        <div class="admin-stat-icon success">
-            <i class="fas fa-shopping-cart"></i>
-        </div>
+        <div class="admin-stat-icon success"><i class="fas fa-shopping-cart"></i></div>
         <div class="admin-stat-content">
-            <div class="admin-stat-label">Commandes</div>
-            <div class="admin-stat-value">156</div>
-            <div class="admin-stat-change up">
-                <i class="fas fa-arrow-up"></i> +8.2% ce mois
-            </div>
+            <div class="admin-stat-label">Commandes payées</div>
+            <div class="admin-stat-value">{{ stats.orders_paid }}</div>
+            <div class="admin-stat-change">Ce mois : {{ stats.orders_month }} · panier moyen {{ "%.2f"|format(stats.avg_basket) }} €</div>
         </div>
     </div>
-    
     <div class="admin-stat-card">
-        <div class="admin-stat-icon info">
-            <i class="fas fa-box"></i>
-        </div>
+        <div class="admin-stat-icon danger"><i class="fas fa-truck"></i></div>
         <div class="admin-stat-content">
-            <div class="admin-stat-label">Produits</div>
-            <div class="admin-stat-value">{{ products_count if products_count else 0 }}</div>
-            <div class="admin-stat-change">
-                <i class="fas fa-info-circle"></i> Total en stock
-            </div>
+            <div class="admin-stat-label">À envoyer chez CJ</div>
+            <div class="admin-stat-value">{{ stats.to_send_cj }}</div>
+            <div class="admin-stat-change">{{ stats.orders_pending }} paiement(s) en attente</div>
         </div>
     </div>
-    
     <div class="admin-stat-card">
-        <div class="admin-stat-icon danger">
-            <i class="fas fa-users"></i>
-        </div>
+        <div class="admin-stat-icon info"><i class="fas fa-box"></i></div>
         <div class="admin-stat-content">
-            <div class="admin-stat-label">Utilisateurs</div>
-            <div class="admin-stat-value">{{ users_count if users_count else 0 }}</div>
-            <div class="admin-stat-change up">
-                <i class="fas fa-arrow-up"></i> +15 ce mois
-            </div>
+            <div class="admin-stat-label">Produits en ligne</div>
+            <div class="admin-stat-value">{{ stats.products_online }}</div>
+            <div class="admin-stat-change">{{ stats.products_out }} en rupture · {{ stats.products_count }} en base</div>
+        </div>
+    </div>
+    <div class="admin-stat-card">
+        <div class="admin-stat-icon primary"><i class="fas fa-users"></i></div>
+        <div class="admin-stat-content">
+            <div class="admin-stat-label">Clients inscrits</div>
+            <div class="admin-stat-value">{{ stats.users_count }}</div>
+            <div class="admin-stat-change">Ce mois : {{ stats.users_month }}</div>
+        </div>
+    </div>
+    <div class="admin-stat-card">
+        <div class="admin-stat-icon success"><i class="fas fa-envelope-open-text"></i></div>
+        <div class="admin-stat-content">
+            <div class="admin-stat-label">Paniers relancés</div>
+            <div class="admin-stat-value">{{ stats.carts_relaunched }}</div>
+            <div class="admin-stat-change">{{ stats.carts_recovered }} récupéré(s)</div>
         </div>
     </div>
 </div>
 
-<!-- Charts Row -->
-<div class="row g-3 mb-4">
+<div class="row g-4">
     <div class="col-lg-8">
         <div class="admin-card">
-            <div class="admin-card-header">
-                <h5 class="admin-card-title">
-                    <i class="fas fa-chart-area"></i> Ventes Mensuelles
-                </h5>
-                <select class="form-select form-select-sm" style="width: auto;">
-                    <option>2025</option>
-                    <option>2024</option>
-                </select>
+            <div class="admin-card-header d-flex justify-content-between align-items-center">
+                <h3 class="admin-card-title" style="margin: 0;">Dernières commandes</h3>
+                <a href="{{ url_for('admin.orders') }}" class="admin-btn admin-btn-sm admin-btn-primary" style="text-decoration: none;">Toutes</a>
             </div>
-            <div class="admin-card-body">
-                <canvas id="salesChart" height="80"></canvas>
-            </div>
-        </div>
-    </div>
-    
-    <div class="col-lg-4">
-        <div class="admin-card">
-            <div class="admin-card-header">
-                <h5 class="admin-card-title">
-                    <i class="fas fa-chart-pie"></i> Catégories
-                </h5>
-            </div>
-            <div class="admin-card-body">
-                <canvas id="categoriesChart"></canvas>
-            </div>
-        </div>
-    </div>
-</div>
-
-<!-- Recent Orders & Top Products -->
-<div class="row g-3">
-    <div class="col-lg-7">
-        <div class="admin-card">
-            <div class="admin-card-header">
-                <h5 class="admin-card-title">
-                    <i class="fas fa-shopping-cart"></i> Commandes Récentes
-                </h5>
-                <a href="{{ url_for('admin.orders') }}" class="admin-btn admin-btn-sm admin-btn-primary">
-                    Voir Tout
-                </a>
-            </div>
-            <div class="admin-card-body" style="padding: 0;">
+            <div class="admin-card-body" style="padding: 0; overflow-x: auto;">
                 <table class="admin-table">
                     <thead>
-                        <tr>
-                            <th>N° Commande</th>
-                            <th>Client</th>
-                            <th>Montant</th>
-                            <th>Statut</th>
-                            <th>Date</th>
-                        </tr>
+                        <tr><th>N°</th><th>Client</th><th>Total</th><th>Paiement</th><th>Statut</th><th>CJ</th><th>Date</th></tr>
                     </thead>
                     <tbody>
+                        {% for order in recent_orders %}
                         <tr>
-                            <td>#CMD-001</td>
-                            <td>Jean Dupont</td>
-                            <td>149.99€</td>
-                            <td><span class="admin-badge admin-badge-success">Livrée</span></td>
-                            <td>01/11/2025</td>
+                            <td><a href="{{ url_for('admin.order_detail', order_id=order.id) }}">#{{ order.order_number }}</a>
+                                {% if order.admin_notes and order.admin_notes.startswith('Commande interne admin') %}<div style="font-size: 0.75rem; color: #999;">interne</div>{% endif %}</td>
+                            <td>{{ order.shipping_first_name }} {{ order.shipping_last_name }}<div style="font-size: 0.8rem; color: #999;">{{ order.shipping_country }}</div></td>
+                            <td style="font-weight: 700;">{{ "%.2f"|format(order.total_price) }} €</td>
+                            <td>{{ {'paid': 'Payé', 'pending': 'En attente', 'failed': 'Échoué', 'refunded': 'Remboursé'}.get(order.payment_status, order.payment_status) }}</td>
+                            <td>{{ order.get_status_badge()|safe }}</td>
+                            <td>{{ order.cj_status or ('envoyée' if order.cj_order_id else '—') }}</td>
+                            <td>{{ order.created_at.strftime('%d/%m %H:%M') }}</td>
                         </tr>
-                        <tr>
-                            <td>#CMD-002</td>
-                            <td>Marie Martin</td>
-                            <td>89.50€</td>
-                            <td><span class="admin-badge admin-badge-warning">En cours</span></td>
-                            <td>02/11/2025</td>
-                        </tr>
-                        <tr>
-                            <td>#CMD-003</td>
-                            <td>Pierre Bernard</td>
-                            <td>199.99€</td>
-                            <td><span class="admin-badge admin-badge-info">Expédiée</span></td>
-                            <td>02/11/2025</td>
-                        </tr>
+                        {% else %}
+                        <tr><td colspan="7" style="text-align: center; padding: 2rem; color: #999;">Aucune commande pour l'instant</td></tr>
+                        {% endfor %}
                     </tbody>
                 </table>
             </div>
         </div>
     </div>
-    
-    <div class="col-lg-5">
+    <div class="col-lg-4">
         <div class="admin-card">
             <div class="admin-card-header">
-                <h5 class="admin-card-title">
-                    <i class="fas fa-fire"></i> Produits Populaires
-                </h5>
+                <h3 class="admin-card-title" style="margin: 0;">Top produits (30 jours)</h3>
             </div>
             <div class="admin-card-body">
-                <div style="display: flex; flex-direction: column; gap: 1rem;">
-                    <div style="display: flex; align-items: center; gap: 1rem; padding: 0.8rem; background: #f8f9fa; border-radius: 8px;">
-                        <img src="https://via.placeholder.com/60" alt="Produit" style="border-radius: 8px;" loading="lazy" decoding="async">
-                        <div style="flex: 1;">
-                            <div style="font-weight: 600;">Produit Example 1</div>
-                            <div style="font-size: 0.85rem; color: #999;">45 ventes</div>
-                        </div>
-                        <div style="font-weight: 700; color: var(--admin-primary);">99.99€</div>
-                    </div>
-                    <div style="display: flex; align-items: center; gap: 1rem; padding: 0.8rem; background: #f8f9fa; border-radius: 8px;">
-                        <img src="https://via.placeholder.com/60" alt="Produit" style="border-radius: 8px;" loading="lazy" decoding="async">
-                        <div style="flex: 1;">
-                            <div style="font-weight: 600;">Produit Example 2</div>
-                            <div style="font-size: 0.85rem; color: #999;">38 ventes</div>
-                        </div>
-                        <div style="font-weight: 700; color: var(--admin-primary);">79.99€</div>
-                    </div>
-                    <div style="display: flex; align-items: center; gap: 1rem; padding: 0.8rem; background: #f8f9fa; border-radius: 8px;">
-                        <img src="https://via.placeholder.com/60" alt="Produit" style="border-radius: 8px;" loading="lazy" decoding="async">
-                        <div style="flex: 1;">
-                            <div style="font-weight: 600;">Produit Example 3</div>
-                            <div style="font-size: 0.85rem; color: #999;">32 ventes</div>
-                        </div>
-                        <div style="font-weight: 700; color: var(--admin-primary);">129.99€</div>
-                    </div>
+                {% for product, qty, ca in top_products %}
+                <div class="d-flex justify-content-between align-items-center" style="padding: 0.5rem 0; border-bottom: 1px solid #f0f0f0;">
+                    <a href="{{ url_for('admin.edit_product', product_id=product.id) }}" style="font-weight: 600; max-width: 70%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">{{ product.name }}</a>
+                    <span style="color: #999; font-size: 0.85rem;">{{ qty }} · {{ "%.0f"|format(ca) }} €</span>
                 </div>
+                {% else %}
+                <p style="color: #999; margin: 0;">Pas encore de ventes payées sur 30 jours.</p>
+                {% endfor %}
+            </div>
+        </div>
+        <div class="admin-card mt-4">
+            <div class="admin-card-header">
+                <h3 class="admin-card-title" style="margin: 0;">Raccourcis</h3>
+            </div>
+            <div class="admin-card-body d-grid gap-2">
+                <a href="{{ url_for('admin.products', status='selection') }}" class="admin-btn admin-btn-primary" style="text-decoration: none;"><i class="fas fa-box"></i> Produits en ligne et marges</a>
+                <a href="{{ url_for('admin.products', status='out_of_stock') }}" class="admin-btn admin-btn-warning" style="text-decoration: none;"><i class="fas fa-times-circle"></i> Ruptures</a>
+                <a href="{{ url_for('admin.orders') }}" class="admin-btn admin-btn-info" style="text-decoration: none;"><i class="fas fa-receipt"></i> Commandes</a>
             </div>
         </div>
     </div>
 </div>
-{% endblock %}
-
-{% block extra_js %}
-<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-<script>
-// Sales Chart
-const salesCtx = document.getElementById('salesChart').getContext('2d');
-new Chart(salesCtx, {
-    type: 'line',
-    data: {
-        labels: ['Jan', 'Fév', 'Mar', 'Avr', 'Mai', 'Jun', 'Jul', 'Aoû', 'Sep', 'Oct', 'Nov', 'Déc'],
-        datasets: [{
-            label: 'Ventes 2025',
-            data: [12000, 19000, 15000, 25000, 22000, 30000, 28000, 32000, 29000, 35000, 38000, 42000],
-            borderColor: '#ffb300',
-            backgroundColor: 'rgba(255, 179, 0, 0.1)',
-            tension: 0.4,
-            fill: true
-        }]
-    },
-    options: {
-        responsive: true,
-        maintainAspectRatio: true,
-        plugins: {
-            legend: {
-                display: false
-            }
-        },
-        scales: {
-            y: {
-                beginAtZero: true,
-                ticks: {
-                    callback: function(value) {
-                        return value / 1000 + 'k€';
-                    }
-                }
-            }
-        }
-    }
-});
-
-// Categories Chart
-const categoriesCtx = document.getElementById('categoriesChart').getContext('2d');
-new Chart(categoriesCtx, {
-    type: 'doughnut',
-    data: {
-        labels: ['Électronique', 'Mode', 'Maison', 'Sport', 'Autres'],
-        datasets: [{
-            data: [35, 25, 20, 15, 5],
-            backgroundColor: [
-                '#ffb300',
-                '#ff9800',
-                '#28a745',
-                '#17a2b8',
-                '#6c757d'
-            ]
-        }]
-    },
-    options: {
-        responsive: true,
-        maintainAspectRatio: true,
-        plugins: {
-            legend: {
-                position: 'bottom'
-            }
-        }
-    }
-});
-</script>
 {% endblock %}

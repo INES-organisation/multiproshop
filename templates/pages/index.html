@@ -31,7 +31,7 @@
                             <div class="hero-content">
                                 <span class="hero-badge">Livraison</span>
                                 <h1 class="hero-title">Livraison offerte en France dès {{ "%.0f"|format(free_shipping_threshold) }} €</h1>
-                                <p class="hero-subtitle">Livraison suivie en {{ delivery_days }}, en France et en Europe</p>
+                                <p class="hero-subtitle">Selon le panier, affiché au choix de la livraison. Livraison suivie en France et en Europe</p>
                                 <a href="{{ url_for('products.list_products') }}" class="btn-hero">Commencer mes achats</a>
                             </div>
                         </div>
@@ -180,7 +180,7 @@
                             <i class="fas fa-shipping-fast"></i>
                         </div>
                         <h6>Livraison offerte</h6>
-                        <p>En France dès {{ "%.0f"|format(free_shipping_threshold) }} €</p>
+                        <p>En France dès {{ "%.0f"|format(free_shipping_threshold) }} €, selon le panier</p>
                     </div>
                 </div>
                 <div class="col-md-2 col-6">

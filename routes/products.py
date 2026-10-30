@@ -91,11 +91,38 @@ def product_detail(product_id):
     if product.cj_pid:
         return render_template('pages/product_detail_cj.html',
                              product=product,
-                             related_products=related_products)
+                             related_products=related_products,
+                             estimate_countries=ESTIMATE_COUNTRIES)
     
     return render_template('pages/product_detail.html',
                          product=product,
                          related_products=related_products)
+
+# Destinations proposées sur la fiche produit (les mêmes que celles du paiement les plus demandées)
+ESTIMATE_COUNTRIES = {'FR': 'France', 'RE': 'La Réunion', 'GP': 'Guadeloupe', 'MQ': 'Martinique',
+                      'GF': 'Guyane', 'YT': 'Mayotte', 'BE': 'Belgique', 'CH': 'Suisse', 'LU': 'Luxembourg'}
+
+
+@products.route('/<int:product_id>/livraison')
+def shipping_estimate(product_id):
+    """Prix et délai de livraison d'une unité vers un pays, avant l'ajout au panier"""
+    from datetime import date, timedelta
+    from services.shipping_service import ShippingService
+    country = request.args.get('country', 'FR').upper()
+    if country not in ESTIMATE_COUNTRIES:
+        return jsonify({'success': False, 'message': 'Pays non proposé'}), 400
+    product = Product.query.filter_by(id=product_id, is_active=True).first_or_404()
+    estimate = ShippingService().product_estimate(product, country)
+    if estimate is None:
+        return jsonify({'success': False, 'message': 'Tarif indisponible pour le moment'})
+    months = ('janv.', 'févr.', 'mars', 'avr.', 'mai', 'juin', 'juil.', 'août', 'sept.', 'oct.', 'nov.', 'déc.')
+    for key in ('cheapest', 'fastest'):
+        method = estimate.get(key)
+        if method and method['days']:
+            method['dates'] = ['%d %s' % (d.day, months[d.month - 1])
+                               for d in (date.today() + timedelta(days=n) for n in method['days'])]
+    return jsonify({'success': True, 'country': country, 'country_name': ESTIMATE_COUNTRIES[country], **estimate})
+
 
 @products.route('/api/<int:product_id>')
 @cache.cached(timeout=600)

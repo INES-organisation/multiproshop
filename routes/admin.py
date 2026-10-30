@@ -28,12 +28,52 @@ def admin_required(f):
 @login_required
 @admin_required
 def dashboard():
-    # Récupérer les statistiques
+    from datetime import datetime, timedelta
+    from sqlalchemy import func, or_
     from models.product import Product
     from models.user import User
-    products_count = Product.query.count()
-    users_count = User.query.count()
-    return render_template('admin/dashboard.html', products_count=products_count, users_count=users_count)
+    from models.order import Order, OrderItem
+    from models.cart_reminder import CartReminder
+
+    now = datetime.utcnow()
+    month_start = now.replace(day=1, hour=0, minute=0, second=0, microsecond=0)
+    # Les commandes internes passées au prix coûtant ne comptent pas dans le CA
+    paid = Order.query.filter(Order.payment_status == 'paid').filter(
+        or_(Order.admin_notes.is_(None), ~Order.admin_notes.like('Commande interne admin%')))
+
+    def revenue(q):
+        return q.with_entities(func.coalesce(func.sum(Order.total_price), 0.0)).scalar() or 0.0
+
+    paid_month = paid.filter(Order.created_at >= month_start)
+    stats = {
+        'revenue_total': revenue(paid),
+        'revenue_month': revenue(paid_month),
+        'orders_paid': paid.count(),
+        'orders_month': paid_month.count(),
+        'orders_pending': Order.query.filter(Order.payment_status == 'pending').count(),
+        'to_send_cj': Order.query.filter(Order.payment_status == 'paid', Order.cj_order_id.is_(None),
+                                         Order.status.notin_(['cancelled', 'delivered'])).count(),
+        'products_online': Product.query.filter(Product.is_active == True, Product.published_at.isnot(None)).count(),
+        'products_out': Product.query.filter(Product.is_active == True, Product.published_at.isnot(None),
+                                             Product.stock <= 0).count(),
+        'products_count': Product.query.count(),
+        'users_count': User.query.count(),
+        'users_month': User.query.filter(User.created_at >= month_start).count(),
+        'carts_relaunched': CartReminder.query.filter(CartReminder.steps_sent > 0).count(),
+        'carts_recovered': CartReminder.query.filter(CartReminder.completed_at.isnot(None)).count(),
+    }
+    stats['avg_basket'] = stats['revenue_total'] / stats['orders_paid'] if stats['orders_paid'] else 0.0
+
+    recent_orders = Order.query.order_by(Order.created_at.desc()).limit(8).all()
+    top_products = (db.session.query(Product, func.sum(OrderItem.quantity).label('qty'),
+                                     func.sum(OrderItem.quantity * OrderItem.price).label('ca'))
+                    .join(OrderItem, OrderItem.product_id == Product.id)
+                    .join(Order, Order.id == OrderItem.order_id)
+                    .filter(Order.payment_status == 'paid', Order.created_at >= now - timedelta(days=30))
+                    .group_by(Product.id).order_by(func.sum(OrderItem.quantity).desc()).limit(5).all())
+    return render_template('admin/dashboard.html', stats=stats, recent_orders=recent_orders,
+                           top_products=top_products, products_count=stats['products_count'],
+                           users_count=stats['users_count'])
 
 @admin_bp.route('/users/export')
 @login_required
@@ -146,12 +186,15 @@ def edit_user(user_id):
 def delete_user(user_id):
     from models.user import User
     user = User.query.get_or_404(user_id)
+    if user.id == current_user.id:
+        flash('Vous ne pouvez pas supprimer votre propre compte.', 'error')
+        return redirect(url_for('admin.users'))
     if request.method == 'POST':
         db.session.delete(user)
         db.session.commit()
         flash('Utilisateur supprimé.')
         return redirect(url_for('admin.users'))
-    return render_template('pages/admin/user_delete.html', user=user)
+    return render_template('admin/user_delete.html', user=user)
 
 @admin_bp.route('/products/export')
 @login_required
@@ -160,20 +203,24 @@ def export_products():
     from models.product import Product
     import csv
     from flask import Response
-    products = Product.query.all()
-    def generate():
-        data = [['ID', 'Nom', 'Catégorie', 'Prix', 'Stock']]
-        for product in products:
-            data.append([
-                product.id,
-                product.name,
-                product.category.name if product.category else '',
-                f"{product.price:.2f}",
-                product.stock
-            ])
-        for row in data:
-            yield ','.join(str(cell) for cell in row) + '\n'
-    return Response(generate(), mimetype='text/csv', headers={"Content-Disposition": "attachment;filename=produits.csv"})
+    import io
+    from sqlalchemy.orm import joinedload
+    # Construit en mémoire dans la requête : un générateur paresseux perdait la session SQLAlchemy
+    out = io.StringIO()
+    writer = csv.writer(out, delimiter=';')  # point-virgule : ouverture directe dans Excel en français
+    writer.writerow(['ID', 'Nom', 'Catégorie', 'Prix de vente', 'Coût CJ', 'Marge', 'Marge %', 'Stock',
+                     'Actif', 'Sélection', 'Réf. CJ', 'Lien'])
+    for product in Product.query.options(joinedload(Product.category)).order_by(Product.id):
+        margin = round(product.price - product.cost_price, 2) if product.cost_price else ''
+        writer.writerow([
+            product.id, product.name, product.category.name if product.category else '',
+            f"{product.price:.2f}", f"{product.cost_price:.2f}" if product.cost_price else '', margin,
+            f"{margin / product.price * 100:.0f}" if margin != '' and product.price else '',
+            product.stock, 'oui' if product.is_active else 'non', 'oui' if product.published_at else 'non',
+            product.cj_pid or '', url_for('products.product_detail', product_id=product.id, _external=True),
+        ])
+    return Response('\ufeff' + out.getvalue(), mimetype='text/csv; charset=utf-8',
+                    headers={"Content-Disposition": "attachment;filename=produits.csv"})
 
 # Anciennes routes produits supprimées - voir nouvelles routes en bas du fichier
 
@@ -647,7 +694,9 @@ def products():
     if category_id:
         query = query.filter_by(category_id=category_id)
     
-    if status == 'active':
+    if status == 'selection':
+        query = query.filter(Product.is_active == True, Product.published_at.isnot(None))
+    elif status == 'active':
         query = query.filter_by(is_active=True)
     elif status == 'inactive':
         query = query.filter_by(is_active=False)

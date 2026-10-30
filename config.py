@@ -43,9 +43,12 @@ class Config:
     SITE_URL = os.getenv('SITE_URL', 'https://multiproshop.com').rstrip('/')
     FREE_SHIPPING_THRESHOLD = float(os.getenv('FREE_SHIPPING_THRESHOLD', '50'))
     FREE_SHIPPING_COUNTRIES = ('FR',)  # France métropolitaine
+    # Frais de paiement par carte, pour vérifier qu'un port offert laisse une marge (tarif Stripe standard UE)
+    CARD_FEE_RATE = float(os.getenv('CARD_FEE_RATE', '0.015'))
+    CARD_FEE_FIXED = float(os.getenv('CARD_FEE_FIXED', '0.25'))
     RETURN_DAYS = 14
-    DELIVERY_DAYS = '7 à 15 jours ouvrés'
-    DELIVERY_BUSINESS_DAYS = (7, 15)  # même fourchette, pour la date de livraison estimée
+    DELIVERY_DAYS = '2 à 3 semaines'  # délai le plus courant ; le délai exact du transporteur s'affiche sur la fiche et au paiement
+    DELIVERY_BUSINESS_DAYS = (10, 15)  # même fourchette, pour la date de livraison estimée
     # Mesure d'audience et publicité : rien n'est chargé sans identifiant ni sans accord du visiteur
     ANALYTICS = {
         'ga4': os.getenv('GA4_MEASUREMENT_ID', ''),

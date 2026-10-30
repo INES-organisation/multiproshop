@@ -95,6 +95,7 @@
                 <div class="col-md-3">
                     <select class="admin-form-control" name="status">
                         <option value="">Tous les statuts</option>
+                        <option value="selection" {% if current_status == 'selection' %}selected{% endif %}>Sélection en ligne</option>
                         <option value="active" {% if current_status == 'active' %}selected{% endif %}>Actifs</option>
                         <option value="inactive" {% if current_status == 'inactive' %}selected{% endif %}>Inactifs</option>
                         <option value="low_stock" {% if current_status == 'low_stock' %}selected{% endif %}>Stock faible</option>
@@ -122,6 +123,8 @@
                     <th>Nom</th>
                     <th>Catégorie</th>
                     <th>Prix</th>
+                    <th>Coût CJ</th>
+                    <th>Marge</th>
                     <th>Stock</th>
                     <th>Statut</th>
                     <th>Actions</th>
@@ -156,6 +159,15 @@
                             {% if product.compare_price and product.compare_price > product.price %}
                             <div style="font-size: 0.85rem; color: #999; text-decoration: line-through;">{{ "%.2f"|format(product.compare_price) }}€</div>
                             {% endif %}
+                            {% if product.has_price_range %}<div style="font-size: 0.8rem; color: #999;">à partir de</div>{% endif %}
+                        </td>
+                        <td>{{ "%.2f"|format(product.cost_price) ~ '€' if product.cost_price else '—' }}</td>
+                        <td>
+                            {% if product.cost_price %}
+                            {% set margin = product.price - product.cost_price %}
+                            <div style="font-weight: 700; color: {{ 'var(--admin-success, #16a34a)' if margin > 0 else '#dc2626' }};">{{ "%.2f"|format(margin) }}€</div>
+                            <div style="font-size: 0.8rem; color: #999;">{{ "%.0f"|format(margin / product.price * 100) if product.price else 0 }} %</div>
+                            {% else %}—{% endif %}
                         </td>
                         <td>
                             {% if product.stock > 10 %}
@@ -204,7 +216,7 @@
                     {% endfor %}
                 {% else %}
                     <tr>
-                        <td colspan="8" style="text-align: center; padding: 3rem; color: #999;">
+                        <td colspan="10" style="text-align: center; padding: 3rem; color: #999;">
                             <i class="fas fa-box" style="font-size: 3rem; margin-bottom: 1rem; display: block;"></i>
                             Aucun produit trouvé
                         </td>

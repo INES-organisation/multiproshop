@@ -601,7 +601,8 @@ class CJDropshippingApiOptimized:
                 break
         return {'total': total, 'france': france} if answered else None
 
-    def calculate_shipping(self, products: List[Dict], country_code: str = 'FR') -> Optional[Dict]:
+    def calculate_shipping(self, products: List[Dict], country_code: str = 'FR',
+                           start_country: str = 'CN') -> Optional[Dict]:
         """
         Calculer les frais de port CJ
         Inspiré de TonyAlpha80/src/Controllers/ShippingController.php
@@ -616,7 +617,7 @@ class CJDropshippingApiOptimized:
                 })
             
             freight_data = {
-                'startCountryCode': 'CN',
+                'startCountryCode': start_country,
                 'endCountryCode': country_code,
                 'products': product_list
             }

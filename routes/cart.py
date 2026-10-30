@@ -29,15 +29,32 @@ def _wants_json():
         or request.accept_mimetypes.best == 'application/json'
 
 
-def _with_free_shipping(methods, subtotal, country):
-    """Livraison offerte en France dès le seuil affiché sur le site : la méthode la moins chère passe à 0 €."""
+def _with_free_shipping(methods, subtotal, country, items=None):
+    """Livraison offerte en France dès le seuil, si la marge du panier reste positive une fois le port
+    le moins cher et les frais de carte payés : cette méthode passe alors à 0 €."""
     if not methods or admin_cost_mode() or country not in current_app.config['FREE_SHIPPING_COUNTRIES'] \
             or subtotal < current_app.config['FREE_SHIPPING_THRESHOLD']:
         return methods
     methods = [dict(m) for m in methods]
     cheapest = min(methods, key=lambda m: m['price'])
+    if free_shipping_margin(items or [], subtotal, cheapest['price']) is None:
+        return methods
     cheapest['price'] = 0
     return sorted(methods, key=lambda m: m['price'])
+
+
+def free_shipping_margin(items, subtotal, shipping):
+    """Marge du panier si le port est offert, ou None si elle n'est pas positive ou inconnue"""
+    from models.cart import cost_price
+    cost = 0.0
+    for item in items:
+        unit = cost_price(item['product'], item.get('variant'))
+        if not unit:
+            return None  # coût inconnu : on n'offre pas le port à l'aveugle
+        cost += unit * item['quantity']
+    fees = subtotal * current_app.config['CARD_FEE_RATE'] + current_app.config['CARD_FEE_FIXED']
+    margin = subtotal - cost - shipping - fees
+    return round(margin, 2) if margin > 0 else None
 
 
 @cart_bp.route('/add', methods=['POST'])
@@ -250,7 +267,7 @@ def get_checkout_shipping():
         from services.shipping_service import ShippingService
         shipping_service = ShippingService()
         result = shipping_service.calculate_shipping(shipping_items, country_code)
-        result['methods'] = _with_free_shipping(result.get('methods', []), cart.get_total_price(), country_code)
+        result['methods'] = _with_free_shipping(result.get('methods', []), cart.get_total_price(), country_code, items)
 
         return jsonify(result)
         
@@ -279,7 +296,7 @@ def _shipping_price(items, country, method_code, subtotal):
         'product': item['product'],
     } for item in items]
     result = ShippingService().calculate_shipping(shipping_items, country)
-    for method in _with_free_shipping(result.get('methods', []), subtotal, country):
+    for method in _with_free_shipping(result.get('methods', []), subtotal, country, items):
         if method.get('code') == method_code:
             return round(float(method['price']), 2)
     return None

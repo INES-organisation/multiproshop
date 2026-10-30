@@ -50,6 +50,10 @@
 {% block extra_css %}
 <style>
 .delivery-estimate { color: #047857; font-size: .95rem; margin: -.25rem 0 1rem; }
+.delivery-estimate label { margin-right: .35rem; }
+.delivery-estimate .shipping-country { border: 1px solid #d1d5db; border-radius: 6px; padding: .15rem .4rem; max-width: 100%; }
+#shipping-estimate-text { color: #374151; margin-top: .35rem; }
+#shipping-estimate-text.unavailable { color: #b91c1c; }
 .mobile-buy-bar { display: none; }
 @media (max-width: 767px) {
     .mobile-buy-bar { position: fixed; left: 0; right: 0; bottom: 0; z-index: 1500; gap: .75rem; align-items: center;
@@ -570,14 +574,15 @@
                     </div>
                     
                     <p class="price-info">
-                        <i class="fas fa-info-circle"></i> {{ seller.vat }} • Livraison offerte en France dès {{ "%.0f"|format(free_shipping_threshold) }} €
+                        <i class="fas fa-info-circle"></i> {{ seller.vat }} • Livraison offerte en France dès {{ "%.0f"|format(free_shipping_threshold) }} € selon le panier
                     </p>
-                    {% if product.stock > 0 %}
-                    {% set window = delivery_window() %}
-                    <p class="delivery-estimate">
-                        <i class="fas fa-truck"></i> Commandez aujourd'hui, livraison estimée entre le <strong>{{ window[0] }}</strong> et le <strong>{{ window[1] }}</strong>
-                    </p>
-                    {% endif %}
+                    <div class="delivery-estimate" id="shipping-estimate" data-url="{{ url_for('products.shipping_estimate', product_id=product.id) }}">
+                        <label for="shipping-country"><i class="fas fa-truck"></i> Livraison vers</label>
+                        <select id="shipping-country" class="shipping-country">
+                            {% for code, name in estimate_countries.items() %}<option value="{{ code }}">{{ name }}</option>{% endfor %}
+                        </select>
+                        <div id="shipping-estimate-text" aria-live="polite">Calcul du prix de livraison…</div>
+                    </div>
                 </div>
                 
                 <!-- Quantity Selector -->
@@ -1145,5 +1150,42 @@ function updateSlider() {
 if (sliderContainer && totalSlides > 1) {
     initSlider();
 }
+// Prix et délai de livraison avant l'ajout au panier
+(function () {
+    const box = document.getElementById('shipping-estimate');
+    if (!box) return;
+    const select = document.getElementById('shipping-country');
+    const text = document.getElementById('shipping-estimate-text');
+    const euro = n => n.toFixed(2).replace('.', ',') + ' €';
+    const line = (m, label) => label + ' <strong>' + euro(m.price) + '</strong>' +
+        (m.dates ? ', livré entre le <strong>' + m.dates[0] + '</strong> et le <strong>' + m.dates[1] + '</strong>' : '');
+    function load() {
+        text.classList.remove('unavailable');
+        text.textContent = 'Calcul du prix de livraison…';
+        fetch(box.dataset.url + '?country=' + encodeURIComponent(select.value))
+            .then(r => r.json())
+            .then(d => {
+                if (!d.success) { text.textContent = d.message || 'Tarif indisponible pour le moment'; return; }
+                if (!d.available) {
+                    text.classList.add('unavailable');
+                    text.textContent = 'Ce produit ne peut pas être livré vers ' + d.country_name + '.';
+                    return;
+                }
+                let html = line(d.cheapest, 'Livraison dès');
+                if (d.fastest) html += '<br>' + line(d.fastest, 'Express');
+                text.innerHTML = html;
+            })
+            .catch(() => { text.textContent = 'Tarif indisponible pour le moment'; });
+    }
+    try {
+        const saved = localStorage.getItem('shipping_country');
+        if (saved && select.querySelector('option[value="' + saved + '"]')) select.value = saved;
+    } catch (e) {}
+    select.addEventListener('change', () => {
+        try { localStorage.setItem('shipping_country', select.value); } catch (e) {}
+        load();
+    });
+    load();
+})();
 </script>
 {% endblock %}

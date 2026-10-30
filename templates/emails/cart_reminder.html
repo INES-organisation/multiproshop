@@ -38,12 +38,12 @@
             {{ line.quantity }} × {{ "%.2f"|format(line.price) }} €</span>
         </div>
         {% endfor %}
-        <p style="text-align: right;"><strong>Total : {{ "%.2f"|format(total) }} €</strong>{% if total >= free_shipping_threshold %} — livraison offerte en France{% endif %}</p>
+        <p style="text-align: right;"><strong>Total : {{ "%.2f"|format(total) }} €</strong>{% if total >= free_shipping_threshold %} — livraison offerte possible en France{% endif %}</p>
 
         {% if step == 1 %}
         <ul>
             <li>Paiement sécurisé par Stripe</li>
-            <li>Livraison suivie en {{ delivery_days }}{% if total < free_shipping_threshold %}, offerte en France dès {{ "%.0f"|format(free_shipping_threshold) }} €{% endif %}</li>
+            <li>Livraison suivie en {{ delivery_days }}{% if total < free_shipping_threshold %}, offerte en France dès {{ "%.0f"|format(free_shipping_threshold) }} € selon le panier{% endif %}</li>
             <li>{{ return_days }} jours pour changer d'avis</li>
         </ul>
         {% endif %}
