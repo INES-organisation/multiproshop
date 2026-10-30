@@ -263,36 +263,19 @@ class CjSyncService:
         cj_sell_price = product_data.get('price', 0)  # Prix d'achat CJ
         cj_suggested_price = product_data.get('suggested_price')  # Prix suggéré CJ
         
+        is_new = product is None
         if product:
-            # Mettre à jour produit existant
-            product.name = product_data.get('name', product.name)
-            product.description = product_data.get('description', product.description)
-            product.stock = product_data.get('stock', 0)
-            product.sku = product_data.get('sku', product.sku)
-            product.product_weight = product_data.get('weight')
-            product.material = product_data.get('material')
+            # Produit déjà en boutique : on ne rafraîchit que les données techniques. Le nom, la
+            # description (réécrits en français), les prix (fixés à la publication), le stock (lu
+            # par la sync dédiée, absent de product/query) et la mise en ligne (un produit retiré
+            # doit le rester) ne sont plus écrasés par CJ.
+            product.product_weight = product_data.get('weight') or product.product_weight
+            product.material = product_data.get('material') or product.material
+            product.cost_price = cj_sell_price or product.cost_price
+            product.suggested_price = cj_suggested_price or product.suggested_price
             product.synced_at = datetime.utcnow()
             product.cj_last_sync = datetime.utcnow()
-            
-            # Sauvegarder les données brutes CJ pour audit
             product.cj_raw_data = json.dumps(product_data, ensure_ascii=False)
-            
-            # Activer et publier automatiquement
-            product.is_active = True
-            product.published = True
-            
-            # Calculer les prix avec PricingService
-            product = self.pricing_service.update_product_pricing(
-                product, 
-                cj_sell_price, 
-                cj_suggested_price
-            )
-            
-            # Mettre à jour images
-            images = product_data.get('images', [])
-            if images:
-                product.image_url = images[0]
-                product.set_images_list(images[1:] if len(images) > 1 else [])
         else:
             # Créer nouveau produit avec slug unique
             from slugify import slugify
@@ -341,9 +324,9 @@ class CjSyncService:
         # Forcer un flush pour obtenir l'ID du produit
         db.session.flush()
         
-        # Synchroniser les variantes
+        # Variantes : seulement à la création (les recréer effacerait leurs prix de vente)
         variants = product_data.get('variants', [])
-        if variants:
+        if variants and is_new:
             self._sync_variants(product.id, variants)
     
     def _sync_variants(self, product_id: int, variants: List[Dict]) -> None:

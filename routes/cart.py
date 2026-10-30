@@ -56,7 +56,7 @@ def add_to_cart():
         
         # Vérifier que le produit existe
         product = Product.query.get(product_id)
-        if not product:
+        if not product or not product.is_active:
             return jsonify({
                 'success': False,
                 'message': 'Produit introuvable'

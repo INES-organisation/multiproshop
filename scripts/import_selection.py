@@ -17,6 +17,7 @@ Usage (dans le conteneur web) :
   python scripts/import_selection.py instance/selection_cj_1.json --unpublish
 """
 import argparse
+import glob
 import json
 import os
 import sys
@@ -144,9 +145,18 @@ def main():
         api = CJDropshippingApiOptimized(email=os.getenv('CJ_EMAIL'), password=os.getenv('CJ_PASSWORD'),
                                          dev_key=os.getenv('CJ_DEV_KEY'))
         published = json.load(open(log_path, encoding='utf-8')) if os.path.exists(log_path) else []
+        # Un produit déjà publié par un lot n'est pas réimporté : son titre, sa description en
+        # français et une éventuelle dépublication seraient écrasés
+        # (tous les fichiers .publies.json du dossier : les passages de sélection se recoupent)
+        batch_ids = set(published)
+        for other in glob.glob(os.path.join(os.path.dirname(log_path) or '.', '*.publies.json')):
+            batch_ids |= set(json.load(open(other, encoding='utf-8')))
+        already = {pid for (pid,) in db.session.query(Product.cj_pid).filter(Product.id.in_(batch_ids))}
         done = 0
         try:
             for item in items:
+                if item['pid'] in already:
+                    continue
                 response = cj_call(api, 'product/query', {'pid': item['pid']})
                 if not response or response.get('result') is False or not response.get('data'):
                     print(f"  ignoré (fiche CJ indisponible) : {item['nom_en']}")

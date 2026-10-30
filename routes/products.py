@@ -83,7 +83,7 @@ def by_category(category_id):
 @cache.cached(timeout=600, unless=personal_page)  # Cache 10 minutes, visiteurs anonymes
 def product_detail(product_id):
     product = ProductService.get_product_by_id(product_id)
-    if not product:
+    if not product or not product.is_active:  # produit retiré de la vente : plus de fiche
         flash('Produit introuvable', 'error')
         return redirect(url_for('products.list_products'))
     

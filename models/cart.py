@@ -174,8 +174,12 @@ class Cart:
                 # Vérifier le stock de la variante
                 if not variant.active:
                     errors.append(f"{product.name} ({variant.display_name}) n'est plus disponible")
-                elif variant.stock < quantity:
-                    errors.append(f"{product.name} ({variant.display_name}): seulement {variant.stock} en stock")
+                else:
+                    # Même règle que l'ajout au panier et la fiche : sans stock connu pour la
+                    # variante (CJ ne le donne pas toujours), celui du produit
+                    stock = variant.stock if variant.stock > 0 else product.stock
+                    if stock < quantity:
+                        errors.append(f"{product.name} ({variant.display_name}): seulement {stock} en stock")
             else:
                 # Vérifier le stock du produit
                 if product.stock < quantity:
