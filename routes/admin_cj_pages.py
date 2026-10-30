@@ -3,11 +3,14 @@ Routes admin pour les pages CJ (catégories et produits)
 """
 from flask import Blueprint, render_template, request
 from flask_login import login_required
+from routes.admin import admin_required
 
 bp = Blueprint('admin_cj_pages', __name__, url_prefix='/admin/cj')
 
 
 @bp.route('/categories')
+@login_required
+@admin_required
 def categories():
     """Page admin catégories CJ"""
     try:
@@ -17,6 +20,8 @@ def categories():
 
 
 @bp.route('/products')
+@login_required
+@admin_required
 def products():
     """Page admin produits CJ"""
     try:

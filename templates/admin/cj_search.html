@@ -1,0 +1,102 @@
+{% extends 'admin/layout_admin_modern.html' %}
+
+{% block title %}Rechercher sur CJ{% endblock %}
+
+{% block content %}
+<div class="mb-4">
+    <h1 style="font-weight: 800; margin-bottom: 0.5rem;"><i class="fas fa-search"></i> Rechercher sur CJ</h1>
+    <p style="color: #999; margin: 0;">Catalogue CJ en direct. Les mots-clés en anglais donnent plus de résultats (drill, sunglasses, men watch…). Un produit importé arrive en brouillon : traduisez-le puis activez-le.</p>
+</div>
+
+<div class="admin-card mb-4">
+    <div class="admin-card-body">
+        <form method="GET" action="{{ url_for('admin.cj_search') }}">
+            <div class="row g-3">
+                <div class="col-md-6">
+                    <input type="text" class="admin-form-control" name="q" value="{{ q }}" placeholder="ex. cordless drill" required>
+                </div>
+                <div class="col-md-4">
+                    <select class="admin-form-control" name="category" aria-label="Catégorie de destination">
+                        <option value="">Catégorie (pour la marge)</option>
+                        {% for c in categories %}
+                        <option value="{{ c.id }}" {% if category and category.id == c.id %}selected{% endif %}>{{ c.name_fr or c.name }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="col-md-2">
+                    <button type="submit" class="admin-btn admin-btn-primary w-100"><i class="fas fa-search"></i> Chercher</button>
+                </div>
+            </div>
+        </form>
+    </div>
+</div>
+
+{% if q %}
+<div class="admin-card">
+    <div class="admin-card-body" style="padding: 0; overflow-x: auto;">
+        <table class="admin-table">
+            <thead>
+                <tr><th>Image</th><th>Produit CJ</th><th>Coût CJ</th><th>Prix de vente</th><th>Marge</th><th>Stock</th><th>Port FR / Réunion</th><th></th></tr>
+            </thead>
+            <tbody>
+                {% for r in results %}
+                <tr>
+                    <td><img src="{{ r.image }}" alt="" style="width: 60px; height: 60px; object-fit: cover; border-radius: 8px;" loading="lazy"></td>
+                    <td style="max-width: 320px;">
+                        <div style="font-weight: 600;">{{ r.name }}</div>
+                        <div style="font-size: 0.8rem; color: #999;">{{ r.sku }}</div>
+                    </td>
+                    <td>{{ "%.2f"|format(r.cost) }} €</td>
+                    <td>{{ "%.2f"|format(r.sell_price) }} €</td>
+                    <td style="color: {{ '#16a34a' if r.margin > 0 else '#dc2626' }}; font-weight: 700;">{{ "%.2f"|format(r.margin) }} €</td>
+                    <td>{{ r.stock }}</td>
+                    <td class="freight-cell" data-pid="{{ r.pid }}">
+                        <button type="button" class="admin-btn admin-btn-sm admin-btn-info freight-btn">Calculer</button>
+                    </td>
+                    <td>
+                        {% if r.existing %}
+                        <a href="{{ url_for('admin.edit_product', product_id=r.existing.id) }}" class="admin-badge admin-badge-success">Déjà en boutique</a>
+                        {% else %}
+                        <form method="POST" action="{{ url_for('admin.cj_search_import') }}">
+                            <input type="hidden" name="pid" value="{{ r.pid }}">
+                            <input type="hidden" name="q" value="{{ q }}">
+                            <input type="hidden" name="category_id" value="{{ category.id if category else '' }}">
+                            <button type="submit" class="admin-btn admin-btn-sm admin-btn-primary" {% if not category %}disabled title="Choisissez d'abord une catégorie"{% endif %}>Importer</button>
+                        </form>
+                        {% endif %}
+                    </td>
+                </tr>
+                {% else %}
+                <tr><td colspan="8" style="text-align: center; padding: 2rem; color: #999;">Aucun résultat CJ pour « {{ q }} »</td></tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+
+{% if total_pages > 1 %}
+<div class="d-flex justify-content-center gap-2 mt-4">
+    {% if page > 1 %}<a class="admin-btn admin-btn-sm admin-btn-info" href="{{ url_for('admin.cj_search', q=q, page=page - 1, category=category.id if category else None) }}">Précédent</a>{% endif %}
+    <span style="padding: 0.4rem;">Page {{ page }} / {{ total_pages }}</span>
+    {% if page < total_pages %}<a class="admin-btn admin-btn-sm admin-btn-info" href="{{ url_for('admin.cj_search', q=q, page=page + 1, category=category.id if category else None) }}">Suivant</a>{% endif %}
+</div>
+{% endif %}
+{% endif %}
+
+<script>
+document.querySelectorAll('.freight-btn').forEach(btn => btn.addEventListener('click', () => {
+    const cell = btn.closest('.freight-cell');
+    cell.textContent = 'Calcul…';
+    fetch('{{ url_for('admin.cj_search_freight') }}', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({pid: cell.dataset.pid})
+    }).then(r => r.json()).then(d => {
+        if (!d.success) { cell.textContent = d.message || 'Indisponible'; return; }
+        const fmt = (label, m) => label + ' : ' + (m === null ? 'inconnu' : m === false ? 'non livrable'
+            : m.price.toFixed(2).replace('.', ',') + ' € (' + m.days + ' j)');
+        cell.innerHTML = fmt('FR', d.FR) + '<br>' + fmt('RE', d.RE);
+    }).catch(() => { cell.textContent = 'Erreur'; });
+}));
+</script>
+{% endblock %}

@@ -887,6 +887,8 @@ def toggle_product_status(product_id):
     
     product = Product.query.get_or_404(product_id)
     product.is_active = not product.is_active
+    if product.is_active and product.published_at is None:
+        product.published_at = datetime.utcnow()  # activé depuis l'admin : il rejoint la sélection en ligne
     
     try:
         db.session.commit()
@@ -897,3 +899,113 @@ def toggle_product_status(product_id):
         flash(f'Erreur: {str(e)}', 'error')
     
     return redirect(url_for('admin.products'))
+
+
+# --- Recherche CJ en temps réel : chercher, chiffrer (coût, marge, port), importer en brouillon ---
+
+def _cj_api():
+    from config import Config
+    from services.api_providers.cj_dropshipping_optimized import CJDropshippingApiOptimized
+    return CJDropshippingApiOptimized(email=Config.CJ_EMAIL, password=Config.CJ_PASSWORD, dev_key=Config.CJ_DEV_KEY)
+
+
+def _cj_details(pid):
+    """Fiche CJ complète (product/query), gardée 1 h : le chiffrage du port et l'import la relisent"""
+    from extensions import cache
+    key = f'cj_details:{pid}'
+    details = cache.get(key)
+    if details is None:
+        details = _cj_api().get_product_details(pid)
+        if details:
+            cache.set(key, details, timeout=3600)
+    return details
+
+
+@admin_bp.route('/cj-recherche')
+@login_required
+@admin_required
+def cj_search():
+    """Recherche dans le catalogue CJ (product/listV2), avec le prix de vente que donnerait la marge"""
+    from models.product import Product
+    from services.pricing_service import PricingService
+    from services.shipping_service import USD_TO_EUR
+    q = request.args.get('q', '').strip()
+    page = max(request.args.get('page', 1, type=int), 1)
+    category_id = request.args.get('category', type=int)
+    categories = Category.query.filter_by(level=1).order_by(Category.name).all()
+    category = Category.query.get(category_id) if category_id else None
+    results, total_pages = [], 0
+    if q:
+        data = _cj_api().get_products_v2(page=page, page_size=24, keyword=q)
+        total_pages = data.get('total_pages', 0)
+        pricing = PricingService()
+        markup = pricing.get_markup_for_category(category.name if category else None)
+        imported = {p.cj_pid: p for p in Product.query.filter(
+            Product.cj_pid.in_([r['pid'] for r in data['products'] if r.get('pid')])).all()}
+        for r in data['products']:
+            cost = round(r['price'] * USD_TO_EUR, 2)
+            price = pricing.calculate_selling_price(cost, markup) if cost else 0
+            results.append({**r, 'cost': cost, 'sell_price': price, 'margin': round(price - cost, 2),
+                            'existing': imported.get(r['pid'])})
+    return render_template('admin/cj_search.html', q=q, page=page, results=results, total_pages=total_pages,
+                           categories=categories, category=category)
+
+
+@admin_bp.route('/cj-recherche/port', methods=['POST'])
+@login_required
+@admin_required
+def cj_search_freight():
+    """Port le moins cher d'une unité (première variante) vers la France et La Réunion"""
+    from flask import jsonify
+    from services.shipping_service import ShippingService
+    pid = (request.get_json(silent=True) or {}).get('pid', '')
+    details = _cj_details(pid) if pid else None
+    vid = next((v['vid'] for v in (details or {}).get('variants', []) if v.get('vid')), None)
+    if not vid:
+        return jsonify({'success': False, 'message': 'Produit ou variante introuvable chez CJ'}), 404
+    service = ShippingService()
+    result = {'success': True, 'variants': len(details.get('variants', []))}
+    for country in ('FR', 'RE'):
+        methods = service._cart_freight([{'cj_vid': vid, 'quantity': 1}], country, timeout=7 * 24 * 3600)
+        result[country] = None if methods is None else (
+            {'price': methods[0]['price'], 'days': methods[0]['delivery_time'], 'name': methods[0]['name']}
+            if methods else False)
+    return jsonify(result)
+
+
+@admin_bp.route('/cj-recherche/importer', methods=['POST'])
+@login_required
+@admin_required
+def cj_search_import():
+    """Importe un produit CJ en brouillon (inactif) : on traduit et vérifie la fiche avant de l'activer"""
+    from models.product import Product
+    from services.cj_sync_service import CjSyncService
+    from services.pricing_service import PricingService
+    from services.shipping_service import USD_TO_EUR
+    pid = request.form.get('pid', '').strip()
+    category = Category.query.get(request.form.get('category_id', type=int) or 0)
+    existing = Product.query.filter_by(cj_pid=pid).first() if pid else None
+    if existing:
+        flash('Ce produit est déjà dans la boutique.', 'info')
+        return redirect(url_for('admin.edit_product', product_id=existing.id))
+    details = _cj_details(pid) if pid else None
+    if not details or not category:
+        flash('Produit CJ introuvable ou catégorie manquante.', 'error')
+        return redirect(url_for('admin.cj_search', q=request.form.get('q', '')))
+    try:
+        CjSyncService(_cj_api())._sync_product(dict(details, category_id=None))
+        product = Product.query.filter_by(cj_pid=pid).first()
+        cost = round((details.get('price') or 0) * USD_TO_EUR, 2)
+        pricing = PricingService()
+        product.category_id = category.id
+        product.cost_price = cost or None
+        product.price = pricing.calculate_selling_price(cost, pricing.get_markup_for_category(category.name)) or product.price
+        product.is_active = False  # brouillon : activé depuis la liste une fois la fiche relue
+        product.published_at = None
+        db.session.commit()
+    except Exception as e:
+        db.session.rollback()
+        flash(f'Import impossible : {e}', 'error')
+        return redirect(url_for('admin.cj_search', q=request.form.get('q', '')))
+    flash('Produit importé en brouillon : traduisez le titre et la description, puis activez-le.', 'success')
+    return redirect(url_for('admin.edit_product', product_id=product.id))
