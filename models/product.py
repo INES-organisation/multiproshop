@@ -177,6 +177,10 @@ class Product(db.Model):
     def update_stock_from_variants(self):
         """Met à jour le stock principal depuis les variantes"""
         new_stock = self.calculate_total_stock_from_variants()
+        # Variantes toutes à 0 : stock inconnu (CJ ne le donnait pas), pas une rupture.
+        # La sync de stock produit, elle, lit le vrai stock et met 0 quand il l'est.
+        if new_stock == 0:
+            return False
         if new_stock != self.stock:
             self.stock = new_stock
             return True
