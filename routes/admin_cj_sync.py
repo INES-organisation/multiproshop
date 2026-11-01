@@ -162,15 +162,16 @@ def enrich_product(pid):
         enriched_fields = []
         
         if details:
-            if details.get('name') and details['name'] != product.name:
+            # Les champs déjà renseignés en boutique (textes traduits, photos triées) ne sont pas écrasés
+            if details.get('name') and not product.name:
                 product.name = details['name']
                 enriched_fields.append('nom')
             
-            if details.get('description'):
+            if details.get('description') and not product.description:
                 product.description = details['description']
                 enriched_fields.append('description')
             
-            if details.get('image'):
+            if details.get('image') and not product.image_url:
                 img = details['image']
                 # Parser si c'est un JSON array
                 if isinstance(img, str) and img.strip().startswith('['):
@@ -183,7 +184,7 @@ def enrich_product(pid):
                 product.image_url = img
                 enriched_fields.append('image')
             
-            if details.get('images') and len(details['images']) > 0:
+            if details.get('images') and len(details['images']) > 0 and not product.images:
                 # Parser chaque image si c'est un JSON array
                 clean_imgs = []
                 for im in details['images']:
@@ -201,14 +202,14 @@ def enrich_product(pid):
                 product.images = json.dumps(clean_imgs)
                 enriched_fields.append(f"images ({len(clean_imgs)})")
             
-            if details.get('weight'):
+            if details.get('weight') and not product.weight:
                 try:
                     product.weight = float(details['weight'])
                     enriched_fields.append('poids')
                 except (ValueError, TypeError):
                     pass
             
-            if details.get('material'):
+            if details.get('material') and not product.material:
                 product.material = details['material']
                 enriched_fields.append('matériau')
             

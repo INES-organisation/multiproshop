@@ -102,6 +102,8 @@ def register_template_filters(app):
     app.jinja_env.filters['format_number'] = format_number
     app.jinja_env.filters['truncate_smart'] = truncate_smart
     app.jinja_env.filters['pluralize'] = pluralize
+    from utils.colors_fr import translate_colors
+    app.jinja_env.filters['fr_color'] = translate_colors
     
     # Ajouter l'extension de cache
     app.jinja_env.add_extension(FragmentCacheExtension)

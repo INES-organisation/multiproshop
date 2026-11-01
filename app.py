@@ -86,6 +86,21 @@ def create_app(config_name='development'):
         # gunicorn --preload : ne pas partager les connexions du processus maître avec les workers
         db.engine.dispose()
     
+    # Tout ce qui est sous /admin est réservé aux administrateurs. Plusieurs blueprints admin
+    # (synchro CJ, tâches Celery, tarifs…) ne vérifiaient que la connexion : un client inscrit
+    # pouvait les appeler.
+    @app.before_request
+    def admin_only():
+        from flask import request, redirect, url_for, abort
+        from flask_login import current_user
+        if request.path != '/admin' and not request.path.startswith('/admin/'):
+            return None
+        if not current_user.is_authenticated:
+            return redirect(url_for('auth.login', next=request.full_path))
+        if not current_user.is_admin:
+            abort(404)
+        return None
+
     # Context processor - recharge les catégories à chaque requête pour éviter les instances détachées
     @app.context_processor
     def inject_global_vars():
