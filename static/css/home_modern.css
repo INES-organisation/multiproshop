@@ -713,17 +713,9 @@
         height: 200px;
     }
     
+    /* Les flèches recouvraient le texte et le bouton : on fait défiler au doigt */
     .carousel-control-prev,
     .carousel-control-next {
-        width: 40px;
-        height: 40px;
-    }
-    
-    .carousel-control-prev {
-        left: 10px;
-    }
-    
-    .carousel-control-next {
-        right: 10px;
+        display: none;
     }
 }
