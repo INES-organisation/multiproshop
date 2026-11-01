@@ -167,9 +167,12 @@ class CJDropshippingApiOptimized:
             logger.error(f"[CJ API] Exception getAccessToken: {e}")
             return None
 
+    SLOT_MS = 1300          # écart minimal entre deux appels CJ pour tout le compte (CJ : 1 par seconde)
+    REFUSAL_PAUSE = 15      # pause partagée après un refus CJ (429 ou code 1600200), en secondes
+
     def _wait_turn(self) -> bool:
-        """Réserve une seconde d'appel CJ pour tout le compte (clé Redis par seconde, posée une seule
-        fois grâce à add). Attend au plus 8 s pendant une requête web, 120 s ailleurs.
+        """Réserve un créneau d'appel CJ pour tout le compte. Attend au plus 8 s pendant une requête
+        web, 120 s ailleurs, et respecte la pause partagée posée après un refus CJ.
         Sans cache partagé (hors app), seul le limiteur du processus s'applique."""
         if not has_app_context():
             return True
@@ -177,15 +180,21 @@ class CJDropshippingApiOptimized:
             from extensions import cache
         except Exception:
             return True
-        # Redis : une clé qui expire au bout de 1,1 s, posée par un seul processus (SET NX PX), donc
-        # un vrai écart d'au moins 1,1 s entre deux appels. Autres caches (tests) : une clé par seconde.
+        # Redis : une clé qui expire au bout de SLOT_MS, posée par un seul processus (SET NX PX), donc
+        # un vrai écart entre deux appels. Autres caches (tests) : une clé par seconde.
         client = getattr(getattr(cache, 'cache', None), '_write_client', None)
         deadline = time.time() + (8 if self.fail_fast else 120)
         while True:
             now = time.time()
+            blocked_until = max(_memory_cache['rate_limit_until'], _shared_get('cj:rate_limit_until') or 0)
+            if blocked_until > now:
+                if self.fail_fast or blocked_until > deadline:
+                    return False
+                time.sleep(blocked_until - now)
+                continue
             try:
                 if client is not None:
-                    if client.set('cj:slot', 1, px=1100, nx=True):
+                    if client.set('cj:slot', 1, px=self.SLOT_MS, nx=True):
                         return True
                 elif cache.add(f'cj:slot:{int(now)}', 1, timeout=5):
                     return True
@@ -261,14 +270,12 @@ class CJDropshippingApiOptimized:
                 # Gérer rate limiting (429)
                 if response.status_code == 429:
                     logger.warning(f"[CJ API] 429 body: {response.text[:300]}")
+                    # Pause courte partagée par tous les processus : la file d'attente la respecte
+                    self._block(self.REFUSAL_PAUSE)
                     if self.fail_fast:
-                        self._block(60)
                         return None
                     if attempt < max_retries - 1:
-                        # Attente longue fixe de 10 min - chaque retry court relance le compteur CJ
-                        wait_time = 600
-                        logger.warning(f"[CJ API] Rate limit 429 - attente {wait_time // 60} min (retry {attempt + 1}/{max_retries})")
-                        time.sleep(wait_time)
+                        logger.warning(f"[CJ API] Rate limit 429 - pause {self.REFUSAL_PAUSE}s (retry {attempt + 1}/{max_retries})")
                         continue
                     else:
                         logger.error(f"[CJ API] Rate limit 429 - max retries atteint après {max_retries} tentatives")
@@ -297,13 +304,11 @@ class CJDropshippingApiOptimized:
                 # Vérifier si CJ retourne une erreur dans le JSON
                 if isinstance(data, dict) and data.get('code') == 1600200:
                     # Code 1600200 = rate limit dans la réponse JSON
+                    self._block(self.REFUSAL_PAUSE)
                     if self.fail_fast:
-                        self._block(60)
                         return None
                     if attempt < max_retries - 1:
-                        wait_time = 600
-                        logger.warning(f"[CJ API] Rate limit code 1600200 - attente {wait_time // 60} min (retry {attempt + 1}/{max_retries})")
-                        time.sleep(wait_time)
+                        logger.warning(f"[CJ API] Rate limit code 1600200 - pause {self.REFUSAL_PAUSE}s (retry {attempt + 1}/{max_retries})")
                         continue
                     else:
                         logger.error(f"[CJ API] Rate limit code 1600200 - max retries atteint")
