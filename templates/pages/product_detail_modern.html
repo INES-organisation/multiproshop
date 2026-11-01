@@ -364,7 +364,7 @@
                         <div class="color-options">
                             {% for color in colors %}
                             <button type="button" class="color-option" data-color="{{ color }}" onclick="selectColor(this)">
-                                <span class="color-name">{{ color }}</span>
+                                <span class="color-name">{{ color|fr_color }}</span>
                             </button>
                             {% endfor %}
                         </div>

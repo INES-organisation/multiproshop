@@ -81,7 +81,8 @@ class ProductVariant(db.Model):
             parts.append(self.color)
         if self.size:
             parts.append(self.size)
-        return ' - '.join(parts) if parts else self.variant_key or 'Variante'
+        from utils.colors_fr import translate_colors
+        return translate_colors(' - '.join(parts) if parts else self.variant_key or 'Variante')
     
     @property
     def is_in_stock(self):

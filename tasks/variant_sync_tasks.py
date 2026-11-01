@@ -65,6 +65,7 @@ def sync_product_variants(self, product_id):
             # Synchroniser les variantes
             variants_created = 0
             variants_updated = 0
+            had_variants = ProductVariant.query.filter_by(product_id=product.id).count() > 0
             
             for variant_data in variants_list:
                 vid = variant_data.get('vid')
@@ -87,29 +88,29 @@ def sync_product_variants(self, product_id):
                         stock = existing_variant.stock
                 
                 if existing_variant:
-                    # Mettre à jour
-                    existing_variant.variant_key = variant_data.get('variantKey', '')
-                    existing_variant.price = float(variant_data.get('variantSellPrice', 0))
-                    existing_variant.suggested_price = float(variant_data.get('variantSugSellPrice', 0))
+                    # Seuls le stock, le poids et le SKU suivent CJ. Le prix de vente, l'image, le libellé
+                    # et l'état actif/inactif sont choisis en boutique : variantSellPrice est le coût CJ
+                    # en dollars, et les images CJ peuvent porter des logos retirés à la main.
                     existing_variant.stock = int(stock) if stock else 0
-                    existing_variant.image_url = variant_data.get('variantImage', '')
-                    existing_variant.weight = int(variant_data.get('variantWeight', 0)) if variant_data.get('variantWeight') else 0
-                    existing_variant.sku = variant_data.get('variantSku', '')
+                    if variant_data.get('variantWeight'):
+                        existing_variant.weight = int(variant_data['variantWeight'])
+                    existing_variant.sku = existing_variant.sku or variant_data.get('variantSku', '')
                     existing_variant.updated_at = datetime.utcnow()
                     variants_updated += 1
                 else:
-                    # Créer
+                    # Nouvelle variante : prix de vente du produit (price=None), et inactive si le produit
+                    # a déjà des variantes, pour qu'une option ajoutée chez CJ ne parte pas en ligne sans relecture
                     new_variant = ProductVariant(
                         product_id=product.id,
                         cj_vid=vid,
                         variant_key=variant_data.get('variantKey', ''),
-                        price=float(variant_data.get('variantSellPrice', 0)),
-                        suggested_price=float(variant_data.get('variantSugSellPrice', 0)),
+                        price=None,
+                        suggested_price=product.compare_price,
                         stock=int(stock) if stock else 0,
-                        image_url=variant_data.get('variantImage', ''),
+                        image_url=variant_data.get('variantImage', '') or product.image_url,
                         weight=int(variant_data.get('variantWeight', 0)) if variant_data.get('variantWeight') else 0,
                         sku=variant_data.get('variantSku', ''),
-                        active=True
+                        active=not had_variants
                     )
                     db.session.add(new_variant)
                     variants_created += 1

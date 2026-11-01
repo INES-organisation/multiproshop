@@ -60,9 +60,10 @@ class CjVariantSyncService:
             # Synchroniser les variantes
             created = 0
             updated = 0
+            had_variants = ProductVariant.query.filter_by(product_id=product.id).count() > 0
             
             for variant_data in variants_data:
-                result = self._sync_single_variant(product, variant_data)
+                result = self._sync_single_variant(product, variant_data, had_variants)
                 if result == 'created':
                     created += 1
                 elif result == 'updated':
@@ -185,7 +186,7 @@ class CjVariantSyncService:
         
         return variants
     
-    def _sync_single_variant(self, product, variant_data):
+    def _sync_single_variant(self, product, variant_data, had_variants=True):
         """
         Synchroniser une seule variante
         
@@ -208,20 +209,18 @@ class CjVariantSyncService:
         ).first()
         
         if variant:
-            # Mise à jour
-            variant.variant_key = variant_data.get('variant_key') or variant.variant_key
-            variant.color = variant_data.get('color') or variant.color
-            variant.size = variant_data.get('size') or variant.size
+            # Mise à jour : seuls le stock, le poids et le SKU suivent CJ. Le libellé, l'image et l'état
+            # actif/inactif sont choisis en boutique (variantes trompeuses désactivées, photos avec logo retirées).
+            variant.color = variant.color or variant_data.get('color')
+            variant.size = variant.size or variant_data.get('size')
             # variant_data['price'] est le coût CJ : on ne l'écrit pas comme prix de vente
             variant.stock = variant_data.get('stock', 0)
-            variant.image_url = variant_data.get('image_url') or variant.image_url
             variant.weight = variant_data.get('weight') or variant.weight
-            variant.sku = variant_data.get('sku') or variant.sku
-            variant.active = True
+            variant.sku = variant.sku or variant_data.get('sku')
             
             return 'updated'
         else:
-            # Création
+            # Création : inactive si le produit avait déjà des variantes, pour relecture avant mise en ligne
             variant = ProductVariant(
                 product_id=product.id,
                 cj_vid=cj_vid,
@@ -234,7 +233,7 @@ class CjVariantSyncService:
                 image_url=variant_data.get('image_url') or product.image_url,
                 weight=variant_data.get('weight'),
                 sku=variant_data.get('sku'),
-                active=True
+                active=not had_variants
             )
             
             db.session.add(variant)

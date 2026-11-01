@@ -179,7 +179,8 @@ class Product(db.Model):
         variants = ProductVariant.query.filter_by(product_id=self.id).all()
         
         if variants:
-            total = sum(v.stock for v in variants if v.stock)
+            # Les variantes désactivées (trompeuses, retirées) ne comptent pas dans le stock vendable
+            total = sum(v.stock for v in variants if v.stock and v.active)
             return total
         return self.stock
     
