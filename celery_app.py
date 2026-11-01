@@ -31,6 +31,7 @@ def make_celery(app_name=__name__):
             'tasks.payment_tasks',
             'tasks.cart_reminder_tasks',
             'tasks.review_request_tasks',
+            'tasks.shipping_rate_tasks',
         ]
     )
     
@@ -84,6 +85,12 @@ def make_celery(app_name=__name__):
                 'schedule': crontab(hour=16, minute=0),  # 16h00 - Après sync variantes
             },
             
+            'refresh-shipping-rates-weekly': {
+                'task': 'tasks.shipping_rate_tasks.refresh_shipping_rates',
+                'schedule': crontab(hour=1, minute=0, day_of_week='mon'),  # lundi 01h00 UTC (02h00 Paris, 05h00 Réunion)
+                'options': {'expires': 6 * 3600},
+            },
+
             'sync-cj-stock-hourly': {
                 'task': 'tasks.cj_sync_tasks.sync_stock_task',
                 'schedule': crontab(minute=30),  # XX:30 - Décalé de TonyAlpha (XX:00)
