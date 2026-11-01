@@ -97,9 +97,15 @@
     font-weight: 600;
 }
 
+.breadcrumb-modern .breadcrumb-item + .breadcrumb-item {
+    padding-left: 0;  /* Bootstrap lit une variable définie seulement sur .breadcrumb */
+}
+
 .breadcrumb-modern .breadcrumb-item + .breadcrumb-item::before {
     content: '›';
-    padding-right: 0.5rem;
+    float: none;
+    display: inline-block;
+    padding: 0 0.5rem 0 0;
     color: var(--dark-color);
 }
 

@@ -225,6 +225,7 @@ def sync_missing_variants(self):
             products_without_variants = db.session.query(Product).filter(
                 Product.cj_pid.isnot(None),
                 Product.published == True,
+                Product.is_active == True,  # les produits masqués ne consomment plus le quota CJ
                 ~Product.id.in_(
                     db.session.query(ProductVariant.product_id).distinct()
                 )

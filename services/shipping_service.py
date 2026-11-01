@@ -5,6 +5,7 @@ Stratégie hybride : DB cache + refresh API CJ si expiré + fallback
 from typing import List, Dict, Optional
 from config import Config
 import logging
+import time
 
 logger = logging.getLogger(__name__)
 
@@ -169,6 +170,21 @@ class ShippingService:
         cached = cache.get(key)
         if cached is not None:
             return cached
+        # Une seule demande à CJ pour un même panier : les visiteurs simultanés attendent sa réponse
+        if not cache.add(f'{key}:pending', 1, timeout=20):
+            for _ in range(80):
+                time.sleep(0.1)
+                cached = cache.get(key)
+                if cached is not None:
+                    return cached
+            return None
+        try:
+            return self._fetch_freight(lines, country_code, key, timeout)
+        finally:
+            cache.delete(f'{key}:pending')
+
+    def _fetch_freight(self, lines, country_code: str, key: str, timeout: int) -> Optional[List[Dict]]:
+        from extensions import cache
         products = [{'vid': v, 'quantity': q} for v, q in lines]
         data = self.cj_api.calculate_shipping(products, country_code)
         if data is None:  # CJ injoignable : pas de mise en cache

@@ -177,17 +177,23 @@ class CJDropshippingApiOptimized:
             from extensions import cache
         except Exception:
             return True
+        # Redis : une clé qui expire au bout de 1,1 s, posée par un seul processus (SET NX PX), donc
+        # un vrai écart d'au moins 1,1 s entre deux appels. Autres caches (tests) : une clé par seconde.
+        client = getattr(getattr(cache, 'cache', None), '_write_client', None)
         deadline = time.time() + (8 if self.fail_fast else 120)
         while True:
             now = time.time()
             try:
-                if cache.add(f'cj:slot:{int(now)}', 1, timeout=5):
+                if client is not None:
+                    if client.set('cj:slot', 1, px=1100, nx=True):
+                        return True
+                elif cache.add(f'cj:slot:{int(now)}', 1, timeout=5):
                     return True
             except Exception:
                 return True  # cache indisponible : ne pas bloquer les appels
             if now >= deadline:
                 return False
-            time.sleep(int(now) + 1 - now + random.uniform(0, 0.05))
+            time.sleep(0.1 + random.uniform(0, 0.05))
 
     def _block(self, seconds: int):
         """Pause imposée par CJ, partagée entre processus"""

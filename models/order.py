@@ -83,6 +83,23 @@ class Order(db.Model):
         badge_class, label = badges.get(self.status, ('secondary', 'Inconnu'))
         return f'<span class="badge bg-{badge_class}">{label}</span>'
     
+    def product_margin(self):
+        """Marge sur les produits : ventes - coût CJ des articles - frais de carte (le port CJ réellement
+        payé n'est pas connu ici). None si un coût manque."""
+        from flask import current_app
+        from models.cart import cost_price
+        cost = 0.0
+        for item in self.order_items:
+            if item.product is None:
+                return None
+            unit = cost_price(item.product, item.variant)
+            if not unit:
+                return None
+            cost += unit * item.quantity
+        fees = (self.total_price or 0) * current_app.config.get('CARD_FEE_RATE', 0.015) \
+            + current_app.config.get('CARD_FEE_FIXED', 0.25) if self.payment_status == 'paid' else 0
+        return round((self.subtotal or 0) - cost - fees, 2)
+
     def get_full_address(self):
         """Retourner l'adresse complète"""
         return f"{self.shipping_address}, {self.shipping_postal_code} {self.shipping_city}, {self.shipping_country}"

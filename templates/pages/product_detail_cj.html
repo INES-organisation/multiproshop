@@ -49,6 +49,9 @@
 
 {% block extra_css %}
 <style>
+.product-bullets { list-style: none; padding: 0; margin: 0 0 1rem; }
+.product-bullets li { display: flex; gap: .5rem; align-items: baseline; margin-bottom: .35rem; color: #374151; }
+.product-bullets i { color: #047857; font-size: .85rem; }
 .delivery-estimate { color: #047857; font-size: .95rem; margin: -.25rem 0 1rem; }
 .delivery-estimate label { margin-right: .35rem; }
 .delivery-estimate .shipping-country { border: 1px solid #d1d5db; border-radius: 6px; padding: .15rem .4rem; max-width: 100%; }
@@ -63,7 +66,7 @@
     .mobile-buy-price { font-weight: 700; font-size: 1.15rem; white-space: nowrap; }
 }
 </style>
-<link rel="stylesheet" href="{{ url_for('static', filename='css/pages_modern.css') }}?v=2">
+<link rel="stylesheet" href="{{ url_for('static', filename='css/pages_modern.css') }}?v=3">
 <link rel="stylesheet" href="{{ url_for('static', filename='css/product_detail.css') }}">
 <link rel="stylesheet" href="{{ url_for('static', filename='css/product_variants.css') }}">
 <style>
@@ -576,6 +579,12 @@
                     <p class="price-info">
                         <i class="fas fa-info-circle"></i> {{ seller.vat }} • Livraison offerte en France dès {{ "%.0f"|format(free_shipping_threshold) }} € selon le panier
                     </p>
+                    {% set bullets = (product.short_description or '').split('\n')|map('trim')|select|list %}
+                    {% if bullets|length > 1 %}
+                    <ul class="product-bullets">
+                        {% for b in bullets[:5] %}<li><i class="fas fa-check"></i> {{ b.lstrip('-•* ') }}</li>{% endfor %}
+                    </ul>
+                    {% endif %}
                     <div class="delivery-estimate" id="shipping-estimate" data-url="{{ url_for('products.shipping_estimate', product_id=product.id) }}">
                         <label for="shipping-country"><i class="fas fa-truck"></i> Livraison vers</label>
                         <select id="shipping-country" class="shipping-country">
@@ -757,12 +766,6 @@
                         <tr>
                             <td class="spec-label">Marque</td>
                             <td>{{ product.brand }}</td>
-                        </tr>
-                        {% endif %}
-                        {% if product.cj_pid %}
-                        <tr>
-                            <td class="spec-label">ID Produit CJ</td>
-                            <td><code>{{ product.cj_pid }}</code></td>
                         </tr>
                         {% endif %}
                     </tbody>
