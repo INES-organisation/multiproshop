@@ -238,12 +238,58 @@ class ShippingService:
             common = set(countries) if common is None else common & set(countries)
         return sorted(common or [])
 
+    # Tarifs de la fiche produit enregistrés en base par la tâche hebdomadaire (tasks.shipping_rate_tasks)
+    RATE_SOURCES = ('freight', 'freight_empty')
+    RATE_MAX_AGE_DAYS = 8
+
     def product_estimate(self, product, country_code: str = 'FR') -> Optional[Dict]:
         """Livraison d'une unité du produit, pour la fiche produit : moins chère et plus rapide.
-        Cache 7 jours pour ne pas consommer le quota CJ à chaque visite. None = inconnu."""
-        methods = self._cart_freight([{'product': product, 'quantity': 1}], country_code, timeout=7 * 24 * 3600)
+        Lit d'abord le tarif enregistré en base (rafraîchi chaque semaine), sinon interroge CJ
+        (cache 7 jours) et enregistre la réponse. None = inconnu."""
+        methods = self._stored_rate(product.id, country_code)
         if methods is None:
+            methods = self._cart_freight([{'product': product, 'quantity': 1}], country_code, timeout=7 * 24 * 3600)
+            if methods is None:
+                return None
+            self.store_rate(product.id, country_code, methods)
+        return self._summarize(methods)
+
+    def _stored_rate(self, product_id: int, country_code: str) -> Optional[List[Dict]]:
+        from models.shipping_rate import ShippingRate
+        try:
+            rate = ShippingRate.get_for_product(product_id, country_code)
+        except Exception as e:
+            logger.warning(f"[Shipping] Lecture tarif en base impossible: {e}")
             return None
+        if rate and rate.source in self.RATE_SOURCES and not rate.is_expired(self.RATE_MAX_AGE_DAYS):
+            return rate.methods
+        return None
+
+    @classmethod
+    def store_rate(cls, product_id: int, country_code: str, methods: List[Dict], commit: bool = True):
+        """Enregistre le tarif d'une unité (format freightCalculate, [] = non livrable)"""
+        from models.shipping_rate import ShippingRate
+        from extensions import db
+        try:
+            ShippingRate.upsert(product_id, country_code, methods,
+                                source='freight' if methods else 'freight_empty')
+            if commit:
+                db.session.commit()
+        except Exception as e:
+            db.session.rollback()
+            logger.warning(f"[Shipping] Enregistrement tarif impossible ({product_id}, {country_code}): {e}")
+
+    def refresh_product_rate(self, product, country_code: str) -> Optional[List[Dict]]:
+        """Interroge CJ pour une unité du produit, sans passer par le cache, et met le cache à jour.
+        None = pas de variante CJ ou CJ injoignable (rien n'est enregistré)."""
+        vid = self._first_vid(product)
+        if not vid or not self.cj_api:
+            return None
+        key = 'freight:%s:%sx1' % (country_code, vid)
+        return self._fetch_freight([(vid, 1)], country_code, key, 7 * 24 * 3600)
+
+    @staticmethod
+    def _summarize(methods: List[Dict]) -> Dict:
         if not methods:
             return {'available': False}
 
