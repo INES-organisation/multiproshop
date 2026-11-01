@@ -21,6 +21,8 @@ class Order(db.Model):
     shipping_cost = db.Column(db.Float, nullable=False, default=0.0)
     tax = db.Column(db.Float, nullable=False, default=0.0)
     total_price = db.Column(db.Float, nullable=False, default=0.0)
+    discount_amount = db.Column(db.Float, nullable=True, default=0.0)  # remise du code promo, déjà déduite du total
+    coupon_code = db.Column(db.String(40), nullable=True)
     
     # Informations client
     customer_email = db.Column(db.String(120), nullable=False)
@@ -98,7 +100,7 @@ class Order(db.Model):
             cost += unit * item.quantity
         fees = (self.total_price or 0) * current_app.config.get('CARD_FEE_RATE', 0.015) \
             + current_app.config.get('CARD_FEE_FIXED', 0.25) if self.payment_status == 'paid' else 0
-        return round((self.subtotal or 0) - cost - fees, 2)
+        return round((self.subtotal or 0) - (self.discount_amount or 0) - cost - fees, 2)
 
     def get_full_address(self):
         """Retourner l'adresse complète"""

@@ -211,10 +211,16 @@ def export_products():
     writer.writerow(['ID', 'Nom', 'Catégorie', 'Prix de vente', 'Coût CJ', 'Marge', 'Marge %', 'Stock',
                      'Actif', 'Sélection', 'Réf. CJ', 'Lien'])
     for product in Product.query.options(joinedload(Product.category)).order_by(Product.id):
-        margin = round(product.price - product.cost_price, 2) if product.cost_price else ''
+        # Produits en ligne : marge de la variante la moins rentable (chacune comparée à son coût)
+        mi = product.margin_info() if product.is_active else None
+        if mi:
+            cost, margin = mi['cost'][0], mi['margin'][0]
+        else:
+            cost = product.cost_price
+            margin = round(product.price - product.cost_price, 2) if product.cost_price else ''
         writer.writerow([
             product.id, product.name, product.category.name if product.category else '',
-            f"{product.price:.2f}", f"{product.cost_price:.2f}" if product.cost_price else '', margin,
+            f"{product.price:.2f}", f"{cost:.2f}" if cost else '', margin,
             f"{margin / product.price * 100:.0f}" if margin != '' and product.price else '',
             product.stock, 'oui' if product.is_active else 'non', 'oui' if product.published_at else 'non',
             product.cj_pid or '', url_for('products.product_detail', product_id=product.id, _external=True),
@@ -692,7 +698,12 @@ def products():
         )
     
     if category_id:
-        query = query.filter_by(category_id=category_id)
+        # La catégorie choisie et toutes ses sous-catégories (les produits sont rangés au niveau le plus fin)
+        ids, frontier = {category_id}, [category_id]
+        while frontier:
+            frontier = [c.id for c in Category.query.filter(Category.parent_id.in_(frontier)).all() if c.id not in ids]
+            ids.update(frontier)
+        query = query.filter(Product.category_id.in_(ids))
     
     if status == 'selection':
         query = query.filter(Product.is_active == True, Product.published_at.isnot(None))
@@ -700,24 +711,43 @@ def products():
         query = query.filter_by(is_active=True)
     elif status == 'inactive':
         query = query.filter_by(is_active=False)
-    elif status == 'low_stock':
-        query = query.filter(Product.stock <= Product.low_stock_threshold)
+    elif status == 'draft':  # jamais mis en ligne : candidats à la publication
+        query = query.filter(Product.is_active == False, Product.published_at.is_(None))
+    elif status == 'unpublished':  # déjà en ligne puis retirés
+        query = query.filter(Product.is_active == False, Product.published_at.isnot(None))
+    elif status == 'low_stock':  # comme les compteurs : produits en ligne seulement
+        query = query.filter(Product.is_active == True, Product.stock > 0, Product.stock <= Product.low_stock_threshold)
     elif status == 'out_of_stock':
-        query = query.filter_by(stock=0)
-    
+        query = query.filter(Product.is_active == True, Product.stock <= 0)
+    elif status == 'low_margin':  # en ligne avec au moins une variante vendue sous 2 € de marge
+        low_ids = [p.id for p in Product.query.filter_by(is_active=True).all()
+                   if (lambda mi: mi is None or mi['margin'][0] < 2)(p.margin_info())]
+        query = query.filter(Product.id.in_(low_ids or [0]))
+
+    sorts = {
+        'newest': Product.created_at.desc(), 'oldest': Product.created_at.asc(),
+        'name': Product.name.asc(), 'price_asc': Product.price.asc(), 'price_desc': Product.price.desc(),
+        'stock_asc': Product.stock.asc(), 'stock_desc': Product.stock.desc(),
+        'published': Product.published_at.desc().nullslast(),
+    }
+    sort = request.args.get('sort', 'newest')
+    if sort not in sorts:
+        sort = 'newest'
+
     # Pagination
-    products_paginated = query.order_by(Product.created_at.desc()).paginate(
+    products_paginated = query.order_by(sorts[sort], Product.id.desc()).paginate(
         page=page, per_page=per_page, error_out=False
     )
     
     # Catégories pour le filtre
     categories = Category.query.filter_by(level=1).order_by(Category.name).all()
     
-    # Statistiques
+    # Statistiques (stock bas et ruptures : produits en ligne seulement, les inactifs ne se vendent pas)
     total_products = Product.query.count()
     active_products = Product.query.filter_by(is_active=True).count()
-    low_stock_products = Product.query.filter(Product.stock <= Product.low_stock_threshold, Product.stock > 0).count()
-    out_of_stock_products = Product.query.filter_by(stock=0).count()
+    low_stock_products = Product.query.filter(Product.is_active == True, Product.stock <= Product.low_stock_threshold,
+                                              Product.stock > 0).count()
+    out_of_stock_products = Product.query.filter(Product.is_active == True, Product.stock <= 0).count()
     
     return render_template('admin/products.html',
                          products=products_paginated,
@@ -725,6 +755,7 @@ def products():
                          search=search,
                          current_category=category_id,
                          current_status=status,
+                         current_sort=sort,
                          total_products=total_products,
                          active_products=active_products,
                          low_stock_products=low_stock_products,
@@ -886,6 +917,11 @@ def toggle_product_status(product_id):
     from models.product import Product
     
     product = Product.query.get_or_404(product_id)
+    if not product.is_active:
+        problem = _publish_problem(product)
+        if problem:
+            flash(f'« {product.name} » non activé : {problem}', 'error')
+            return redirect(request.referrer if (request.referrer or '').find('/admin/') >= 0 else url_for('admin.products'))
     product.is_active = not product.is_active
     if product.is_active and product.published_at is None:
         product.published_at = datetime.utcnow()  # activé depuis l'admin : il rejoint la sélection en ligne
@@ -898,7 +934,22 @@ def toggle_product_status(product_id):
         db.session.rollback()
         flash(f'Erreur: {str(e)}', 'error')
     
-    return redirect(url_for('admin.products'))
+    from extensions import cache
+    cache.delete('menu_category_ids')
+    referrer = request.referrer or ''
+    return redirect(referrer if '/admin/products' in referrer else url_for('admin.products'))
+
+
+def _publish_problem(product):
+    """Raison d'empêcher la mise en ligne (vente à perte, coût ou prix inconnu), ou None"""
+    if not product.price or product.price <= 0:
+        return 'prix de vente manquant.'
+    mi = product.margin_info()
+    if mi is None:
+        return 'coût CJ inconnu, impossible de vérifier la marge.'
+    if mi['margin'][0] <= 0:
+        return 'au moins une variante active serait vendue à perte (%.2f €). Corrigez son prix ou désactivez-la.' % mi['margin'][0]
+    return None
 
 
 # --- Recherche CJ en temps réel : chercher, chiffrer (coût, marge, port), importer en brouillon ---
@@ -1035,13 +1086,110 @@ def bulk_products():
             p.category_id = category.id
         message = f'{len(products)} produit(s) déplacé(s) dans « {category.name} »'
     else:
+        refused = []
+        changed = 0
         for p in products:
+            if action == 'activate' and not p.is_active:
+                problem = _publish_problem(p)
+                if problem:
+                    refused.append(f'#{p.id} ({problem})')
+                    continue
             p.is_active = action == 'activate'
             if p.is_active and p.published_at is None:
                 p.published_at = datetime.utcnow()
-        message = f"{len(products)} produit(s) {'activé(s)' if action == 'activate' else 'désactivé(s)'}"
+            changed += 1
+        message = f"{changed} produit(s) {'activé(s)' if action == 'activate' else 'désactivé(s)'}"
+        if refused:
+            flash('Non activés : ' + ' ; '.join(refused[:10]) + (' …' if len(refused) > 10 else ''), 'error')
     db.session.commit()
     from extensions import cache
     cache.delete('menu_category_ids')  # le menu ne montre que les catégories avec des produits actifs
     flash(message, 'success')
     return redirect(target)
+
+
+# ============================================================================
+# CODES PROMO
+# ============================================================================
+
+def _parse_date(value, end_of_day=False):
+    if not value:
+        return None
+    try:
+        d = datetime.strptime(value, '%Y-%m-%d')
+    except ValueError:
+        return None
+    return d.replace(hour=23, minute=59, second=59) if end_of_day else d
+
+
+@admin_bp.route('/coupons', methods=['GET', 'POST'])
+@login_required
+@admin_required
+def coupons():
+    """Liste et création des codes promo"""
+    from models.coupon import Coupon
+    from models.order import Order
+    from services.coupons import normalize
+
+    if request.method == 'POST':
+        f = request.form
+        code = normalize(f.get('code'))
+        kind = f.get('kind') if f.get('kind') in Coupon.KINDS else 'percent'
+        try:
+            value = float((f.get('value') or '0').replace(',', '.'))
+            min_subtotal = float((f.get('min_subtotal') or '0').replace(',', '.'))
+            max_uses = int(f['max_uses']) if f.get('max_uses') else None
+        except ValueError:
+            flash('Valeur, minimum ou nombre d\'utilisations invalide.', 'error')
+            return redirect(url_for('admin.coupons'))
+        if not code:
+            flash('Indiquez un code.', 'error')
+        elif Coupon.query.filter_by(code=code).first():
+            flash(f'Le code {code} existe déjà.', 'error')
+        elif kind == 'percent' and not 0 < value <= 90:
+            flash('Le pourcentage doit être compris entre 1 et 90.', 'error')
+        elif kind == 'fixed' and value <= 0:
+            flash('Le montant doit être positif.', 'error')
+        else:
+            db.session.add(Coupon(
+                code=code, kind=kind, value=value if kind != 'shipping' else 0, min_subtotal=max(min_subtotal, 0),
+                starts_at=_parse_date(f.get('starts_at')), ends_at=_parse_date(f.get('ends_at'), True),
+                max_uses=max_uses, once_per_email=bool(f.get('once_per_email')), note=(f.get('note') or '')[:200] or None,
+            ))
+            db.session.commit()
+            flash(f'Code {code} créé.', 'success')
+        return redirect(url_for('admin.coupons'))
+
+    items = Coupon.query.order_by(Coupon.created_at.desc()).all()
+    totals = dict(db.session.query(Order.coupon_code, db.func.sum(Order.discount_amount))
+                  .filter(Order.payment_status == 'paid', Order.coupon_code.isnot(None))
+                  .group_by(Order.coupon_code).all())
+    return render_template('admin/coupons.html', coupons=items, kinds=Coupon.KINDS, totals=totals)
+
+
+@admin_bp.route('/coupons/<int:coupon_id>/toggle', methods=['POST'])
+@login_required
+@admin_required
+def toggle_coupon(coupon_id):
+    from models.coupon import Coupon
+    coupon = Coupon.query.get_or_404(coupon_id)
+    coupon.active = not coupon.active
+    db.session.commit()
+    flash(f'Code {coupon.code} {"activé" if coupon.active else "désactivé"}.', 'success')
+    return redirect(url_for('admin.coupons'))
+
+
+@admin_bp.route('/coupons/<int:coupon_id>/delete', methods=['POST'])
+@login_required
+@admin_required
+def delete_coupon(coupon_id):
+    from models.coupon import Coupon
+    coupon = Coupon.query.get_or_404(coupon_id)
+    if coupon.uses:
+        coupon.active = False
+        flash(f'Code {coupon.code} déjà utilisé : désactivé plutôt que supprimé.', 'info')
+    else:
+        db.session.delete(coupon)
+        flash(f'Code {coupon.code} supprimé.', 'success')
+    db.session.commit()
+    return redirect(url_for('admin.coupons'))

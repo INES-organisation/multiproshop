@@ -16,6 +16,40 @@ import logging
 logger = logging.getLogger(__name__)
 
 bp = Blueprint('admin_cj_sync', __name__, url_prefix='/admin/api/cj')
+
+
+def _status_sort(query, data):
+    """Filtre de statut et tri communs à la liste par catégorie et à la recherche (inactifs inclus par défaut)"""
+    from models.product import Product
+    status = data.get('status', '')
+    if status in ('published', 'active'):
+        query = query.filter(Product.is_active == True)
+    elif status in ('draft', 'inactive'):
+        query = query.filter(Product.is_active == False)
+    elif status == 'never':
+        query = query.filter(Product.is_active == False, Product.published_at.is_(None))
+    elif status == 'in_stock':
+        query = query.filter(Product.stock > 0)
+    if data.get('include_hidden') == '0' and not status:
+        query = query.filter(Product.is_active == True)
+    sorts = {'name': Product.name.asc(), 'price_asc': Product.price.asc(), 'price_desc': Product.price.desc(),
+             'stock': Product.stock.desc(), 'newest': Product.id.desc()}
+    return query.order_by(sorts.get(data.get('sort'), Product.name.asc()), Product.id.desc())
+
+
+def _product_card(product):
+    """Données d'une carte produit de /admin/cj/products (prix en euros, marge par variante)"""
+    mi = product.margin_info() if product.cost_price or product.cj_raw_data else None
+    return {
+        'id': product.id, 'cj_pid': product.cj_pid, 'name': product.name, 'sku': product.sku,
+        'price': product.price, 'cost_price': mi['cost'][0] if mi else product.cost_price,
+        'margin': mi['margin'][0] if mi else None, 'compare_price': product.compare_price,
+        'suggested_price': product.suggested_price, 'stock': product.stock, 'image_url': product.image_url,
+        'published': product.is_active, 'is_active': product.is_active,
+        'ever_published': product.published_at is not None,
+        'category': (product.category.name_fr or product.category.name) if product.category else None,
+        'synced_at': product.synced_at.isoformat() if product.synced_at else None,
+    }
 pricing_service = PricingService()
 
 
@@ -541,11 +575,16 @@ def get_products_by_category():
         include_hidden = data.get('include_hidden', '0') == '1'
         search_term = data.get('search', '').strip()
         
-        if not category_id:
-            return jsonify({
-                'success': False,
-                'message': 'category_id requis'
-            }), 400
+        if not category_id or category_id == 'all':
+            # « Tous les produits » : tout le catalogue CJ, avec les mêmes filtres
+            query = Product.query.filter(Product.cj_pid.isnot(None))
+            if search_term:
+                query = query.filter(or_(Product.cj_pid.ilike(f'%{search_term}%'), Product.sku.ilike(f'%{search_term}%'),
+                                         Product.name.ilike(f'%{search_term}%')))
+            pagination = _status_sort(query, data).paginate(page=page, per_page=per_page, error_out=False)
+            return jsonify({'success': True, 'products': [_product_card(p) for p in pagination.items], 'pagination': {
+                'current_page': pagination.page, 'per_page': pagination.per_page, 'total': pagination.total,
+                'pages': pagination.pages, 'has_prev': pagination.has_prev, 'has_next': pagination.has_next}}), 200
         
         # Trouver la catégorie CJ par ID BDD
         category = db.session.get(Category, int(category_id))
@@ -576,16 +615,17 @@ def get_products_by_category():
                 if cat3.cj_category_id:
                     cj_cat_ids.append(cat3.cj_category_id)
         
-        # Chercher les produits dont le cj_raw_data contient un de ces category_id CJ
-        # On utilise LIKE sur le JSON brut pour filtrer efficacement
-        query = Product.query.filter(
-            Product.cj_pid.isnot(None)
-        )
-        
-        if cj_cat_ids:
-            # Construire un filtre OR sur cj_raw_data pour chaque cj_category_id
-            cj_filters = [Product.cj_raw_data.like(f'%"categoryId": "{cid}"%') for cid in cj_cat_ids]
-            query = query.filter(or_(*cj_filters))
+        # Produits rangés dans cette catégorie ou ses sous-catégories, ou dont la catégorie CJ d'origine
+        # (cj_raw_data) en fait partie
+        local_ids, frontier = {category.id}, [category.id]
+        while frontier:
+            frontier = [c.id for c in Category.query.filter(Category.parent_id.in_(frontier)).all() if c.id not in local_ids]
+            local_ids.update(frontier)
+        cat_filters = [Product.category_id.in_(local_ids)]
+        for cid in cj_cat_ids:
+            cat_filters += [Product.cj_raw_data.like(f'%"categoryId": "{cid}"%'),
+                            Product.cj_raw_data.like(f'%"categoryId":"{cid}"%')]
+        query = Product.query.filter(Product.cj_pid.isnot(None), or_(*cat_filters))
         
         # Recherche par PID, SKU ou nom
         if search_term:
@@ -597,38 +637,13 @@ def get_products_by_category():
                 )
             )
         
-        # Dans l'admin CJ, on affiche tous les produits par défaut (actifs et inactifs)
-        # L'utilisateur peut filtrer avec include_hidden si nécessaire
-        if include_hidden == False:  # Si explicitement False, filtrer les inactifs
-            query = query.filter_by(is_active=True)
+        query = _status_sort(query, data)
         
         # Pagination
         pagination = query.paginate(page=page, per_page=per_page, error_out=False)
         
         # Formater les produits
-        products_data = []
-        for product in pagination.items:
-            # Calculer le markup réel appliqué
-            markup_percentage = 0
-            if product.cost_price and product.price and product.cost_price > 0:
-                markup_percentage = pricing_service.calculate_markup_percentage(product.price, product.cost_price)
-            
-            products_data.append({
-                'id': product.id,
-                'cj_pid': product.cj_pid,
-                'name': product.name,
-                'sku': product.sku,
-                'price': product.price,
-                'cost_price': product.cost_price,
-                'compare_price': product.compare_price,
-                'suggested_price': product.suggested_price,
-                'stock': product.stock,
-                'image_url': product.image_url,
-                'published': product.published,
-                'is_active': product.is_active,
-                'markup_percentage': markup_percentage,
-                'synced_at': product.synced_at.isoformat() if product.synced_at else None
-            })
+        products_data = [_product_card(product) for product in pagination.items]
         
         return jsonify({
             'success': True,
@@ -684,35 +699,13 @@ def search_products():
                 Product.name.ilike(f'%{search_term}%')
             )
         )
+        query = _status_sort(query, data)
         
         # Pagination
         pagination = query.paginate(page=page, per_page=per_page, error_out=False)
         
         # Formater les produits
-        products_data = []
-        for product in pagination.items:
-            # Calculer le markup réel appliqué
-            markup_percentage = 0
-            if product.cost_price and product.price and product.cost_price > 0:
-                markup_percentage = pricing_service.calculate_markup_percentage(product.price, product.cost_price)
-            
-            products_data.append({
-                'id': product.id,
-                'cj_pid': product.cj_pid,
-                'name': product.name,
-                'sku': product.sku,
-                'price': product.price,
-                'cost_price': product.cost_price,
-                'compare_price': product.compare_price,
-                'suggested_price': product.suggested_price,
-                'stock': product.stock,
-                'image_url': product.image_url,
-                'published': product.published,
-                'is_active': product.is_active,
-                'markup_percentage': markup_percentage,
-                'synced_at': product.synced_at.isoformat() if product.synced_at else None,
-                'category_id': product.category_id
-            })
+        products_data = [_product_card(product) for product in pagination.items]
         
         return jsonify({
             'success': True,
@@ -1447,3 +1440,25 @@ def shipping_stats():
         
     except Exception as e:
         return jsonify({'success': False, 'message': str(e)}), 500
+
+
+@bp.route('/product/<int:product_id>/publish', methods=['POST'])
+@login_required
+def publish_product(product_id):
+    """Mettre en ligne ou retirer un produit depuis /admin/cj/products (refusé s'il serait vendu à perte)"""
+    from datetime import datetime
+    from extensions import cache
+    from routes.admin import _publish_problem
+    product = Product.query.get_or_404(product_id)
+    data = request.get_json(silent=True) or {}
+    active = bool(data.get('active'))
+    if active and not product.is_active:
+        problem = _publish_problem(product)
+        if problem:
+            return jsonify({'success': False, 'message': problem}), 400
+    product.is_active = active
+    if active and product.published_at is None:
+        product.published_at = datetime.utcnow()
+    db.session.commit()
+    cache.delete('menu_category_ids')
+    return jsonify({'success': True, 'is_active': product.is_active})

@@ -184,6 +184,27 @@ class Product(db.Model):
             return total
         return self.stock
     
+    def margin_info(self):
+        """Coût et marge sur les variantes actives : chaque variante comparée à son propre coût CJ
+        (et non le prix le plus bas au coût le plus haut). {'cost': (min, max), 'margin': (min, max)}
+        ou None si aucun coût n'est connu."""
+        from models.product_variant import ProductVariant
+        from models.cart import cost_price
+        pairs = []
+        variants = ProductVariant.query.filter_by(product_id=self.id, active=True).all()
+        for variant in variants:
+            cost = cost_price(self, variant)
+            sell = variant.price or self.price
+            if cost and sell:
+                pairs.append((cost, round(sell - cost, 2)))
+        if not variants and self.cost_price and self.price:
+            pairs.append((self.cost_price, round(self.price - self.cost_price, 2)))
+        if not pairs:
+            return None
+        costs, margins = [c for c, _ in pairs], [m for _, m in pairs]
+        return {'cost': (min(costs), max(costs)), 'margin': (min(margins), max(margins)),
+                'margin_pct': round(min(margins) / (self.price or 1) * 100)}
+
     def update_stock_from_variants(self):
         """Met à jour le stock principal depuis les variantes"""
         new_stock = self.calculate_total_stock_from_variants()

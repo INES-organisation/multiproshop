@@ -120,6 +120,12 @@
                     <td colspan="2"><strong>Sous-total</strong></td>
                     <td><strong>{{ "%.2f"|format(order.subtotal) }}€</strong></td>
                 </tr>
+                {% if order.discount_amount %}
+                <tr>
+                    <td colspan="2"><strong>Code {{ order.coupon_code }}</strong></td>
+                    <td><strong>-{{ "%.2f"|format(order.discount_amount) }}€</strong></td>
+                </tr>
+                {% endif %}
                 <tr>
                     <td colspan="2"><strong>Livraison</strong></td>
                     <td><strong>{{ "%.2f"|format(order.shipping_cost) }}€</strong></td>

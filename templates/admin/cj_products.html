@@ -153,6 +153,7 @@
                         </button>
                     </div>
                     <!-- Liste catégories -->
+                    <button type="button" class="btn btn-sm btn-outline-primary w-100 mb-2" onclick="showAllProducts()">Tous les produits</button>
                     <div class="sidebar-categories" id="categoriesSidebar">
                         <div class="text-center py-3">
                             <div class="spinner-border spinner-border-sm" role="status"></div>
@@ -236,8 +237,9 @@
                 <div class="col-md-3">
                     <select id="statusFilter" class="form-select">
                         <option value="">Tous les statuts</option>
-                        <option value="published">Publiés</option>
-                        <option value="draft">Brouillons</option>
+                        <option value="published">En ligne</option>
+                        <option value="draft">Inactifs</option>
+                        <option value="never">Jamais publiés (à publier)</option>
                         <option value="in_stock">En stock</option>
                     </select>
                 </div>
@@ -247,6 +249,7 @@
                         <option value="price_asc">Prix croissant</option>
                         <option value="price_desc">Prix décroissant</option>
                         <option value="stock">Stock</option>
+                        <option value="newest">Plus récents</option>
                     </select>
                 </div>
             </div>
@@ -313,7 +316,36 @@ document.addEventListener('DOMContentLoaded', function() {
     loadCategories();
     loadGlobalStats();
     initEventListeners();
+    // Par défaut : tout le catalogue (produits en ligne et inactifs), filtrable par statut
+    currentCategory = {{ (category_id or 'all')|tojson }};
+    document.getElementById('categoryPath').textContent = currentCategory === 'all' ? 'Tous les produits' : 'Catégorie sélectionnée';
+    loadProducts(1);
 });
+
+function filterParams(formData) {
+    formData.append('status', document.getElementById('statusFilter').value);
+    formData.append('sort', document.getElementById('sortFilter').value);
+}
+
+function showAllProducts() {
+    document.querySelectorAll('.category-item').forEach(i => i.classList.remove('active'));
+    currentCategory = 'all';
+    document.getElementById('categoryPath').textContent = 'Tous les produits';
+    loadProducts(1);
+}
+
+function togglePublish(productId, active, btn) {
+    if (btn) btn.disabled = true;
+    fetch(`/admin/api/cj/product/${productId}/publish`, {
+        method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({active: active})
+    }).then(r => r.json()).then(d => {
+        if (!d.success) { alert('Non publié : ' + d.message); if (btn) btn.disabled = false; return; }
+        const p = allProducts.find(x => x.id === productId); if (p) { p.is_active = p.published = d.is_active; }
+        if (currentProduct && currentProduct.id === productId) currentProduct.is_active = d.is_active;
+        renderProducts(allProducts);
+        loadGlobalStats();
+    }).catch(e => { alert('Erreur réseau : ' + e); if (btn) btn.disabled = false; });
+}
 
 function initEventListeners() {
     document.getElementById('syncProductsBtn').addEventListener('click', syncProducts);
@@ -489,7 +521,7 @@ function renderCategoriesSidebar(categories) {
 }
 
 function loadProducts(page = 1) {
-    if (!currentCategory) return;
+    if (!currentCategory) currentCategory = 'all';
     
     const overlay = document.getElementById('loading-overlay');
     overlay.classList.add('show');
@@ -498,6 +530,7 @@ function loadProducts(page = 1) {
     formData.append('category_id', currentCategory);
     formData.append('page', page);
     formData.append('per_page', 20);
+    filterParams(formData);
     
     // Ajouter le terme de recherche s'il existe
     const searchTerm = document.getElementById('searchInput').value.trim();
@@ -544,41 +577,36 @@ function renderProducts(products) {
     
     let html = '<div class="row g-3">';
     
+    const eur = v => (v === null || v === undefined) ? '—' : Number(v).toFixed(2).replace('.', ',') + ' €';
     products.forEach(product => {
-        const discount = product.suggested_price && product.price < product.suggested_price
-            ? Math.round((1 - product.price / product.suggested_price) * 100)
-            : 0;
-        
+        const marginCls = product.margin === null ? 'text-muted' : (product.margin > 0 ? 'text-success' : 'text-danger');
         html += `
             <div class="col-md-4">
                 <div class="card product-card h-100" data-product-id="${product.cj_pid}">
                     <div class="position-relative">
                         <img src="${product.image_url || '/static/images/default-product.jpg'}" 
-                             class="product-image" alt="${product.name}" loading="lazy" decoding="async">
+                             class="product-image" alt="" loading="lazy" decoding="async">
                         <div class="product-badge">
-                            ${product.published ? '<span class="badge bg-success">Publié</span>' : '<span class="badge bg-secondary">Brouillon</span>'}
+                            ${product.is_active ? '<span class="badge bg-success">En ligne</span>' : (product.ever_published ? '<span class="badge bg-warning text-dark">Retiré</span>' : '<span class="badge bg-secondary">Jamais publié</span>')}
                             ${product.stock > 0 ? '<span class="badge bg-info ms-1">En stock</span>' : '<span class="badge bg-danger ms-1">Rupture</span>'}
                         </div>
                     </div>
                     <div class="card-body">
-                        <h6 class="card-title text-truncate" title="${product.name}">
-                            ${product.name}
-                        </h6>
-                        <p class="text-muted small mb-2">SKU: ${product.sku || 'N/A'}</p>
-                        
-                        <div class="price-comparison mb-2">
-                            <span class="price-current">$${product.price}</span>
-                            ${product.suggested_price ? `<span class="price-suggested">$${product.suggested_price}</span>` : ''}
-                            ${discount > 0 ? `<span class="discount-badge">-${discount}%</span>` : ''}
+                        <h6 class="card-title text-truncate" title="${(product.name || '').replace(/"/g, '&quot;')}">${product.name}</h6>
+                        <p class="text-muted small mb-2">${product.category || ''} · SKU ${product.sku || 'N/A'}</p>
+                        <div class="small mb-2">
+                            Prix <strong>${eur(product.price)}</strong> · coût ${eur(product.cost_price)}
+                            · marge <strong class="${marginCls}">${eur(product.margin)}</strong>
                         </div>
-                        
-                        <div class="d-flex justify-content-between align-items-center">
-                            <small class="text-muted">
-                                <i class="bi bi-box"></i> Stock: ${product.stock}
-                            </small>
-                            <button class="btn btn-sm btn-outline-primary" onclick="showProductDetails('${product.cj_pid}')">
-                                <i class="bi bi-eye"></i> Détails
-                            </button>
+                        <div class="d-flex justify-content-between align-items-center gap-1">
+                            <small class="text-muted"><i class="bi bi-box"></i> ${product.stock}</small>
+                            <div class="d-flex gap-1">
+                                <button class="btn btn-sm ${product.is_active ? 'btn-outline-warning' : 'btn-success'}" onclick="togglePublish(${product.id}, ${!product.is_active}, this)">
+                                    ${product.is_active ? 'Retirer' : 'Publier'}
+                                </button>
+                                <a class="btn btn-sm btn-outline-secondary" href="/admin/products/${product.id}/edit" title="Modifier"><i class="bi bi-pencil"></i></a>
+                                <button class="btn btn-sm btn-outline-primary" onclick="showProductDetails('${product.cj_pid}')"><i class="bi bi-eye"></i></button>
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -1025,7 +1053,7 @@ function enrichProduct() {
 
 function publishProduct() {
     if (!currentProduct) return;
-    alert('Fonctionnalité de publication à implémenter');
+    togglePublish(currentProduct.id, !currentProduct.is_active, document.getElementById('publishProductBtn'));
 }
 
 function syncProductVariants(productId) {
@@ -1242,6 +1270,7 @@ function searchProductsGlobal(searchTerm, page = 1) {
     formData.append('search', searchTerm);
     formData.append('page', page);
     formData.append('per_page', 20);
+    filterParams(formData);
     
     fetch('/admin/api/cj/products/search', {
         method: 'POST',

@@ -54,7 +54,8 @@ def cents(amount):
 def create_checkout(order, success_url, cancel_url):
     """Session Checkout pour une commande en attente : les montants viennent de la commande
     (prix TTC enregistrés + livraison), jamais du navigateur. Renvoie {'id', 'url'}."""
-    line_items = []
+    discount = cents(order.discount_amount or 0)
+    lines = []
     for item in order.order_items:
         name = item.product.name if item.product else f'Produit {item.product_id}'
         if item.variant:
@@ -64,10 +65,31 @@ def create_checkout(order, success_url, cancel_url):
         product_data = {'name': name[:250]}
         if item.product and item.product.image_url and item.product.image_url.startswith('https://'):
             product_data['images'] = [item.product.image_url]
-        line_items.append({
-            'price_data': {'currency': 'eur', 'product_data': product_data, 'unit_amount': cents(item.price)},
-            'quantity': item.quantity,
-        })
+        lines.append((item, product_data))
+    line_items = []
+    if discount <= 0:
+        for item, product_data in lines:
+            line_items.append({
+                'price_data': {'currency': 'eur', 'product_data': product_data, 'unit_amount': cents(item.price)},
+                'quantity': item.quantity,
+            })
+    else:
+        # Code promo : remise répartie au prorata sur chaque ligne (une ligne = quantité 1 au montant total
+        # de la ligne), le reste des arrondis sur la dernière, pour que Stripe encaisse exactement le total
+        gross = sum(cents(item.price) * item.quantity for item, _ in lines)
+        left = discount
+        for index, (item, product_data) in enumerate(lines):
+            line_total = cents(item.price) * item.quantity
+            share = left if index == len(lines) - 1 else min(left, round(discount * line_total / gross))
+            left -= share
+            data = dict(product_data)
+            if item.quantity > 1:
+                data['name'] = f'{data["name"]} x {item.quantity}'[:250]
+            data['description'] = f'Remise {order.coupon_code} incluse'
+            line_items.append({
+                'price_data': {'currency': 'eur', 'product_data': data, 'unit_amount': line_total - share},
+                'quantity': 1,
+            })
     if order.shipping_cost > 0:
         line_items.append({
             'price_data': {'currency': 'eur', 'product_data': {'name': f'Livraison ({order.shipping_method})'},
@@ -114,6 +136,11 @@ def fulfill(order_id, session):
     order.payment_status = 'paid'
     order.status = 'paid'
     order.paid_at = datetime.utcnow()
+    if order.coupon_code:
+        from models.coupon import Coupon
+        coupon = Coupon.query.filter_by(code=order.coupon_code).first()
+        if coupon:
+            coupon.uses = (coupon.uses or 0) + 1
     for item in order.order_items:
         if item.variant:
             item.variant.stock = max(0, (item.variant.stock or 0) - item.quantity)

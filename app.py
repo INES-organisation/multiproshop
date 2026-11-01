@@ -16,6 +16,22 @@ load_dotenv()
 compress = Compress()
 
 
+def _add_missing_columns():
+    """db.create_all ne modifie pas les tables existantes : colonnes ajoutées depuis, créées ici une fois"""
+    from sqlalchemy import inspect, text
+    wanted = {'order': [('discount_amount', 'FLOAT DEFAULT 0'), ('coupon_code', 'VARCHAR(40)')]}
+    try:
+        inspector = inspect(db.engine)
+        for table, columns in wanted.items():
+            existing = {c['name'] for c in inspector.get_columns(table)}
+            for name, ddl in columns:
+                if name not in existing:
+                    with db.engine.begin() as conn:
+                        conn.execute(text(f'ALTER TABLE "{table}" ADD COLUMN {name} {ddl}'))
+    except Exception as e:  # un autre processus l'a peut-être ajoutée au même moment
+        print(f"[schema] colonnes non ajoutées : {e}")
+
+
 def create_app(config_name='development'):
     """Factory pour créer l'application Flask"""
     app = Flask(__name__)
@@ -81,8 +97,10 @@ def create_app(config_name='development'):
     from models.review_request import ReviewRequest
     
     # Créer les tables
+    from models.coupon import Coupon
     with app.app_context():
         db.create_all()
+        _add_missing_columns()
         # gunicorn --preload : ne pas partager les connexions du processus maître avec les workers
         db.engine.dispose()
     
