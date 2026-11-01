@@ -1009,3 +1009,39 @@ def cj_search_import():
         return redirect(url_for('admin.cj_search', q=request.form.get('q', '')))
     flash('Produit importé en brouillon : traduisez le titre et la description, puis activez-le.', 'success')
     return redirect(url_for('admin.edit_product', product_id=product.id))
+
+
+@admin_bp.route('/products/bulk', methods=['POST'])
+@login_required
+@admin_required
+def bulk_products():
+    """Actions groupées sur les produits cochés : activer (et publier), désactiver, changer de catégorie"""
+    from models.product import Product
+    ids = [int(i) for i in request.form.getlist('ids') if i.isdigit()]
+    action = request.form.get('action')
+    target = request.form.get('next') or url_for('admin.products')
+    if not target.startswith('/admin/'):
+        target = url_for('admin.products')
+    if not ids or action not in ('activate', 'deactivate', 'category'):
+        flash('Cochez au moins un produit et choisissez une action.', 'error')
+        return redirect(target)
+    products = Product.query.filter(Product.id.in_(ids)).all()
+    if action == 'category':
+        category = Category.query.get(request.form.get('category_id', type=int) or 0)
+        if not category:
+            flash('Choisissez la nouvelle catégorie.', 'error')
+            return redirect(target)
+        for p in products:
+            p.category_id = category.id
+        message = f'{len(products)} produit(s) déplacé(s) dans « {category.name} »'
+    else:
+        for p in products:
+            p.is_active = action == 'activate'
+            if p.is_active and p.published_at is None:
+                p.published_at = datetime.utcnow()
+        message = f"{len(products)} produit(s) {'activé(s)' if action == 'activate' else 'désactivé(s)'}"
+    db.session.commit()
+    from extensions import cache
+    cache.delete('menu_category_ids')  # le menu ne montre que les catégories avec des produits actifs
+    flash(message, 'success')
+    return redirect(target)
