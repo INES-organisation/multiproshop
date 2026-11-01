@@ -98,6 +98,7 @@ def create_app(config_name='development'):
     
     # Créer les tables
     from models.coupon import Coupon
+    from models.admin_notification import AdminNotification
     with app.app_context():
         db.create_all()
         _add_missing_columns()
@@ -118,6 +119,13 @@ def create_app(config_name='development'):
         if not current_user.is_admin:
             abort(404)
         return None
+
+    @app.context_processor
+    def admin_helpers():
+        def admin_unread_notifications():
+            from services.notifications import unread_count
+            return unread_count()
+        return {'admin_unread_notifications': admin_unread_notifications}
 
     # Context processor - recharge les catégories à chaque requête pour éviter les instances détachées
     @app.context_processor

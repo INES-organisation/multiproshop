@@ -604,7 +604,7 @@ function renderProducts(products) {
                                 <button class="btn btn-sm ${product.is_active ? 'btn-outline-warning' : 'btn-success'}" onclick="togglePublish(${product.id}, ${!product.is_active}, this)">
                                     ${product.is_active ? 'Retirer' : 'Publier'}
                                 </button>
-                                <a class="btn btn-sm btn-outline-secondary" href="/admin/products/${product.id}/edit" title="Modifier"><i class="bi bi-pencil"></i></a>
+                                <a class="btn btn-sm btn-outline-secondary" href="/admin/products/edit/${product.id}" title="Modifier"><i class="bi bi-pencil"></i></a>
                                 <button class="btn btn-sm btn-outline-primary" onclick="showProductDetails('${product.cj_pid}')"><i class="bi bi-eye"></i></button>
                             </div>
                         </div>

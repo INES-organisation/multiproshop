@@ -47,6 +47,14 @@
                     <i class="fas fa-shopping-cart admin-nav-icon"></i>
                     <span class="admin-nav-text">Commandes</span>
                 </a>
+                <a href="{{ url_for('admin.notifications') }}" class="admin-nav-item {% if 'notification' in request.endpoint %}active{% endif %}">
+                    <i class="fas fa-bell admin-nav-icon"></i>
+                    <span class="admin-nav-text">Notifications</span>
+                </a>
+                <a href="{{ url_for('admin.disputes') }}" class="admin-nav-item {% if 'dispute' in request.endpoint %}active{% endif %}">
+                    <i class="fas fa-exclamation-triangle admin-nav-icon"></i>
+                    <span class="admin-nav-text">Litiges CJ</span>
+                </a>
                 <a href="{{ url_for('admin.coupons') }}" class="admin-nav-item {% if 'coupon' in request.endpoint %}active{% endif %}">
                     <i class="fas fa-tags admin-nav-icon"></i>
                     <span class="admin-nav-text">Codes promo</span>
@@ -112,17 +120,18 @@
                     <button class="admin-toggle d-md-none" onclick="toggleSidebar()">
                         <i class="fas fa-bars"></i>
                     </button>
-                    <div class="admin-search">
+                    <form class="admin-search" method="GET" action="{{ url_for('admin.products') }}">
                         <i class="fas fa-search"></i>
-                        <input type="text" placeholder="Rechercher...">
-                    </div>
+                        <input type="text" name="search" placeholder="Rechercher un produit..." aria-label="Rechercher un produit">
+                    </form>
                 </div>
                 
                 <div class="admin-topbar-right">
-                    <div class="admin-notification">
+                    {% set unread = admin_unread_notifications() %}
+                    <a class="admin-notification" href="{{ url_for('admin.notifications') }}" title="Notifications" aria-label="Notifications ({{ unread }} non lues)">
                         <i class="fas fa-bell" style="font-size: 1.2rem; color: #666;"></i>
-                        <span class="admin-notification-badge">3</span>
-                    </div>
+                        {% if unread %}<span class="admin-notification-badge">{{ unread if unread < 100 else '99+' }}</span>{% endif %}
+                    </a>
                     
                     <div class="admin-user">
                         <div class="admin-avatar">

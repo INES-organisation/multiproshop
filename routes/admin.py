@@ -985,12 +985,19 @@ def cj_search():
     category_id = request.args.get('category', type=int)
     categories = Category.query.filter_by(level=1).order_by(Category.name).all()
     category = Category.query.get(category_id) if category_id else None
-    results, total_pages = [], 0
-    if q:
-        data = _cj_api().get_products_v2(page=page, page_size=24, keyword=q)
+    root = category
+    while root is not None and root.parent_id:
+        root = root.parent
+    results, total_pages, error = [], 0, None
+    # Mot-clé, catégorie CJ, ou les deux : la catégorie filtre désormais les résultats chez CJ
+    cj_category = category.cj_category_id if category else None
+    if q or cj_category:
+        data = _cj_api().get_products_v2(page=page, page_size=24, keyword=q or None, category_id=cj_category)
         total_pages = data.get('total_pages', 0)
+        if not data.get('products') and data.get('total', 0) == 0 and page == 1:
+            error = None if q else "CJ ne renvoie aucun produit pour cette catégorie seule : ajoutez un mot-clé."
         pricing = PricingService()
-        markup = pricing.get_markup_for_category(category.name if category else None)
+        markup = pricing.get_markup_for_category(root.name if root else None)
         imported = {p.cj_pid: p for p in Product.query.filter(
             Product.cj_pid.in_([r['pid'] for r in data['products'] if r.get('pid')])).all()}
         for r in data['products']:
@@ -998,8 +1005,10 @@ def cj_search():
             price = pricing.calculate_selling_price(cost, markup) if cost else 0
             results.append({**r, 'cost': cost, 'sell_price': price, 'margin': round(price - cost, 2),
                             'existing': imported.get(r['pid'])})
+    elif category and not cj_category:
+        error = "Cette catégorie n'a pas d'équivalent CJ : ajoutez un mot-clé."
     return render_template('admin/cj_search.html', q=q, page=page, results=results, total_pages=total_pages,
-                           categories=categories, category=category)
+                           categories=categories, category=category, error=error)
 
 
 @admin_bp.route('/cj-recherche/port', methods=['POST'])
@@ -1193,3 +1202,41 @@ def delete_coupon(coupon_id):
         flash(f'Code {coupon.code} supprimé.', 'success')
     db.session.commit()
     return redirect(url_for('admin.coupons'))
+
+
+# ============================================================================
+# NOTIFICATIONS ET LITIGES CJ
+# ============================================================================
+
+@admin_bp.route('/notifications', methods=['GET', 'POST'])
+@login_required
+@admin_required
+def notifications():
+    from models.admin_notification import AdminNotification
+    from services.notifications import mark_read, KINDS
+    if request.method == 'POST':
+        ids = [int(i) for i in request.form.getlist('ids') if i.isdigit()]
+        mark_read(ids or None)
+        flash('Notifications marquées comme lues.', 'success')
+        return redirect(url_for('admin.notifications', kind=request.args.get('kind') or None))
+    kind = request.args.get('kind') or None
+    q = AdminNotification.query
+    if kind:
+        q = q.filter_by(kind=kind)
+    if request.args.get('unread'):
+        q = q.filter_by(read_at=None)
+    page = q.order_by(AdminNotification.created_at.desc()).paginate(page=request.args.get('page', 1, type=int),
+                                                                     per_page=50, error_out=False)
+    return render_template('admin/notifications.html', notifications=page, kinds=KINDS, kind=kind)
+
+
+@admin_bp.route('/litiges')
+@login_required
+@admin_required
+def disputes():
+    """Litiges ouverts chez CJ, lus en direct"""
+    from services import cj_disputes
+    page = max(request.args.get('page', 1, type=int), 1)
+    order_id = (request.args.get('order') or '').strip() or None
+    data = cj_disputes.fetch(_cj_api(), page=page, size=20, order_id=order_id)
+    return render_template('admin/disputes.html', data=data, page=page, order_id=order_id)

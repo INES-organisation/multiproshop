@@ -276,6 +276,8 @@ class CjSyncService:
             product.synced_at = datetime.utcnow()
             product.cj_last_sync = datetime.utcnow()
             product.cj_raw_data = json.dumps(product_data, ensure_ascii=False)
+            from services.notifications import check_margin
+            check_margin(product, commit=False)
         else:
             # Créer nouveau produit avec slug unique
             from slugify import slugify
@@ -386,6 +388,10 @@ class CjSyncService:
                     # Stock inconnu (CJ ne répond pas) → on garde l'ancien plutôt que d'écrire 0.
                     stock = self.cj_api.get_stock(details['variants']) if details else None
                     if stock is not None:
+                        if product.stock and product.stock > 0 and stock['total'] <= 0:
+                            from services.notifications import notify
+                            notify('stock', f'Rupture chez CJ : {product.name}', 'Le produit reste en ligne mais ne peut plus être commandé.',
+                                   url=f'/admin/products/edit/{product.id}', level='warning', dedupe=f'stock:{product.id}', commit=False)
                         product.stock = stock['total']
                         product.synced_at = datetime.utcnow()
                         updated += 1

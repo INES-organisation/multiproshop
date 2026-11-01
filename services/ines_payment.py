@@ -148,6 +148,11 @@ def fulfill(order_id, session):
             item.product.stock = max(0, (item.product.stock or 0) - item.quantity)
     db.session.commit()
     logger.info("Commande %s payée (%s)", order.order_number, session.get('id'))
+    from services.notifications import notify
+    notify('order', f'Commande payée {order.order_number}',
+           f"{order.total_price:.2f} € — {order.shipping_first_name} {order.shipping_last_name} ({order.shipping_country})"
+           + (f" — code {order.coupon_code}" if order.coupon_code else ''),
+           url=f'/admin/orders/{order.id}', level='success')
 
     try:
         from utils.email import send_order_confirmation_email
@@ -165,8 +170,15 @@ def fulfill(order_id, session):
             result = CjOrderService(CJDropshippingProvider(provider=provider)).create_cj_order(order.id)
             if not result.get('success'):
                 logger.error("Commande CJ non créée pour %s : %s", order.order_number, result.get('message'))
+                notify('cj_order_error', f'Commande CJ non créée : {order.order_number}', result.get('message'),
+                       url=f'/admin/orders/{order.id}', level='danger')
+        else:
+            notify('cj_order_error', f'Commande CJ à passer à la main : {order.order_number}',
+                   'Fournisseur CJ inactif ou introuvable.', url=f'/admin/orders/{order.id}', level='danger')
     except Exception as e:  # noqa: BLE001 — la commande reste payée, à passer à la main sur CJ
         logger.error("Commande CJ non créée pour %s : %s", order.order_number, e)
+        notify('cj_order_error', f'Commande CJ non créée : {order.order_number}', str(e),
+               url=f'/admin/orders/{order.id}', level='danger')
     return True
 
 

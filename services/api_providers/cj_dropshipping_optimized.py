@@ -521,6 +521,20 @@ class CJDropshippingApiOptimized:
             logger.error(f"[CJ API] Erreur get_products_v2: {e}")
             return {'products': [], 'total': 0, 'page': page}
     
+    def get_disputes(self, page: int = 1, size: int = 20, order_id: str = None) -> Optional[Dict]:
+        """Litiges CJ (disputes/getDisputeList). Renvoie {'list': [...], 'total': n} ou None si CJ ne répond pas."""
+        params = {'pageNum': page, 'pageSize': min(size, 100)}
+        if order_id:
+            params['orderId'] = order_id
+        response = self._make_request('GET', 'disputes/getDisputeList', params=params)
+        if not response or response.get('result') is False:
+            return None
+        data = response.get('data') or {}
+        if isinstance(data, list):
+            return {'list': data, 'total': len(data)}
+        items = data.get('list') or data.get('content') or data.get('records') or []
+        return {'list': items, 'total': data.get('total') or data.get('totalRecords') or len(items)}
+
     def get_product_details(self, pid: str) -> Optional[Dict]:
         """Récupérer les détails complets d'un produit"""
         try:

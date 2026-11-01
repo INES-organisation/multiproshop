@@ -39,19 +39,22 @@ class CjAnalyticsService:
             ).all()
             
             total_orders = len(cj_orders)
-            total_revenue = sum(order.total for order in cj_orders)
+            total_revenue = sum(order.total_price or 0 for order in cj_orders)
             
             # Calculer la marge (prix de vente - coût CJ)
             total_cost = 0
             total_margin = 0
             
+            from models.cart import cost_price
             for order in cj_orders:
-                for item in order.items:
-                    if item.product and item.product.cj_price:
-                        cost = item.product.cj_price * item.quantity
+                for item in order.order_items:
+                    unit = cost_price(item.product, item.variant) if item.product else None
+                    if unit:
+                        cost = unit * item.quantity
                         revenue = item.price * item.quantity
                         total_cost += cost
                         total_margin += (revenue - cost)
+                total_margin -= order.discount_amount or 0
             
             margin_percentage = (total_margin / total_revenue * 100) if total_revenue > 0 else 0
             
@@ -94,7 +97,7 @@ class CjAnalyticsService:
             daily_sales = db.session.query(
                 func.date(Order.created_at).label('date'),
                 func.count(Order.id).label('orders'),
-                func.sum(Order.total).label('revenue')
+                func.sum(Order.total_price).label('revenue')
             ).filter(
                 Order.cj_order_id.isnot(None),
                 Order.cj_order_id != '',
@@ -295,18 +298,19 @@ class CjAnalyticsService:
                     'count': pending_orders
                 })
             
-            # Alerte 4: Produits sans prix CJ
+            # Alerte 4: Produits en ligne sans coût CJ (marge invérifiable)
             no_price = Product.query.filter(
                 Product.cj_pid.isnot(None),
                 Product.cj_pid != '',
-                or_(Product.cj_price.is_(None), Product.cj_price == 0)
+                Product.is_active == True,
+                or_(Product.cost_price.is_(None), Product.cost_price == 0)
             ).count()
             
             if no_price > 0:
                 alerts.append({
                     'type': 'danger',
-                    'title': 'Produits sans prix CJ',
-                    'message': f'{no_price} produit(s) sans prix CJ défini',
+                    'title': 'Produits sans coût CJ',
+                    'message': f'{no_price} produit(s) en ligne sans coût CJ',
                     'count': no_price
                 })
             

@@ -32,6 +32,7 @@ def make_celery(app_name=__name__):
             'tasks.cart_reminder_tasks',
             'tasks.review_request_tasks',
             'tasks.shipping_rate_tasks',
+            'tasks.notification_tasks',
         ]
     )
     
@@ -114,6 +115,11 @@ def make_celery(app_name=__name__):
             'send-cart-reminders-15min': {
                 'task': 'tasks.cart_reminder_tasks.send_cart_reminders',
                 'schedule': 900.0,  # Relances de panier abandonné (1 h, 24 h, 72 h)
+            },
+
+            'check-cj-disputes-daily': {
+                'task': 'tasks.notification_tasks.check_cj_disputes',
+                'schedule': crontab(hour=8, minute=15),  # litiges CJ nouveaux ou mis à jour
             },
 
             'send-review-requests-daily': {
