@@ -167,6 +167,28 @@ class CJDropshippingApiOptimized:
             logger.error(f"[CJ API] Exception getAccessToken: {e}")
             return None
 
+    def _wait_turn(self) -> bool:
+        """Réserve une seconde d'appel CJ pour tout le compte (clé Redis par seconde, posée une seule
+        fois grâce à add). Attend au plus 8 s pendant une requête web, 120 s ailleurs.
+        Sans cache partagé (hors app), seul le limiteur du processus s'applique."""
+        if not has_app_context():
+            return True
+        try:
+            from extensions import cache
+        except Exception:
+            return True
+        deadline = time.time() + (8 if self.fail_fast else 120)
+        while True:
+            now = time.time()
+            try:
+                if cache.add(f'cj:slot:{int(now)}', 1, timeout=5):
+                    return True
+            except Exception:
+                return True  # cache indisponible : ne pas bloquer les appels
+            if now >= deadline:
+                return False
+            time.sleep(int(now) + 1 - now + random.uniform(0, 0.05))
+
     def _block(self, seconds: int):
         """Pause imposée par CJ, partagée entre processus"""
         _memory_cache['rate_limit_until'] = time.time() + seconds
@@ -212,7 +234,11 @@ class CJDropshippingApiOptimized:
         # Retry avec backoff exponentiel
         for attempt in range(max_retries):
             try:
-                # Rate limiter global: 1.5s minimum entre chaque appel API (Free CJ = 1 req/s)
+                # Rate limiter : CJ = 1 req/s pour tout le compte, donc file d'attente partagée entre
+                # processus ; dans le processus, 1.5 s minimum entre deux appels
+                if not self._wait_turn():
+                    logger.warning(f"[CJ API] File d'attente CJ trop longue - abandon {endpoint}")
+                    return None
                 elapsed = time.time() - _memory_cache['last_api_call']
                 min_interval = _memory_cache['min_interval']
                 if elapsed < min_interval:
