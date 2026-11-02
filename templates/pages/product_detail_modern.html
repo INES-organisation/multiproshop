@@ -343,12 +343,13 @@
                 {% endif %}
                 
                 <!-- Variantes -->
-                {% if product.variants and product.variants.count() > 0 %}
+                {% set active_variants = product.variants.filter_by(active=True).all() if product.variants else [] %}
+                {% if active_variants %}
                 <div class="variant-selector mb-4">
                     {% set colors = [] %}
                     {% set sizes = [] %}
                     {% set other_variants = [] %}
-                    {% for variant in product.variants %}
+                    {% for variant in active_variants %}
                         {% set effective_stock = variant.stock if variant.stock > 0 else product.stock %}
                         {% if variant.color and variant.color not in colors %}
                             {% set _ = colors.append(variant.color) %}
@@ -377,7 +378,7 @@
                         <div class="size-options">
                             {% for size in sizes %}
                             <button type="button" class="size-option" data-size="{{ size }}" onclick="selectSize(this)">
-                                {{ size }}
+                                {{ size|fr_color }}
                             </button>
                             {% endfor %}
                         </div>
@@ -388,7 +389,7 @@
                     <div class="variant-option mb-3">
                         <span class="variant-label">Options</span>
                         <div class="color-options">
-                            {% for variant in product.variants %}
+                            {% for variant in active_variants %}
                             {% set effective_stock = variant.stock if variant.stock > 0 else product.stock %}
                             <button type="button" class="color-option {% if not effective_stock %}disabled{% endif %}"
                                     data-variant-id="{{ variant.id }}"
@@ -412,7 +413,7 @@
 
                     <script>
                     var productVariants = [
-                        {% for variant in product.variants %}
+                        {% for variant in active_variants %}
                         {
                             id: {{ variant.id }},
                             color: "{{ variant.color or '' }}",
