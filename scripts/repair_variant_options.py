@@ -54,7 +54,7 @@ def main():
         db.session.commit()
         for pid in products:
             try:
-                cache.delete(f'flask_cache_view//products/{pid}')
+                cache.delete(f'view//products/{pid}')  # préfixe flask_cache_ ajouté par Flask-Caching
             except Exception:
                 pass
         print(f'Appliqué. Sauvegarde des anciennes valeurs : {args.backup}')

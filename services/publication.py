@@ -277,7 +277,7 @@ def write_and_publish(product_id):
     cache.delete(PENDING_KEY % product.id)
     cache.delete('menu_category_ids')
     try:
-        cache.delete(f'flask_cache_view//products/{product.id}')
+        cache.delete(f'view//products/{product.id}')  # Flask-Caching ajoute lui-même le préfixe flask_cache_
     except Exception:
         pass
     notify('publication', f'En ligne : {product.name[:80]}', 'Fiche rédigée en français par Claude, à relire si besoin.',
