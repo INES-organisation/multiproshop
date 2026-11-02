@@ -1456,7 +1456,8 @@ def publish_product(product_id):
     if active and not product.is_active:
         problem = _publish_problem(product)
         if problem:
-            return jsonify({'success': False, 'message': problem}), 400
+            db.session.commit()  # garder le stock et les tarifs relus chez CJ
+            return jsonify({'success': False, 'message': problem, 'stock': product.stock}), 400
     product.is_active = active
     if active and product.published_at is None:
         product.published_at = datetime.utcnow()

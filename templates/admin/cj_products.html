@@ -346,11 +346,15 @@ function showAllProducts() {
 }
 
 function togglePublish(productId, active, btn) {
-    if (btn) btn.disabled = true;
+    if (btn) {
+        btn.disabled = true;
+        // La publication relit le stock et la livraison chez CJ : jusqu'à 30 s
+        if (active) btn.innerHTML = '<span class="spinner-border spinner-border-sm"></span> Vérification CJ…';
+    }
     fetch(`/admin/api/cj/product/${productId}/publish`, {
         method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({active: active})
     }).then(r => r.json()).then(d => {
-        if (!d.success) { alert('Non publié : ' + d.message); if (btn) btn.disabled = false; return; }
+        if (!d.success) { alert('Non publié : ' + d.message); renderProducts(allProducts); return; }
         const p = allProducts.find(x => x.id === productId); if (p) { p.is_active = p.published = d.is_active; }
         if (currentProduct && currentProduct.id === productId) {
             currentProduct.is_active = d.is_active;

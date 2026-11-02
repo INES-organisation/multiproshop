@@ -858,6 +858,7 @@ def edit_product(product_id):
             product.sku = request.form.get('sku', '')
             product.description = request.form.get('description', '')
             product.short_description = request.form.get('short_description', '')
+            was_active, old_price = product.is_active, product.price
             product.price = float(request.form['price'])
             product.compare_price = float(request.form.get('compare_price', 0)) or None
             product.stock = int(request.form.get('stock', 0))
@@ -865,6 +866,14 @@ def edit_product(product_id):
             product.brand = request.form.get('brand', '')
             product.weight = float(request.form.get('weight', 0)) or None
             product.is_active = 'is_active' in request.form
+            if product.is_active and not was_active:
+                # Même contrôles que le bouton Publier ; un prix saisi à la main n'est pas remplacé par la grille
+                problem = _publish_problem(product, reprice=abs((old_price or 0) - product.price) < 0.005)
+                if problem:
+                    product.is_active = False
+                    flash(f'Modifications enregistrées, mais produit non publié : {problem}', 'error')
+                elif product.published_at is None:
+                    product.published_at = datetime.utcnow()
             product.is_featured = 'is_featured' in request.form
             product.is_new = 'is_new' in request.form
             
@@ -920,6 +929,7 @@ def toggle_product_status(product_id):
     if not product.is_active:
         problem = _publish_problem(product)
         if problem:
+            db.session.commit()  # garder le stock et les tarifs relus chez CJ
             flash(f'« {product.name} » non activé : {problem}', 'error')
             return redirect(request.referrer if (request.referrer or '').find('/admin/') >= 0 else url_for('admin.products'))
     product.is_active = not product.is_active
@@ -970,10 +980,17 @@ def _launch_prices(product):
         product.compare_price = None
 
 
-def _publish_problem(product):
-    """Raison d'empêcher la mise en ligne (vente à perte, coût ou prix inconnu), ou None.
-    À la première publication, les prix aberrants sont d'abord recalculés."""
-    if product.published_at is None:
+def _publish_problem(product, deadline=None, reprice=True):
+    """Raison d'empêcher la mise en ligne, ou None.
+    Produit CJ : stock relu chez CJ, livraison France et Réunion vérifiée, et à la première publication
+    prix calculés avec la grille (services/publication.py). Autres produits : prix aberrants recalculés.
+    Puis refus d'une vente à perte, d'un coût ou d'un prix inconnu."""
+    if product.cj_pid:
+        from services.publication import prepare
+        problem = prepare(product, deadline, reprice=reprice)
+        if problem:
+            return problem
+    elif product.published_at is None and reprice:
         _launch_prices(product)
     if not product.price or product.price <= 0:
         return 'prix de vente manquant.'
@@ -1030,13 +1047,12 @@ def cj_search():
         total_pages = data.get('total_pages', 0)
         if not data.get('products') and data.get('total', 0) == 0 and page == 1 and not q:
             error = "CJ ne renvoie aucun produit pour cette catégorie seule : ajoutez un mot-clé."
-        pricing = PricingService()
-        markup = pricing.get_markup_for_category(root.name if root else None)
+        from services.publication import grid_price
         imported = {p.cj_pid: p for p in Product.query.filter(
             Product.cj_pid.in_([r['pid'] for r in data['products'] if r.get('pid')])).all()}
         for r in data['products']:
             cost = round(r['price'] * USD_TO_EUR, 2)
-            price = pricing.calculate_selling_price(cost, markup) if cost else 0
+            price = grid_price(cost) if cost else 0  # le prix que donnera la publication
             results.append({**r, 'cost': cost, 'sell_price': price, 'margin': round(price - cost, 2),
                             'existing': imported.get(r['pid'])})
     elif category and not cj_category and not error:
@@ -1116,10 +1132,10 @@ def cj_search_import():
         CjSyncService(_cj_api())._sync_product(dict(details, category_id=None))
         product = Product.query.filter_by(cj_pid=pid).first()
         cost = round((details.get('price') or 0) * USD_TO_EUR, 2)
-        pricing = PricingService()
+        from services.publication import apply_grid
         product.category_id = category.id
         product.cost_price = cost or None
-        product.price = pricing.calculate_selling_price(cost, pricing.get_markup_for_category(category.name)) or product.price
+        apply_grid(product)  # mêmes prix que ceux de la publication
         product.is_active = False  # brouillon : activé depuis la liste une fois la fiche relue
         product.published_at = None
         db.session.commit()
@@ -1157,9 +1173,11 @@ def bulk_products():
     else:
         refused = []
         changed = 0
+        import time as _time
+        deadline = _time.time() + 40  # chaque produit CJ coûte des appels CJ : rester sous le délai web
         for p in products:
             if action == 'activate' and not p.is_active:
-                problem = _publish_problem(p)
+                problem = _publish_problem(p, deadline)
                 if problem:
                     refused.append(f'#{p.id} ({problem})')
                     continue
