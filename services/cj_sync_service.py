@@ -166,7 +166,7 @@ class CjSyncService:
         try:
             logger.info(f"[CjSync] Début sync produits (catégorie: {category_id}, limit: {limit})")
             
-            synced = 0
+            synced = created = 0
             errors = []
             page = 1
             
@@ -182,6 +182,9 @@ class CjSyncService:
                 products = result.get('products', [])
                 
                 if not products:
+                    if result.get('error') and page == 1:
+                        return {'success': False, 'synced': 0, 'errors': [],
+                                'message': f"CJ n'a pas renvoyé la liste : {result['error']}. Réessayez dans une minute."}
                     break
                 
                 # Synchroniser chaque produit
@@ -190,7 +193,7 @@ class CjSyncService:
                         break
                     
                     try:
-                        self._sync_product(product_data)
+                        created += bool(self._sync_product(product_data))
                         db.session.commit()  # Commit après chaque produit
                         synced += 1
                     except Exception as e:
@@ -214,8 +217,11 @@ class CjSyncService:
             
             return {
                 'success': True,
-                'message': f"{synced} produits synchronisés",
+                'message': (f"{synced} produits synchronisés : {created} nouveaux importés en brouillon "
+                            f"(à publier un par un), {synced - created} déjà en boutique mis à jour"
+                            if synced else "Aucun produit CJ dans cette catégorie"),
                 'synced': synced,
+                'created': created,
                 'errors': errors
             }
             
@@ -229,8 +235,8 @@ class CjSyncService:
                 'errors': []
             }
     
-    def _sync_product(self, product_data: Dict) -> None:
-        """Synchroniser un produit CJ vers la BDD"""
+    def _sync_product(self, product_data: Dict) -> bool:
+        """Synchroniser un produit CJ vers la BDD. Renvoie True si le produit vient d'être créé."""
         import json
         
         pid = product_data.get('pid')
@@ -292,9 +298,9 @@ class CjSyncService:
                 unique_slug = f"{base_slug}-{counter}"
                 counter += 1
             
-            # Calculer le prix de vente avec marge
-            markup = self.pricing_service.get_markup_for_category(category.name)
-            selling_price = self.pricing_service.calculate_selling_price(cj_sell_price, markup)
+            # Prix provisoire selon la grille ; recalculé par variante à la publication
+            from services.publication import grid_price
+            selling_price = grid_price(cj_sell_price or 0)
             
             product = Product(
                 name=product_data.get('name', ''),
@@ -305,14 +311,16 @@ class CjSyncService:
                 cost_price=cj_sell_price,  # Prix CJ
                 price=selling_price,  # Prix calculé avec marge
                 suggested_price=cj_suggested_price,
-                compare_price=cj_suggested_price,  # Prix barré
+                compare_price=None,  # pas de prix barré inventé (le prix conseillé CJ n'est pas un ancien prix)
                 stock=product_data.get('stock', 0),
                 image_url=images[0] if images else None,
                 category_id=category.id,
                 product_weight=product_data.get('weight'),
                 material=product_data.get('material'),
-                is_active=True,  # Actif par défaut
-                published=True,  # Publié automatiquement
+                # Importé en brouillon : la mise en ligne passe par « Publier » (stock, livraison, prix,
+                # rédaction française), jamais directement depuis la synchro
+                is_active=False,
+                published=False,
                 synced_at=datetime.utcnow(),
                 cj_last_sync=datetime.utcnow(),
                 cj_raw_data=json.dumps(product_data, ensure_ascii=False)  # Données brutes pour audit
@@ -330,6 +338,7 @@ class CjSyncService:
         variants = product_data.get('variants', [])
         if variants and is_new:
             self._sync_variants(product.id, variants)
+        return is_new
     
     def _sync_variants(self, product_id: int, variants: List[Dict]) -> None:
         """Synchroniser les variantes d'un produit"""
@@ -514,57 +523,23 @@ class CjSyncService:
             return {'success': False, 'error': str(e)}
 
     def _update_category_counts(self):
-        """Mettre à jour les compteurs de produits pour toutes les catégories CJ"""
+        """Compteurs de produits CJ (brouillons compris) par catégorie CJ, sous-catégories incluses.
+        Une seule requête groupée : l'ancienne version faisait une requête par catégorie (~40 s)."""
         try:
             logger.info("[CjSync] Mise à jour des compteurs de catégories")
-            
-            # Récupérer toutes les catégories CJ
-            categories = Category.query.filter(
-                Category.cj_category_id.isnot(None)
-            ).all()
-            
+            direct = dict(db.session.query(Product.category_id, db.func.count(Product.id))
+                          .filter(Product.cj_pid.isnot(None)).group_by(Product.category_id).all())
+            categories = Category.query.all()
+            children = {}
+            for c in categories:
+                children.setdefault(c.parent_id, []).append(c.id)
+
+            def total(cid, depth=0):
+                return direct.get(cid, 0) + (sum(total(k, depth + 1) for k in children.get(cid, [])) if depth < 3 else 0)
+
             for category in categories:
-                # Compter les produits directs de cette catégorie
-                direct_count = Product.query.filter(
-                    Product.category_id == category.id,
-                    Product.cj_pid.isnot(None),
-                    Product.published == True
-                ).count()
-                
-                # Pour les catégories de niveau 1 et 2, inclure les sous-catégories
-                total_count = direct_count
-                
-                if category.level == 1:
-                    # Ajouter produits des catégories niveau 2
-                    level2_cats = Category.query.filter_by(parent_id=category.id).all()
-                    for cat2 in level2_cats:
-                        total_count += Product.query.filter(
-                            Product.category_id == cat2.id,
-                            Product.cj_pid.isnot(None),
-                            Product.published == True
-                        ).count()
-                        
-                        # Ajouter produits des catégories niveau 3
-                        level3_cats = Category.query.filter_by(parent_id=cat2.id).all()
-                        for cat3 in level3_cats:
-                            total_count += Product.query.filter(
-                                Product.category_id == cat3.id,
-                                Product.cj_pid.isnot(None),
-                                Product.published == True
-                            ).count()
-                
-                elif category.level == 2:
-                    # Ajouter produits des catégories niveau 3
-                    level3_cats = Category.query.filter_by(parent_id=category.id).all()
-                    for cat3 in level3_cats:
-                        total_count += Product.query.filter(
-                            Product.category_id == cat3.id,
-                            Product.cj_pid.isnot(None),
-                            Product.published == True
-                        ).count()
-                
-                # Mettre à jour le compteur
-                category.product_count = total_count
+                if category.cj_category_id:
+                    category.product_count = total(category.id)
             
             db.session.commit()
             logger.info("[CjSync] Compteurs de catégories mis à jour")
