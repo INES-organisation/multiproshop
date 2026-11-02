@@ -940,8 +940,41 @@ def toggle_product_status(product_id):
     return redirect(referrer if '/admin/products' in referrer else url_for('admin.products'))
 
 
+def _launch_prices(product):
+    """Première mise en ligne : les prix aberrants de l'ancien catalogue (0,02 € ou 159 998 €, ou le coût CJ
+    en dollars recopié comme prix) sont recalculés avec la marge de la catégorie. Un prix fixé à la main
+    dans une fourchette raisonnable (1,1 à 8 fois le coût) est gardé."""
+    from models.product_variant import ProductVariant
+    from models.cart import cost_price
+    from services.pricing_service import PricingService
+    root = product.category
+    while root is not None and root.parent_id:
+        root = root.parent
+    pricing = PricingService()
+    markup = pricing.get_markup_for_category(root.name if root else None)
+    sane = lambda price, cost: price and cost and cost * 1.1 <= price <= cost * 8
+    prices = []
+    for variant in ProductVariant.query.filter_by(product_id=product.id, active=True).all():
+        cost = cost_price(product, variant)
+        if not cost:
+            continue
+        current = variant.price or product.price
+        if not sane(current, cost):
+            variant.price = pricing.calculate_selling_price(cost, markup)
+        prices.append(variant.price or product.price)
+    if prices:
+        product.price = min(prices)
+    elif product.cost_price and not sane(product.price, product.cost_price):
+        product.price = pricing.calculate_selling_price(product.cost_price, markup)
+    if product.compare_price and product.compare_price <= product.price:
+        product.compare_price = None
+
+
 def _publish_problem(product):
-    """Raison d'empêcher la mise en ligne (vente à perte, coût ou prix inconnu), ou None"""
+    """Raison d'empêcher la mise en ligne (vente à perte, coût ou prix inconnu), ou None.
+    À la première publication, les prix aberrants sont d'abord recalculés."""
+    if product.published_at is None:
+        _launch_prices(product)
     if not product.price or product.price <= 0:
         return 'prix de vente manquant.'
     mi = product.margin_info()
@@ -988,14 +1021,15 @@ def cj_search():
     root = category
     while root is not None and root.parent_id:
         root = root.parent
-    results, total_pages, error = [], 0, None
-    # Mot-clé, catégorie CJ, ou les deux : la catégorie filtre désormais les résultats chez CJ
-    cj_category = category.cj_category_id if category else None
+    results, total_pages = [], 0
+    # Mot-clé, catégorie CJ, ou les deux : la catégorie filtre les résultats chez CJ (identifiant CJ de la
+    # catégorie, ou à défaut celui de la table de correspondance category_mapping)
+    cj_category, error = (_cj_category_for(category) if category else (None, None))
     if q or cj_category:
         data = _cj_api().get_products_v2(page=page, page_size=24, keyword=q or None, category_id=cj_category)
         total_pages = data.get('total_pages', 0)
-        if not data.get('products') and data.get('total', 0) == 0 and page == 1:
-            error = None if q else "CJ ne renvoie aucun produit pour cette catégorie seule : ajoutez un mot-clé."
+        if not data.get('products') and data.get('total', 0) == 0 and page == 1 and not q:
+            error = "CJ ne renvoie aucun produit pour cette catégorie seule : ajoutez un mot-clé."
         pricing = PricingService()
         markup = pricing.get_markup_for_category(root.name if root else None)
         imported = {p.cj_pid: p for p in Product.query.filter(
@@ -1005,11 +1039,37 @@ def cj_search():
             price = pricing.calculate_selling_price(cost, markup) if cost else 0
             results.append({**r, 'cost': cost, 'sell_price': price, 'margin': round(price - cost, 2),
                             'existing': imported.get(r['pid'])})
-    elif category and not cj_category:
-        error = "Cette catégorie n'a pas d'équivalent CJ : ajoutez un mot-clé."
+    elif category and not cj_category and not error:
+        error = "Cette catégorie n'a pas d'équivalent CJ : ajoutez un mot-clé ou choisissez une sous-catégorie."
+    if q and category and not cj_category:
+        error = (error or '') + ' Résultats affichés sans filtre de catégorie.'
     return render_template('admin/cj_search.html', q=q, page=page, results=results, total_pages=total_pages,
                            categories=categories, category=category, error=error)
 
+
+def _cj_category_for(category):
+    """(identifiant de catégorie CJ, message) pour filtrer la recherche CJ sur une catégorie de la boutique.
+    CJ n'accepte qu'un identifiant : celui de la catégorie, sinon sa correspondance, sinon celle de son
+    unique sous-catégorie liée ; plusieurs possibles → on demande une sous-catégorie plus précise."""
+    from models.api_provider import CategoryMapping
+    if category.cj_category_id:
+        return category.cj_category_id, None
+    direct = CategoryMapping.query.filter_by(mps_category_id=category.id).first()
+    if direct:
+        return direct.external_category_id, None
+    ids, frontier = set(), [category.id]
+    while frontier:
+        children = Category.query.filter(Category.parent_id.in_(frontier)).all()
+        frontier = [c.id for c in children]
+        ids.update(c.cj_category_id for c in children if c.cj_category_id)
+        if frontier:
+            ids.update(m.external_category_id for m in
+                       CategoryMapping.query.filter(CategoryMapping.mps_category_id.in_(frontier)).all())
+    if len(ids) == 1:
+        return ids.pop(), None
+    if ids:
+        return None, "Catégorie trop large pour CJ : choisissez une sous-catégorie."
+    return None, None
 
 @admin_bp.route('/cj-recherche/port', methods=['POST'])
 @login_required
