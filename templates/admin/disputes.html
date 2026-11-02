@@ -1,0 +1,46 @@
+{% extends 'admin/layout_admin_modern.html' %}
+{% block title %}Litiges CJ{% endblock %}
+{% block content %}
+<div class="mb-4">
+    <h1 style="font-weight: 800; margin-bottom: 0.5rem;"><i class="fas fa-exclamation-triangle"></i> Litiges CJ</h1>
+    <p style="color: #999; margin: 0;">Litiges ouverts chez CJ (colis perdu, produit abîmé, remboursement…), lus en direct. Un litige nouveau ou qui change d'état crée une notification (vérification chaque jour).</p>
+</div>
+<form method="GET" class="admin-card mb-3"><div class="admin-card-body d-flex gap-2">
+    <input class="admin-form-control" name="order" value="{{ order_id or '' }}" placeholder="N° de commande CJ (facultatif)" aria-label="Commande CJ">
+    <button class="admin-btn admin-btn-primary" type="submit">Filtrer</button>
+</div></form>
+{% if data is none %}
+<div class="alert alert-warning">CJ n'a pas répondu. Réessayez dans une minute.</div>
+{% else %}
+<div class="admin-card">
+    <div class="admin-card-body" style="padding: 0; overflow-x: auto;">
+        <table class="admin-table">
+            <thead><tr><th>Litige</th><th>Commande</th><th>Motif</th><th>État</th><th>Montant</th><th>Solution</th><th>Ouvert le</th><th></th></tr></thead>
+            <tbody>
+            {% for d in data['items'] %}
+            <tr>
+                <td>{{ d.id }}</td>
+                <td>{% if d.order %}<a href="{{ url_for('admin.order_detail', order_id=d.order.id) }}">#{{ d.order.order_number }}</a><div style="font-size: 0.8rem; color: #999;">CJ {{ d.order_ref }}</div>{% else %}{{ d.order_ref or '—' }}{% endif %}</td>
+                <td>{{ d.reason or '—' }}</td>
+                <td><span class="admin-badge admin-badge-warning">{{ d.status or '—' }}</span></td>
+                <td>{{ d.amount if d.amount is not none else '—' }}</td>
+                <td>{{ d.resolution or '—' }}</td>
+                <td>{{ d.created or '—' }}</td>
+                <td><details><summary style="cursor: pointer; font-size: 0.8rem;">Données CJ</summary><pre style="font-size: 0.7rem; max-width: 420px; white-space: pre-wrap;">{{ d.raw|tojson(indent=1) }}</pre></details></td>
+            </tr>
+            {% else %}
+            <tr><td colspan="8" style="text-align: center; padding: 2rem; color: #999;">Aucun litige chez CJ.</td></tr>
+            {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% if data.total > 20 %}
+<div class="d-flex justify-content-center gap-2 mt-3">
+    {% if page > 1 %}<a class="admin-btn admin-btn-sm admin-btn-info" href="{{ url_for('admin.disputes', page=page - 1, order=order_id) }}">Précédent</a>{% endif %}
+    <span style="padding: 0.4rem;">Page {{ page }}</span>
+    {% if page * 20 < data.total %}<a class="admin-btn admin-btn-sm admin-btn-info" href="{{ url_for('admin.disputes', page=page + 1, order=order_id) }}">Suivant</a>{% endif %}
+</div>
+{% endif %}
+{% endif %}
+{% endblock %}

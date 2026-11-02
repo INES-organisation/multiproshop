@@ -1,0 +1,49 @@
+{% extends 'admin/layout_admin_modern.html' %}
+{% block title %}Notifications{% endblock %}
+{% block content %}
+<div class="d-flex justify-content-between align-items-center flex-wrap gap-2 mb-4">
+    <div>
+        <h1 style="font-weight: 800; margin-bottom: 0.5rem;"><i class="fas fa-bell"></i> Notifications</h1>
+        <p style="color: #999; margin: 0;">Commandes payées, commandes CJ en échec, ruptures, marges négatives après un changement de coût CJ, litiges.</p>
+    </div>
+    <form method="POST" action="{{ url_for('admin.notifications', kind=kind) }}">
+        <button class="admin-btn admin-btn-primary" type="submit"><i class="fas fa-check-double"></i> Tout marquer comme lu</button>
+    </form>
+</div>
+<div class="d-flex flex-wrap gap-2 mb-3">
+    <a class="admin-btn admin-btn-sm {{ 'admin-btn-primary' if not kind else 'admin-btn-info' }}" href="{{ url_for('admin.notifications') }}">Toutes</a>
+    {% for k, label in kinds.items() %}
+    <a class="admin-btn admin-btn-sm {{ 'admin-btn-primary' if kind == k else 'admin-btn-info' }}" href="{{ url_for('admin.notifications', kind=k) }}">{{ label }}</a>
+    {% endfor %}
+</div>
+<div class="admin-card">
+    <div class="admin-card-body" style="padding: 0;">
+        <table class="admin-table">
+            <thead><tr><th>Date</th><th>Type</th><th>Détail</th><th></th></tr></thead>
+            <tbody>
+            {% for n in notifications.items %}
+            <tr style="{% if not n.read_at %}font-weight: 600; background: #fffbea;{% endif %}">
+                <td style="white-space: nowrap;">{{ n.created_at.strftime('%d/%m %H:%M') }}</td>
+                <td><span class="admin-badge admin-badge-{{ {'danger': 'danger', 'warning': 'warning', 'success': 'success'}.get(n.level, 'info') }}">{{ kinds.get(n.kind, n.kind) }}</span></td>
+                <td>{% if n.url %}<a href="{{ n.url }}">{{ n.title }}</a>{% else %}{{ n.title }}{% endif %}
+                    {% if n.message %}<div style="font-size: 0.85rem; color: #666; font-weight: 400;">{{ n.message }}</div>{% endif %}</td>
+                <td>{% if not n.read_at %}
+                    <form method="POST" action="{{ url_for('admin.notifications', kind=kind) }}"><input type="hidden" name="ids" value="{{ n.id }}">
+                    <button class="admin-btn admin-btn-sm admin-btn-info" type="submit" title="Marquer comme lue"><i class="fas fa-check"></i></button></form>
+                {% endif %}</td>
+            </tr>
+            {% else %}
+            <tr><td colspan="4" style="text-align: center; padding: 2rem; color: #999;">Aucune notification.</td></tr>
+            {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% if notifications.pages > 1 %}
+<div class="d-flex justify-content-center gap-2 mt-3">
+    {% if notifications.has_prev %}<a class="admin-btn admin-btn-sm admin-btn-info" href="{{ url_for('admin.notifications', kind=kind, page=notifications.prev_num) }}">Précédent</a>{% endif %}
+    <span style="padding: 0.4rem;">Page {{ notifications.page }} / {{ notifications.pages }}</span>
+    {% if notifications.has_next %}<a class="admin-btn admin-btn-sm admin-btn-info" href="{{ url_for('admin.notifications', kind=kind, page=notifications.next_num) }}">Suivant</a>{% endif %}
+</div>
+{% endif %}
+{% endblock %}

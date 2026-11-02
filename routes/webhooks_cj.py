@@ -137,7 +137,7 @@ def webhook_logs():
         from flask_login import login_required, current_user
         
         # Vérifier que l'utilisateur est admin
-        if not current_user.is_authenticated or current_user.role != 'admin':
+        if not current_user.is_authenticated or not current_user.is_admin:
             return jsonify({
                 'success': False,
                 'error': 'Accès non autorisé'
@@ -198,7 +198,7 @@ def webhook_stats():
         from sqlalchemy import func
         
         # Vérifier que l'utilisateur est admin
-        if not current_user.is_authenticated or current_user.role != 'admin':
+        if not current_user.is_authenticated or not current_user.is_admin:
             return jsonify({
                 'success': False,
                 'error': 'Accès non autorisé'

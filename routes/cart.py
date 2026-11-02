@@ -29,11 +29,14 @@ def _wants_json():
         or request.accept_mimetypes.best == 'application/json'
 
 
-def _with_free_shipping(methods, subtotal, country, items=None):
-    """Livraison offerte en France dès le seuil, si la marge du panier reste positive une fois le port
-    le moins cher et les frais de carte payés : cette méthode passe alors à 0 €."""
-    if not methods or admin_cost_mode() or country not in current_app.config['FREE_SHIPPING_COUNTRIES'] \
-            or subtotal < current_app.config['FREE_SHIPPING_THRESHOLD']:
+def _with_free_shipping(methods, subtotal, country, items=None, coupon_shipping=False):
+    """Livraison offerte en France dès le seuil (ou partout avec un code « livraison offerte »), si la marge
+    du panier reste positive une fois le port le moins cher et les frais de carte payés : cette méthode
+    passe alors à 0 €. subtotal = sous-total après remise du code promo."""
+    if not methods or admin_cost_mode():
+        return methods
+    if not coupon_shipping and (country not in current_app.config['FREE_SHIPPING_COUNTRIES']
+                                or subtotal < current_app.config['FREE_SHIPPING_THRESHOLD']):
         return methods
     methods = [dict(m) for m in methods]
     cheapest = min(methods, key=lambda m: m['price'])
@@ -267,7 +270,10 @@ def get_checkout_shipping():
         from services.shipping_service import ShippingService
         shipping_service = ShippingService()
         result = shipping_service.calculate_shipping(shipping_items, country_code)
-        result['methods'] = _with_free_shipping(result.get('methods', []), cart.get_total_price(), country_code, items)
+        promo = _promo(items, cart.get_total_price())
+        result['methods'] = _with_free_shipping(result.get('methods', []), promo['net'], country_code, items,
+                                                promo['free_shipping'])
+        result['discount'] = promo['discount']
 
         return jsonify(result)
         
@@ -285,7 +291,45 @@ REQUIRED_FIELDS = {
 }
 
 
-def _shipping_price(items, country, method_code, subtotal):
+def _promo(items, subtotal, email=None):
+    """Code promo de la session appliqué au panier : remise, sous-total remisé, livraison offerte"""
+    from services import coupons
+    applied = coupons.current(items, subtotal, email)
+    discount = applied['discount'] if applied else 0.0
+    return {'code': applied['code'] if applied else None, 'discount': discount,
+            'net': round(subtotal - discount, 2), 'free_shipping': bool(applied and applied['free_shipping']),
+            'label': applied['label'] if applied else '', 'capped': bool(applied and applied['capped'])}
+
+
+@cart_bp.route('/coupon', methods=['POST'])
+def apply_coupon():
+    """Saisie d'un code promo au paiement"""
+    from services import coupons
+    data = request.get_json(silent=True) or request.form
+    cart = Cart()
+    items = cart.get_items_with_products()
+    if not items:
+        return jsonify({'success': False, 'message': 'Votre panier est vide.'}), 400
+    result = coupons.evaluate(coupons.find(data.get('code')), items, cart.get_total_price(), data.get('email'))
+    if result['error']:
+        session.pop(coupons.SESSION_KEY, None)
+        return jsonify({'success': False, 'message': result['error']}), 400
+    session[coupons.SESSION_KEY] = result['code']
+    message = 'Code %s appliqué' % result['code']
+    if result['capped']:
+        message += ' (remise plafonnée sur ce panier)'
+    return jsonify({'success': True, 'code': result['code'], 'discount': result['discount'],
+                    'free_shipping': result['free_shipping'], 'label': result['label'], 'message': message})
+
+
+@cart_bp.route('/coupon/remove', methods=['POST'])
+def remove_coupon():
+    from services import coupons
+    session.pop(coupons.SESSION_KEY, None)
+    return jsonify({'success': True})
+
+
+def _shipping_price(items, country, method_code, subtotal, coupon_shipping=False):
     """Prix de la méthode de livraison choisie, recalculé ici (jamais celui envoyé par le navigateur)."""
     from services.shipping_service import ShippingService
     shipping_items = [{
@@ -296,7 +340,7 @@ def _shipping_price(items, country, method_code, subtotal):
         'product': item['product'],
     } for item in items]
     result = ShippingService().calculate_shipping(shipping_items, country)
-    for method in _with_free_shipping(result.get('methods', []), subtotal, country, items):
+    for method in _with_free_shipping(result.get('methods', []), subtotal, country, items, coupon_shipping):
         if method.get('code') == method_code:
             return round(float(method['price']), 2)
     return None
@@ -388,7 +432,12 @@ def checkout():
             return redirect(url_for('cart.checkout'))
 
         country = form['country'] or 'FR'
-        shipping_cost = _shipping_price(items, country, form['shipping_method'], total)
+        promo = _promo(items, total, form['email'])
+        if session.get('coupon_code') and not promo['code']:
+            session.pop('coupon_code', None)
+            flash("Votre code promo n'est plus valable pour cette commande, il a été retiré.", 'warning')
+            return redirect(url_for('cart.checkout'))
+        shipping_cost = _shipping_price(items, country, form['shipping_method'], promo['net'], promo['free_shipping'])
         if shipping_cost is None:
             flash("Cette méthode de livraison n'est plus disponible, merci d'en choisir une autre.", 'error')
             return redirect(url_for('cart.checkout'))
@@ -402,7 +451,9 @@ def checkout():
                 subtotal=total,
                 shipping_cost=shipping_cost,
                 tax=0,
-                total_price=round(total + shipping_cost, 2),
+                total_price=round(promo['net'] + shipping_cost, 2),
+                discount_amount=promo['discount'],
+                coupon_code=promo['code'],
                 customer_email=form['email'],
                 customer_phone=form['phone'],
                 shipping_first_name=form['first_name'],
@@ -445,7 +496,7 @@ def checkout():
             flash('Une erreur est survenue, votre commande n\'a pas été enregistrée. Merci de réessayer.', 'error')
             return redirect(url_for('cart.checkout'))
 
-    return render_template('pages/checkout.html', cart_items=items, total=total,
+    return render_template('pages/checkout.html', cart_items=items, total=total, promo=_promo(items, total),
                            payment_enabled=ines_payment.enabled())
 
 
@@ -496,6 +547,7 @@ def payment_success():
             return redirect(url_for('cart.checkout'))
 
     Cart().clear()
+    session.pop('coupon_code', None)
     _remember_order(order.id)
     flash(f'Paiement reçu, merci ! Commande {order.order_number} confirmée.', 'success')
     return redirect(url_for('cart.order_confirmation', order_id=order.id))

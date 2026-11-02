@@ -152,6 +152,12 @@
                         <span>Sous-total</span>
                         <strong>{{ "%.2f"|format(order.subtotal) }}€</strong>
                     </div>
+                    {% if order.discount_amount %}
+                    <div class="order-detail-row">
+                        <span>Code {{ order.coupon_code }}</span>
+                        <strong class="text-success">-{{ "%.2f"|format(order.discount_amount) }}€</strong>
+                    </div>
+                    {% endif %}
                     
                     <div class="order-detail-row">
                         <span>Livraison</span>

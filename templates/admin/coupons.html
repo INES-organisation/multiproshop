@@ -1,0 +1,61 @@
+{% extends 'admin/layout_admin_modern.html' %}
+{% block title %}Codes promo{% endblock %}
+{% block content %}
+<div class="mb-4">
+    <h1 style="font-weight: 800; margin-bottom: 0.5rem;"><i class="fas fa-tags"></i> Codes promo</h1>
+    <p style="color: #999; margin: 0;">Le client saisit le code au paiement. La remise est plafonnée automatiquement pour ne jamais vendre sous le coût CJ et les frais de carte ; la livraison offerte n'est accordée que si la marge la couvre.</p>
+</div>
+
+<div class="admin-card mb-4">
+    <div class="admin-card-header"><h3 class="admin-card-title" style="margin: 0;">Nouveau code</h3></div>
+    <div class="admin-card-body">
+        <form method="POST" action="{{ url_for('admin.coupons') }}">
+            <div class="row g-3">
+                <div class="col-md-3"><label class="form-label">Code</label><input class="admin-form-control" name="code" required placeholder="BIENVENUE10" style="text-transform: uppercase;"></div>
+                <div class="col-md-3"><label class="form-label">Type</label>
+                    <select class="admin-form-control" name="kind">{% for k, v in kinds.items() %}<option value="{{ k }}">{{ v }}</option>{% endfor %}</select></div>
+                <div class="col-md-2"><label class="form-label">Valeur (% ou €)</label><input class="admin-form-control" name="value" inputmode="decimal" placeholder="10"></div>
+                <div class="col-md-2"><label class="form-label">Achat minimum (€)</label><input class="admin-form-control" name="min_subtotal" inputmode="decimal" placeholder="0"></div>
+                <div class="col-md-2"><label class="form-label">Utilisations max</label><input class="admin-form-control" name="max_uses" inputmode="numeric" placeholder="illimité"></div>
+                <div class="col-md-3"><label class="form-label">Début</label><input type="date" class="admin-form-control" name="starts_at"></div>
+                <div class="col-md-3"><label class="form-label">Fin (incluse)</label><input type="date" class="admin-form-control" name="ends_at"></div>
+                <div class="col-md-4"><label class="form-label">Note interne</label><input class="admin-form-control" name="note" maxlength="200" placeholder="ex. newsletter novembre"></div>
+                <div class="col-md-2 d-flex align-items-end"><label><input type="checkbox" name="once_per_email" checked> Une fois par client</label></div>
+            </div>
+            <button type="submit" class="admin-btn admin-btn-primary mt-3"><i class="fas fa-plus"></i> Créer le code</button>
+        </form>
+    </div>
+</div>
+
+<div class="admin-card">
+    <div class="admin-card-body" style="padding: 0; overflow-x: auto;">
+        <table class="admin-table">
+            <thead><tr><th>Code</th><th>Remise</th><th>Minimum</th><th>Validité</th><th>Utilisations</th><th>Remises accordées</th><th>État</th><th></th></tr></thead>
+            <tbody>
+                {% for c in coupons %}
+                {% set st = c.status() %}
+                <tr>
+                    <td><strong>{{ c.code }}</strong>{% if c.note %}<div style="font-size: 0.8rem; color: #999;">{{ c.note }}</div>{% endif %}</td>
+                    <td>{{ c.label() }}</td>
+                    <td>{{ "%.2f"|format(c.min_subtotal) }} €</td>
+                    <td style="font-size: 0.85rem;">{{ c.starts_at.strftime('%d/%m/%Y') if c.starts_at else '—' }} → {{ c.ends_at.strftime('%d/%m/%Y') if c.ends_at else '—' }}</td>
+                    <td>{{ c.uses }}{% if c.max_uses is not none %} / {{ c.max_uses }}{% endif %}{% if c.once_per_email %}<div style="font-size: 0.75rem; color: #999;">1 par client</div>{% endif %}</td>
+                    <td>{{ "%.2f"|format(totals.get(c.code) or 0) }} €</td>
+                    <td><span class="admin-badge {{ 'admin-badge-success' if st == 'actif' else 'admin-badge-warning' }}">{{ st }}</span></td>
+                    <td>
+                        <div class="admin-table-actions">
+                            <form method="POST" action="{{ url_for('admin.toggle_coupon', coupon_id=c.id) }}" style="display: inline;">
+                                <button class="admin-btn admin-btn-sm admin-btn-info" type="submit">{{ 'Désactiver' if c.active else 'Activer' }}</button></form>
+                            <form method="POST" action="{{ url_for('admin.delete_coupon', coupon_id=c.id) }}" style="display: inline;" onsubmit="return confirm('Supprimer ce code ?')">
+                                <button class="admin-btn admin-btn-sm admin-btn-danger" type="submit" title="Supprimer"><i class="fas fa-trash"></i></button></form>
+                        </div>
+                    </td>
+                </tr>
+                {% else %}
+                <tr><td colspan="8" style="text-align: center; padding: 2rem; color: #999;">Aucun code promo pour l'instant.</td></tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endblock %}

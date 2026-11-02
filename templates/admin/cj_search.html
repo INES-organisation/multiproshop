@@ -5,7 +5,7 @@
 {% block content %}
 <div class="mb-4">
     <h1 style="font-weight: 800; margin-bottom: 0.5rem;"><i class="fas fa-search"></i> Rechercher sur CJ</h1>
-    <p style="color: #999; margin: 0;">Catalogue CJ en direct. Les mots-clés en anglais donnent plus de résultats (drill, sunglasses, men watch…). Un produit importé arrive en brouillon : traduisez-le puis activez-le.</p>
+    <p style="color: #999; margin: 0;">Catalogue CJ en direct, par mot-clé et/ou par catégorie. Les mots-clés en anglais donnent plus de résultats (drill, sunglasses, men watch…). Un produit importé arrive en brouillon : traduisez-le puis activez-le.</p>
 </div>
 
 <div class="admin-card mb-4">
@@ -13,13 +13,19 @@
         <form method="GET" action="{{ url_for('admin.cj_search') }}">
             <div class="row g-3">
                 <div class="col-md-6">
-                    <input type="text" class="admin-form-control" name="q" value="{{ q }}" placeholder="ex. cordless drill" required>
+                    <input type="text" class="admin-form-control" name="q" value="{{ q }}" placeholder="ex. cordless drill (facultatif avec une catégorie)" aria-label="Mot-clé">
                 </div>
                 <div class="col-md-4">
                     <select class="admin-form-control" name="category" aria-label="Catégorie de destination">
-                        <option value="">Catégorie (pour la marge)</option>
+                        <option value="">Toutes les catégories CJ</option>
                         {% for c in categories %}
                         <option value="{{ c.id }}" {% if category and category.id == c.id %}selected{% endif %}>{{ c.name_fr or c.name }}</option>
+                        {% for c2 in c.children|sort(attribute='name') %}
+                        <option value="{{ c2.id }}" {% if category and category.id == c2.id %}selected{% endif %}>&nbsp;&nbsp;↳ {{ c2.name_fr or c2.name }}</option>
+                        {% for c3 in c2.children|sort(attribute='name') %}
+                        <option value="{{ c3.id }}" {% if category and category.id == c3.id %}selected{% endif %}>&nbsp;&nbsp;&nbsp;&nbsp;· {{ c3.name_fr or c3.name }}</option>
+                        {% endfor %}
+                        {% endfor %}
                         {% endfor %}
                     </select>
                 </div>
@@ -31,7 +37,8 @@
     </div>
 </div>
 
-{% if q %}
+{% if error %}<div class="alert alert-warning">{{ error }}</div>{% endif %}
+{% if q or category %}
 <div class="admin-card">
     <div class="admin-card-body" style="padding: 0; overflow-x: auto;">
         <table class="admin-table">
@@ -67,7 +74,7 @@
                     </td>
                 </tr>
                 {% else %}
-                <tr><td colspan="8" style="text-align: center; padding: 2rem; color: #999;">Aucun résultat CJ pour « {{ q }} »</td></tr>
+                <tr><td colspan="8" style="text-align: center; padding: 2rem; color: #999;">Aucun résultat CJ{% if q %} pour « {{ q }} »{% endif %}{% if category %} dans {{ category.name_fr or category.name }}{% endif %}</td></tr>
                 {% endfor %}
             </tbody>
         </table>

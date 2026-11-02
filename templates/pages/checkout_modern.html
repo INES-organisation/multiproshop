@@ -618,6 +618,19 @@
                         <strong>{{ "%.2f"|format(total) }}€</strong>
                     </div>
                     
+                    <div class="order-summary-item" id="discount-row" {% if not promo.code %}style="display: none;"{% endif %}>
+                        <span>Code <strong id="discount-code">{{ promo.code or '' }}</strong>
+                            <button type="button" class="btn btn-link btn-sm p-0 ms-1" id="coupon-remove" style="font-size: 0.8rem;">retirer</button></span>
+                        <strong class="text-success" id="summary-discount">{% if promo.discount %}-{{ "%.2f"|format(promo.discount) }}€{% elif promo.free_shipping %}Livraison offerte{% endif %}</strong>
+                    </div>
+                    <div class="mb-3" id="coupon-box" {% if promo.code %}style="display: none;"{% endif %}>
+                        <div class="d-flex gap-2">
+                            <input type="text" id="coupon-input" class="form-control form-control-sm" placeholder="Code promo" aria-label="Code promo" autocomplete="off" style="text-transform: uppercase;">
+                            <button type="button" class="btn btn-outline-secondary btn-sm" id="coupon-apply">Appliquer</button>
+                        </div>
+                        <small id="coupon-message" class="d-block mt-1"></small>
+                    </div>
+
                     <div class="order-summary-item">
                         <span>Livraison</span>
                         <strong id="summary-shipping">
@@ -719,6 +732,37 @@
 {% block extra_js %}
 <script>
 const SUBTOTAL = {{ total }};
+let DISCOUNT = {{ promo.discount or 0 }};
+let currentShipping = null;
+function applyCoupon() {
+    const input = document.getElementById('coupon-input');
+    const msg = document.getElementById('coupon-message');
+    const code = input.value.trim();
+    if (!code) return;
+    fetch({{ url_for('cart.apply_coupon')|tojson }}, {method: 'POST', headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({code: code, email: document.getElementById('checkout-email')?.value || ''})})
+    .then(r => r.json()).then(d => {
+        msg.className = 'd-block mt-1 ' + (d.success ? 'text-success' : 'text-danger');
+        msg.textContent = d.message;
+        if (!d.success) return;
+        DISCOUNT = d.discount || 0;
+        document.getElementById('discount-code').textContent = d.code;
+        document.getElementById('summary-discount').textContent = DISCOUNT > 0 ? '-' + DISCOUNT.toFixed(2) + '€' : 'Livraison offerte';
+        document.getElementById('discount-row').style.display = '';
+        document.getElementById('coupon-box').style.display = 'none';
+        loadShippingMethods();
+    }).catch(() => { msg.className = 'd-block mt-1 text-danger'; msg.textContent = 'Erreur, merci de réessayer.'; });
+}
+document.getElementById('coupon-apply')?.addEventListener('click', applyCoupon);
+document.getElementById('coupon-input')?.addEventListener('keydown', e => { if (e.key === 'Enter') { e.preventDefault(); applyCoupon(); } });
+document.getElementById('coupon-remove')?.addEventListener('click', () => {
+    fetch({{ url_for('cart.remove_coupon')|tojson }}, {method: 'POST'}).then(() => {
+        DISCOUNT = 0;
+        document.getElementById('discount-row').style.display = 'none';
+        const box = document.getElementById('coupon-box'); if (box) box.style.display = '';
+        loadShippingMethods();
+    });
+});
 document.getElementById('checkout-email')?.addEventListener('change', function () {
     if (this.checkValidity()) {
         fetch({{ url_for('cart.remember_email')|tojson }}, {method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({email: this.value})});
@@ -739,7 +783,8 @@ function selectShippingMethod(element, code, price) {
 
 function updateSummary(shippingCost) {
     const shipping = parseFloat(shippingCost) || 0;
-    const total = SUBTOTAL + shipping;
+    currentShipping = shipping;
+    const total = SUBTOTAL - DISCOUNT + shipping;
     
     const shippingEl = document.getElementById('summary-shipping');
     if (shipping === 0) {
