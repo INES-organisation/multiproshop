@@ -20,7 +20,7 @@
             {# Filtrer les enfants actifs en Python pour éviter les requêtes N+1 #}
             {% set active_children = category.children|selectattr('is_active')|selectattr('visible')|selectattr('id', 'in', menu_ids)|list %}
             <div class="sidebar-category">
-                <a href="{{ url_for('products.by_category', category_id=category.id) }}" class="category-main">
+                <a href="{{ url_for('products.category_products', category_id=category.id) }}" class="category-main">
                     {% if category.icon %}
                         <i class="fas {{ category.icon }}"></i>
                     {% else %}
@@ -38,7 +38,7 @@
                     {# Filtrer les sous-enfants actifs #}
                     {% set active_subchildren = subcategory.children|selectattr('is_active')|selectattr('visible')|selectattr('id', 'in', menu_ids)|list %}
                     <div class="subcategory-item">
-                        <a href="{{ url_for('products.by_category', category_id=subcategory.id) }}" class="subcategory-link">
+                        <a href="{{ url_for('products.category_products', category_id=subcategory.id) }}" class="subcategory-link">
                             <i class="fas fa-angle-right"></i>
                             <span>{{ subcategory.name }}</span>
                             {% if active_subchildren|length > 0 %}
@@ -51,7 +51,7 @@
                             {% for item in (active_subchildren|sort(attribute='name'))[:15] %}
                             {% set active_n4 = item.children|selectattr('is_active')|selectattr('visible')|selectattr('id', 'in', menu_ids)|list %}
                             <div class="sub-subcategory-item">
-                                <a href="{{ url_for('products.by_category', category_id=item.id) }}" class="sub-subcategory-link">
+                                <a href="{{ url_for('products.category_products', category_id=item.id) }}" class="sub-subcategory-link">
                                     <i class="fas fa-tag"></i>
                                     {{ item.name }}
                                     {% if active_n4|length > 0 %}
@@ -61,13 +61,13 @@
                                 {% if active_n4|length > 0 %}
                                 <div class="n4-categories">
                                     {% for n4 in (active_n4|sort(attribute='name'))[:10] %}
-                                    <a href="{{ url_for('products.by_category', category_id=n4.id) }}" class="n4-category-link">
+                                    <a href="{{ url_for('products.category_products', category_id=n4.id) }}" class="n4-category-link">
                                         <i class="fas fa-circle"></i>
                                         {{ n4.name }}
                                     </a>
                                     {% endfor %}
                                     {% if active_n4|length > 10 %}
-                                    <a href="{{ url_for('products.by_category', category_id=item.id) }}" class="see-more">
+                                    <a href="{{ url_for('products.category_products', category_id=item.id) }}" class="see-more">
                                         <i class="fas fa-plus"></i> Voir tout ({{ active_n4|length }})
                                     </a>
                                     {% endif %}
@@ -76,7 +76,7 @@
                             </div>
                             {% endfor %}
                             {% if active_subchildren|length > 15 %}
-                            <a href="{{ url_for('products.by_category', category_id=subcategory.id) }}" class="see-more">
+                            <a href="{{ url_for('products.category_products', category_id=subcategory.id) }}" class="see-more">
                                 <i class="fas fa-plus"></i> Voir tout ({{ active_subchildren|length }})
                             </a>
                             {% endif %}

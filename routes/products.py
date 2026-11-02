@@ -75,7 +75,8 @@ def category_products(category_id):
 # Alias pour la sidebar
 @products.route('/cat/<int:category_id>')
 def by_category(category_id):
-    return category_products(category_id)
+    # Une seule adresse par catégorie pour Google : /cat/ redirige définitivement vers /category/
+    return redirect(url_for('products.category_products', category_id=category_id, **request.args), code=301)
 
 @products.route('/<int:product_id>')
 @cache.cached(timeout=600, unless=personal_page)  # Cache 10 minutes, visiteurs anonymes

@@ -124,6 +124,34 @@ def decline_review(token):
     return redirect(url_for('main.index'))
 
 
+@main.route('/newsletter', methods=['POST'])
+def newsletter_subscribe():
+    """Inscription à la newsletter (pied de page) : code de bienvenue -10 % envoyé par e-mail"""
+    from flask import jsonify
+    from services import newsletter
+    data = request.get_json(silent=True) or request.form
+    if data.get('website'):  # champ caché anti-robot
+        return jsonify({'ok': True, 'message': 'Merci !'})
+    if not data.get('consent'):
+        return jsonify({'ok': False, 'message': "Cochez la case pour accepter de recevoir nos e-mails."}), 400
+    try:
+        sub, coupon, created = newsletter.subscribe(data.get('email'), source=(data.get('source') or 'site')[:40])
+    except ValueError as e:
+        return jsonify({'ok': False, 'message': str(e)}), 400
+    newsletter.send_welcome(sub, coupon, request.url_root.rstrip('/'))
+    message = (f"Merci ! Votre code -{int(coupon.value)} % vient de vous être envoyé par e-mail : {coupon.code}"
+               if created else f"Vous êtes déjà inscrit : nous vous renvoyons votre code par e-mail ({coupon.code}).")
+    return jsonify({'ok': True, 'message': message, 'code': coupon.code})
+
+
+@main.route('/newsletter/desinscription/<token>')
+def newsletter_unsubscribe(token):
+    from services import newsletter
+    newsletter.unsubscribe(token)
+    flash("Vous êtes désinscrit de la newsletter. Vous ne recevrez plus nos e-mails.", 'info')
+    return redirect(url_for('main.index'))
+
+
 # Anciennes pages de démonstration (contenu fictif) : redirigées vers le catalogue
 @main.route('/promotions')
 @main.route('/abonnements')

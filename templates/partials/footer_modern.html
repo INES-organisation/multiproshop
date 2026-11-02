@@ -141,6 +141,62 @@
         </div>
     </div>
 
+    <!-- Newsletter : code de bienvenue -10 % -->
+    <div class="footer-newsletter">
+        <div class="container">
+            <form class="newsletter-form" id="newsletter-form" novalidate>
+                <div class="newsletter-text">
+                    <strong><i class="fas fa-envelope-open-text"></i> -10 % sur votre première commande</strong>
+                    <span>Inscrivez-vous : le code arrive par e-mail. Nouveautés et offres, 2 e-mails par mois au plus.</span>
+                </div>
+                <div class="newsletter-fields">
+                    <input type="email" name="email" required placeholder="Votre adresse e-mail" autocomplete="email" aria-label="Adresse e-mail">
+                    <input type="text" name="website" tabindex="-1" autocomplete="off" class="nl-hp" aria-hidden="true">
+                    <button type="submit">Recevoir mon code</button>
+                </div>
+                <label class="newsletter-consent">
+                    <input type="checkbox" name="consent" value="1" required>
+                    J'accepte de recevoir les e-mails de MultiProShop. Désinscription en un clic dans chaque e-mail
+                    (<a href="{{ url_for('main.privacy') }}">confidentialité</a>).
+                </label>
+                <div class="newsletter-result" aria-live="polite"></div>
+            </form>
+        </div>
+    </div>
+    <style>
+        .footer-newsletter { background: rgba(255,255,255,.04); border-top: 1px solid rgba(255,255,255,.08); padding: 1.5rem 0; }
+        .newsletter-form { display: grid; gap: .6rem; }
+        .newsletter-text { display: flex; flex-direction: column; gap: .2rem; }
+        .newsletter-text span { opacity: .8; font-size: .9rem; }
+        .newsletter-fields { display: flex; gap: .5rem; flex-wrap: wrap; }
+        .newsletter-fields input[type=email] { flex: 1 1 240px; min-width: 0; padding: .65rem .9rem; border-radius: 8px; border: 1px solid #ccc; }
+        .newsletter-fields button { padding: .65rem 1.2rem; border: 0; border-radius: 8px; background: #f7a823; color: #1b1b1b; font-weight: 700; }
+        .newsletter-consent { font-size: .8rem; opacity: .85; display: flex; gap: .4rem; align-items: flex-start; }
+        .newsletter-consent a { color: inherit; text-decoration: underline; }
+        .newsletter-result { font-weight: 600; }
+        .nl-hp { position: absolute; left: -9999px; width: 1px; height: 1px; opacity: 0; }
+    </style>
+    <script>
+    (function () {
+        var form = document.getElementById('newsletter-form');
+        if (!form) return;
+        form.addEventListener('submit', function (e) {
+            e.preventDefault();
+            var out = form.querySelector('.newsletter-result');
+            var data = {email: form.email.value, consent: form.consent.checked, website: form.website.value, source: 'pied-de-page'};
+            out.textContent = 'Envoi…';
+            fetch('{{ url_for('main.newsletter_subscribe') }}', {method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify(data)})
+                .then(function (r) { return r.json(); })
+                .then(function (d) {
+                    out.textContent = d.message;
+                    if (d.ok) { form.querySelector('.newsletter-fields').style.display = 'none'; form.querySelector('.newsletter-consent').style.display = 'none';
+                        if (window.gtag) gtag('event', 'generate_lead', {method: 'newsletter'}); }
+                })
+                .catch(function () { out.textContent = 'Erreur réseau, réessayez.'; });
+        });
+    })();
+    </script>
+
     <!-- Payment Methods -->
     <div class="footer-payment">
         <div class="container">

@@ -1263,11 +1263,36 @@ def coupons():
             flash(f'Code {code} créé.', 'success')
         return redirect(url_for('admin.coupons'))
 
-    items = Coupon.query.order_by(Coupon.created_at.desc()).all()
+    # Les codes de bienvenue personnels de la newsletter sont résumés à part
+    items = Coupon.query.filter(db.or_(Coupon.note.is_(None), ~Coupon.note.like('newsletter %'))) \
+        .order_by(Coupon.created_at.desc()).all()
+    from models.newsletter import NewsletterSubscriber
+    nl = {'subscribers': NewsletterSubscriber.query.filter(NewsletterSubscriber.unsubscribed_at.is_(None)).count(),
+          'used': Coupon.query.filter(Coupon.note.like('newsletter %'), Coupon.uses > 0).count()}
     totals = dict(db.session.query(Order.coupon_code, db.func.sum(Order.discount_amount))
                   .filter(Order.payment_status == 'paid', Order.coupon_code.isnot(None))
                   .group_by(Order.coupon_code).all())
-    return render_template('admin/coupons.html', coupons=items, kinds=Coupon.KINDS, totals=totals)
+    return render_template('admin/coupons.html', coupons=items, kinds=Coupon.KINDS, totals=totals, nl=nl)
+
+
+@admin_bp.route('/newsletter.csv')
+@login_required
+@admin_required
+def newsletter_export():
+    """Inscrits actifs à la newsletter (pour un outil d'envoi type Brevo)"""
+    import csv
+    import io
+    from flask import Response
+    from models.newsletter import NewsletterSubscriber
+    out = io.StringIO()
+    writer = csv.writer(out, delimiter=';')
+    writer.writerow(['email', 'inscrit_le', 'source', 'code_bienvenue'])
+    for sub in NewsletterSubscriber.query.filter(NewsletterSubscriber.unsubscribed_at.is_(None)) \
+            .order_by(NewsletterSubscriber.created_at).all():
+        writer.writerow([sub.email, sub.created_at.strftime('%Y-%m-%d') if sub.created_at else '', sub.source or '',
+                         sub.coupon_code or ''])
+    return Response('\ufeff' + out.getvalue(), mimetype='text/csv',
+                    headers={'Content-Disposition': 'attachment; filename=newsletter.csv'})
 
 
 @admin_bp.route('/coupons/<int:coupon_id>/toggle', methods=['POST'])
