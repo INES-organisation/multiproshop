@@ -12,6 +12,17 @@
         box-shadow: 0 4px 12px rgba(0,0,0,0.15);
         transform: translateY(-5px);
     }
+    .card-actions {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 6px;
+    }
+    .card-actions .btn {
+        flex: 1 1 auto;
+        white-space: nowrap;
+        font-size: 0.8rem;
+        padding: 4px 6px;
+    }
     .product-image {
         width: 100%;
         height: 200px;
@@ -341,7 +352,15 @@ function togglePublish(productId, active, btn) {
     }).then(r => r.json()).then(d => {
         if (!d.success) { alert('Non publié : ' + d.message); if (btn) btn.disabled = false; return; }
         const p = allProducts.find(x => x.id === productId); if (p) { p.is_active = p.published = d.is_active; }
-        if (currentProduct && currentProduct.id === productId) currentProduct.is_active = d.is_active;
+        if (currentProduct && currentProduct.id === productId) {
+            currentProduct.is_active = d.is_active;
+            const pubBtn = document.getElementById('publishProductBtn');
+            if (pubBtn) {
+                pubBtn.disabled = false;
+                pubBtn.className = 'btn ' + (d.is_active ? 'btn-outline-warning' : 'btn-success');
+                pubBtn.innerHTML = d.is_active ? '<i class="fas fa-eye-slash"></i> Retirer de la boutique' : '<i class="fas fa-upload"></i> Publier';
+            }
+        }
         renderProducts(allProducts);
         loadGlobalStats();
     }).catch(e => { alert('Erreur réseau : ' + e); if (btn) btn.disabled = false; });
@@ -582,7 +601,7 @@ function renderProducts(products) {
         const marginCls = product.margin === null ? 'text-muted' : (product.margin > 0 ? 'text-success' : 'text-danger');
         html += `
             <div class="col-md-4">
-                <div class="card product-card h-100" data-product-id="${product.cj_pid}">
+                <div class="card product-card h-100" data-product-id="${product.cj_pid}" onclick="openCard(event, '${product.cj_pid}')" title="Voir le détail">
                     <div class="position-relative">
                         <img src="${product.image_url || '/static/images/default-product.jpg'}" 
                              class="product-image" alt="" loading="lazy" decoding="async">
@@ -598,15 +617,15 @@ function renderProducts(products) {
                             Prix <strong>${eur(product.price)}</strong> · coût ${eur(product.cost_price)}
                             · marge <strong class="${marginCls}">${eur(product.margin)}</strong>
                         </div>
-                        <div class="d-flex justify-content-between align-items-center gap-1">
-                            <small class="text-muted"><i class="bi bi-box"></i> ${product.stock}</small>
-                            <div class="d-flex gap-1">
-                                <button class="btn btn-sm ${product.is_active ? 'btn-outline-warning' : 'btn-success'}" onclick="togglePublish(${product.id}, ${!product.is_active}, this)">
-                                    ${product.is_active ? 'Retirer' : 'Publier'}
-                                </button>
-                                <a class="btn btn-sm btn-outline-secondary" href="/admin/products/edit/${product.id}" title="Modifier"><i class="bi bi-pencil"></i></a>
-                                <button class="btn btn-sm btn-outline-primary" onclick="showProductDetails('${product.cj_pid}')"><i class="bi bi-eye"></i></button>
-                            </div>
+                        <div class="d-flex justify-content-between align-items-center mb-2">
+                            <small class="text-muted"><i class="fas fa-box"></i> Stock ${product.stock}</small>
+                        </div>
+                        <div class="card-actions">
+                            <button type="button" class="btn btn-sm ${product.is_active ? 'btn-outline-warning' : 'btn-success'}" onclick="togglePublish(${product.id}, ${!product.is_active}, this)">
+                                <i class="fas ${product.is_active ? 'fa-eye-slash' : 'fa-upload'}"></i> ${product.is_active ? 'Retirer' : 'Publier'}
+                            </button>
+                            <a class="btn btn-sm btn-outline-secondary" href="/admin/products/edit/${product.id}"><i class="fas fa-pen"></i> Modifier</a>
+                            <button type="button" class="btn btn-sm btn-outline-primary" onclick="showProductDetails('${product.cj_pid}')"><i class="fas fa-search-plus"></i> Détails</button>
                         </div>
                     </div>
                 </div>
@@ -685,6 +704,12 @@ function updateStats(products) {
     // Cette fonction est conservée pour compatibilité mais ne fait plus rien
 }
 
+function openCard(event, pid) {
+    // Clic sur la carte : ouvre le détail, sauf sur un bouton ou un lien
+    if (event.target.closest('button, a, input, select')) return;
+    showProductDetails(pid);
+}
+
 function showProductDetails(pid) {
     currentProduct = allProducts.find(p => p.cj_pid === pid);
     if (!currentProduct) return;
@@ -714,6 +739,8 @@ function showProductDetails(pid) {
             modalBody.innerHTML = `<div class="alert alert-danger">Erreur réseau: ${error}</div>`;
         });
 }
+
+const euro = v => (v === null || v === undefined || v === '' || isNaN(v)) ? '—' : Number(v).toFixed(2).replace('.', ',') + ' €';
 
 function renderProductModal(p) {
     const modalBody = document.getElementById('productModalBody');
@@ -754,15 +781,15 @@ function renderProductModal(p) {
                 <table class="table table-sm table-bordered">
                     <tr>
                         <td><strong>Prix CJ (Coût)</strong></td>
-                        <td><span class="text-danger fw-bold">$${(p.cost_price || p.price || 0).toFixed(2)}</span></td>
+                        <td><span class="text-danger fw-bold">${euro(p.cost_price)}</span></td>
                     </tr>
                     <tr>
                         <td><strong>Prix de Vente</strong></td>
-                        <td><span class="text-success fw-bold">$${(p.price || 0).toFixed(2)}</span></td>
+                        <td><span class="text-success fw-bold">${euro(p.price)}</span></td>
                     </tr>
-                    ${p.suggested_price ? `<tr><td><strong>Prix Suggéré CJ</strong></td><td><span class="text-info">$${p.suggested_price.toFixed(2)}</span></td></tr>` : ''}
-                    ${p.compare_price ? `<tr><td><strong>Prix Barré</strong></td><td><del class="text-muted">$${p.compare_price.toFixed(2)}</del></td></tr>` : ''}
-                    ${profit ? `<tr class="table-success"><td><strong>Profit</strong></td><td><span class="text-success fw-bold">$${profit}</span> (${margin}%)</td></tr>` : ''}
+                    ${p.suggested_price ? `<tr><td><strong>Prix Suggéré CJ</strong></td><td><span class="text-info">${euro(p.suggested_price)}</span></td></tr>` : ''}
+                    ${p.compare_price ? `<tr><td><strong>Prix Barré</strong></td><td><del class="text-muted">${euro(p.compare_price)}</del></td></tr>` : ''}
+                    ${profit ? `<tr class="table-success"><td><strong>Profit</strong></td><td><span class="text-success fw-bold">${euro(profit)}</span> (${margin}%)</td></tr>` : ''}
                     ${discount > 0 ? `<tr class="table-warning"><td><strong>Réduction</strong></td><td><span class="text-warning fw-bold">-${discount}%</span></td></tr>` : ''}
                 </table>
                 
@@ -784,8 +811,7 @@ function renderProductModal(p) {
                     <tr>
                         <th>Statut</th>
                         <td>
-                            ${p.published ? '<span class="badge bg-success">Publié</span>' : '<span class="badge bg-secondary">Brouillon</span>'}
-                            ${p.is_active ? '<span class="badge bg-info ms-1">Actif</span>' : '<span class="badge bg-warning ms-1">Inactif</span>'}
+                            ${p.is_active ? '<span class="badge bg-success">En ligne</span>' : (p.published_at ? '<span class="badge bg-warning text-dark">Retiré</span>' : '<span class="badge bg-secondary">Jamais publié</span>')}
                         </td>
                     </tr>
                     ${p.weight ? `<tr><th>Poids</th><td>${p.weight}g</td></tr>` : ''}
@@ -835,7 +861,7 @@ function renderProductModal(p) {
                     <td>${imgHtml}</td>
                     <td><strong>${name}</strong></td>
                     <td><small class="font-monospace">${v.sku || 'N/A'}</small></td>
-                    <td><strong>$${(v.price || 0).toFixed(2)}</strong></td>
+                    <td><strong>${euro(v.price)}</strong></td>
                     <td>${v.stock > 0 ? `<span class="badge bg-success">${v.stock}</span>` : '<span class="badge bg-danger">0</span>'}</td>
                     <td><small>${v.weight ? v.weight + 'g' : 'N/A'}</small></td>
                 </tr>
@@ -872,6 +898,12 @@ function renderProductModal(p) {
     `;
     
     modalBody.innerHTML = html;
+    const pubBtn = document.getElementById('publishProductBtn');
+    if (pubBtn) {
+        pubBtn.disabled = false;
+        pubBtn.className = 'btn ' + (p.is_active ? 'btn-outline-warning' : 'btn-success');
+        pubBtn.innerHTML = p.is_active ? '<i class="fas fa-eye-slash"></i> Retirer de la boutique' : '<i class="fas fa-upload"></i> Publier';
+    }
 }
 
 // loadCjCompleteData n'est plus nécessaire - les données sont chargées depuis la BDD dans renderProductModal
