@@ -434,7 +434,7 @@ class CjSyncService:
             stats['products'] = {
                 'total': Product.query.filter(Product.cj_pid.isnot(None)).count(),
                 'synced': Product.query.filter(Product.synced_at.isnot(None)).count(),
-                'published': Product.query.filter(Product.published == True).count(),
+                'published': Product.query.filter(Product.cj_pid.isnot(None), Product.is_active == True).count(),
                 'in_stock': Product.query.filter(
                     Product.cj_pid.isnot(None),
                     Product.stock > 0

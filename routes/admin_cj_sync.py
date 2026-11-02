@@ -820,7 +820,8 @@ def get_product_details_from_db(product_id):
                 'width': product.width,
                 'height': product.height,
                 'material': product.material,
-                'published': product.published,
+                'published': product.is_active,
+                'published_at': product.published_at.isoformat() if product.published_at else None,
                 'is_active': product.is_active,
                 'rating_average': product.rating_average,
                 'rating_count': product.rating_count,
@@ -1455,7 +1456,8 @@ def publish_product(product_id):
     if active and not product.is_active:
         problem = _publish_problem(product)
         if problem:
-            return jsonify({'success': False, 'message': problem}), 400
+            db.session.commit()  # garder le stock et les tarifs relus chez CJ
+            return jsonify({'success': False, 'message': problem, 'stock': product.stock}), 400
     product.is_active = active
     if active and product.published_at is None:
         product.published_at = datetime.utcnow()
