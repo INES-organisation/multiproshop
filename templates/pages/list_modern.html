@@ -356,7 +356,7 @@
                                     <button class="category-toggle" onclick="toggleCategory({{ main_cat.id }})">
                                         <i class="fas fa-chevron-right toggle-icon" id="icon-{{ main_cat.id }}"></i>
                                     </button>
-                                    <a href="{{ url_for('products.by_category', category_id=main_cat.id) }}" class="category-link">
+                                    <a href="{{ url_for('products.category_products', category_id=main_cat.id) }}" class="category-link">
                                         {% if main_cat.icon %}
                                             <i class="fas {{ main_cat.icon }}"></i>
                                         {% else %}
@@ -380,7 +380,7 @@
                                             {% else %}
                                             <span class="subcategory-spacer"></span>
                                             {% endif %}
-                                            <a href="{{ url_for('products.by_category', category_id=sub_cat.id) }}" class="subcategory-link">
+                                            <a href="{{ url_for('products.category_products', category_id=sub_cat.id) }}" class="subcategory-link">
                                                 <i class="fas fa-angle-right"></i>
                                                 {{ sub_cat.name }}
                                                 {% if sub_children|length > 0 %}
@@ -400,7 +400,7 @@
                                                         <i class="fas fa-chevron-right toggle-icon-n4" id="icon-n4-{{ item_cat.id }}"></i>
                                                     </button>
                                                     {% endif %}
-                                                    <a href="{{ url_for('products.by_category', category_id=item_cat.id) }}" class="item-link">
+                                                    <a href="{{ url_for('products.category_products', category_id=item_cat.id) }}" class="item-link">
                                                         <i class="fas fa-tag"></i>
                                                         {{ item_cat.name }}
                                                         {% if n4_children|length > 0 %}
@@ -411,13 +411,13 @@
                                                 {% if n4_children|length > 0 %}
                                                 <div class="category-level4" id="cat-level4-{{ item_cat.id }}" style="display: none;">
                                                     {% for n4_cat in n4_children[:10] %}
-                                                    <a href="{{ url_for('products.by_category', category_id=n4_cat.id) }}" class="n4-link">
+                                                    <a href="{{ url_for('products.category_products', category_id=n4_cat.id) }}" class="n4-link">
                                                         <i class="fas fa-circle"></i>
                                                         {{ n4_cat.name }}
                                                     </a>
                                                     {% endfor %}
                                                     {% if n4_children|length > 10 %}
-                                                    <a href="{{ url_for('products.by_category', category_id=item_cat.id) }}" class="see-all-link">
+                                                    <a href="{{ url_for('products.category_products', category_id=item_cat.id) }}" class="see-all-link">
                                                         <i class="fas fa-plus-circle"></i>
                                                         Voir tout ({{ n4_children|length }})
                                                     </a>
@@ -427,7 +427,7 @@
                                             </div>
                                             {% endfor %}
                                             {% if sub_children|length > 15 %}
-                                            <a href="{{ url_for('products.by_category', category_id=sub_cat.id) }}" class="see-all-link">
+                                            <a href="{{ url_for('products.category_products', category_id=sub_cat.id) }}" class="see-all-link">
                                                 <i class="fas fa-plus-circle"></i>
                                                 Voir tout ({{ sub_children|length }})
                                             </a>

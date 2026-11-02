@@ -355,6 +355,7 @@ function togglePublish(productId, active, btn) {
         method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({active: active})
     }).then(r => r.json()).then(d => {
         if (!d.success) { alert('Non publié : ' + d.message); renderProducts(allProducts); return; }
+        if (d.queued && d.message) alert(d.message);
         const p = allProducts.find(x => x.id === productId); if (p) { p.is_active = p.published = d.is_active; }
         if (currentProduct && currentProduct.id === productId) {
             currentProduct.is_active = d.is_active;

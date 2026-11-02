@@ -7,7 +7,7 @@ logger = logging.getLogger(__name__)
 
 KINDS = {
     'order': 'Commande payée', 'cj_order_error': 'Commande CJ en échec', 'stock': 'Rupture',
-    'margin': 'Marge', 'dispute': 'Litige CJ', 'cj_status': 'Suivi CJ',
+    'margin': 'Marge', 'dispute': 'Litige CJ', 'cj_status': 'Suivi CJ', 'publication': 'Publication',
 }
 
 

@@ -1458,9 +1458,14 @@ def publish_product(product_id):
         if problem:
             db.session.commit()  # garder le stock et les tarifs relus chez CJ
             return jsonify({'success': False, 'message': problem, 'stock': product.stock}), 400
-    product.is_active = active
-    if active and product.published_at is None:
-        product.published_at = datetime.utcnow()
+    state = 'live'
+    if active and not product.is_active:
+        from services.publication import go_live
+        state = go_live(product)
+    else:
+        product.is_active = active
     db.session.commit()
     cache.delete('menu_category_ids')
-    return jsonify({'success': True, 'is_active': product.is_active})
+    message = ('Vérifications CJ faites. Claude rédige la fiche en français : le produit passera en ligne '
+               'dans une minute environ (notification à la clé).') if state == 'queued' else None
+    return jsonify({'success': True, 'is_active': product.is_active, 'queued': state == 'queued', 'message': message})

@@ -7,6 +7,7 @@
 Chaque appel CJ prend un créneau partagé (environ 1,3 s) : on borne le nombre de variantes relues
 et on respecte une échéance pour rester sous le délai de la requête web.
 """
+import json
 import logging
 import math
 import time
@@ -71,6 +72,79 @@ def _late(deadline):
     return deadline is not None and time.time() > deadline
 
 
+def _clean_images(images):
+    out = []
+    for im in images or []:
+        if isinstance(im, str) and im.strip().startswith('['):
+            try:
+                parsed = json.loads(im)
+                out.extend(parsed if isinstance(parsed, list) else [im])
+            except ValueError:
+                out.append(im)
+        elif im:
+            out.append(im)
+    seen = set()
+    return [u for u in out if not (u in seen or seen.add(u))]
+
+
+def enrich(product, api):
+    """Complète la fiche depuis CJ (product/query, 1 appel) sans écraser ce qui a été saisi en boutique :
+    description, photos, poids, matière, données brutes (noms d'options), coût par variante, variantes
+    ajoutées chez CJ (inactives si le produit en avait déjà), couleur/taille réparées depuis la clé CJ.
+    Renvoie la fiche CJ, ou None si CJ ne répond pas."""
+    from models.product_variant import ProductVariant
+    from utils.variant_keys import product_key_names, repair_variant, split_variant_key
+    try:
+        details = api.get_product_details(product.cj_pid)
+    except Exception as e:
+        logger.warning(f'[Publication] Fiche CJ {product.cj_pid} illisible : {e}')
+        details = None
+    if not details:
+        return None
+    if details.get('description') and not (product.description or '').strip():
+        product.description = details['description']
+    images = _clean_images(details.get('images'))
+    if images and not product.get_images_list():
+        product.set_images_list(images)
+    if images and not product.image_url:
+        product.image_url = images[0]
+    if details.get('weight') and not product.weight:
+        try:
+            product.weight = float(details['weight'])
+        except (TypeError, ValueError):
+            pass
+    if details.get('material') and not getattr(product, 'material', None):
+        product.material = details['material']
+    if details.get('raw_data'):
+        product.cj_raw_data = json.dumps(details['raw_data'], default=str, ensure_ascii=False)
+    names = product_key_names(product)
+    existing = {v.cj_vid: v for v in ProductVariant.query.filter_by(product_id=product.id).all() if v.cj_vid}
+    had_variants = bool(existing)
+    for cj in details.get('variants') or []:
+        vid = cj.get('vid')
+        if not vid:
+            continue
+        raw = {k: cj.get(k) for k in ('vid', 'key', 'sku', 'price', 'suggested_price', 'image', 'weight', 'variantNameEn')}
+        variant = existing.get(vid)
+        if variant is None:
+            parsed = split_variant_key(cj.get('key'), names) or (cj.get('key') or None, None)
+            variant = ProductVariant(product_id=product.id, cj_vid=vid, variant_key=cj.get('key') or None,
+                                     color=parsed[0], size=parsed[1], price=None, stock=0,
+                                     image_url=cj.get('image') or product.image_url, sku=cj.get('sku') or None,
+                                     weight=cj.get('weight') or None, active=not had_variants)
+            from extensions import db
+            db.session.add(variant)
+        else:
+            variant.variant_key = variant.variant_key or cj.get('key') or None
+            variant.sku = variant.sku or cj.get('sku') or None
+            variant.weight = cj.get('weight') or variant.weight
+        variant.cj_raw_data = json.dumps(raw, ensure_ascii=False)  # coût CJ à jour (models.cart.cost_price)
+        repair_variant(variant, names)
+    from extensions import db
+    db.session.flush()
+    return details
+
+
 def refresh_stock(product, api, deadline=None):
     """Relit le stock CJ des variantes actives. Renvoie un motif de refus, ou None."""
     variants = [v for v in _active_variants(product) if v.cj_vid]
@@ -124,6 +198,8 @@ def prepare(product, deadline=None, reprice=True):
     except Exception as e:
         logger.warning(f'[Publication] API CJ indisponible : {e}')
         return 'API CJ indisponible, impossible de vérifier le stock. Réessayez plus tard.'
+    if enrich(product, api) is None:
+        logger.info(f'[Publication] Fiche CJ indisponible pour {product.cj_pid} : publication sans enrichissement')
     problem = refresh_stock(product, api, deadline)
     if problem:
         return problem
@@ -133,3 +209,77 @@ def prepare(product, deadline=None, reprice=True):
     if reprice and product.published_at is None:
         apply_grid(product)
     return None
+
+
+PENDING_KEY = 'copy_pending:%d'
+
+
+def copy_pending(product_id):
+    from extensions import cache
+    try:
+        return bool(cache.get(PENDING_KEY % product_id))
+    except Exception:
+        return False
+
+
+def _queue(product_id):
+    from tasks.publication_tasks import write_and_publish as task
+    task.delay(product_id)
+
+
+def go_live(product):
+    """À appeler quand les vérifications sont passées. Première publication d'une fiche encore en anglais :
+    le produit reste hors ligne le temps que Claude rédige la fiche (tâche de fond, ~30 s), puis passe en
+    ligne. Renvoie 'live' ou 'queued'."""
+    from services import ai_copy
+    from extensions import cache
+    if product.published_at is None and ai_copy.enabled() and not ai_copy.looks_french(product):
+        if not copy_pending(product.id):
+            cache.set(PENDING_KEY % product.id, 1, timeout=600)
+            try:
+                _queue(product.id)
+            except Exception as e:
+                cache.delete(PENDING_KEY % product.id)
+                logger.error(f'[Publication] File de tâches indisponible : {e}')
+                raise
+        return 'queued'
+    product.is_active = True
+    if product.published_at is None:
+        product.published_at = datetime.utcnow()
+    return 'live'
+
+
+def write_and_publish(product_id):
+    """Tâche de fond : rédaction par Claude, puis mise en ligne. En cas d'échec, le produit reste hors ligne
+    et une notification explique quoi faire."""
+    from extensions import db, cache
+    from models.product import Product
+    from services import ai_copy
+    from services.notifications import notify
+    product = db.session.get(Product, product_id)
+    if product is None:
+        return {'error': 'produit introuvable'}
+    url = f'/admin/products/edit/{product.id}'
+    try:
+        data = ai_copy.generate(product)
+        ai_copy.apply(product, data)
+    except Exception as e:
+        db.session.rollback()
+        notify('publication', f'Non publié : {product.name[:80]}',
+               f'Rédaction de la fiche impossible ({e}). Rédigez le titre et la description en français dans la fiche, '
+               'puis publiez-le : il passera en ligne sans nouvelle rédaction.', url=url, level='warning',
+               dedupe=f'copy:{product.id}')
+        cache.delete(PENDING_KEY % product.id)
+        return {'error': str(e)}
+    product.is_active = True
+    product.published_at = product.published_at or datetime.utcnow()
+    db.session.commit()
+    cache.delete(PENDING_KEY % product.id)
+    cache.delete('menu_category_ids')
+    try:
+        cache.delete(f'flask_cache_view//products/{product.id}')
+    except Exception:
+        pass
+    notify('publication', f'En ligne : {product.name[:80]}', 'Fiche rédigée en français par Claude, à relire si besoin.',
+           url=url, level='info')
+    return {'published': product.id}

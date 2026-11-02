@@ -33,6 +33,7 @@ def make_celery(app_name=__name__):
             'tasks.review_request_tasks',
             'tasks.shipping_rate_tasks',
             'tasks.notification_tasks',
+            'tasks.publication_tasks',
         ]
     )
     

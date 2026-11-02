@@ -7,6 +7,10 @@
 {% block extra_css %}
 <link rel="stylesheet" href="{{ url_for('static', filename='css/pages_modern.css') }}?v=3">
 <link rel="stylesheet" href="{{ url_for('static', filename='css/product_detail.css') }}">
+<style>
+    .card-modern-body .d-flex > .feature-icon-wrapper { margin: 0; flex: 0 0 50px; width: 50px; height: 50px; font-size: 1.3rem; border-radius: 12px; }
+    .card-modern-body .d-flex > .feature-icon-wrapper + div { flex: 1; text-align: left; }
+</style>
 <link rel="stylesheet" href="{{ url_for('static', filename='css/product_variants.css') }}">
 <style>
 .product-detail-image {
@@ -312,12 +316,12 @@
                 {% if product.stock > 10 %}
                 <div class="stock-indicator in-stock mb-3">
                     <i class="fas fa-check-circle"></i>
-                    En stock ({{ product.stock }} disponibles)
+                    En stock
                 </div>
                 {% elif product.stock > 0 %}
                 <div class="stock-indicator low-stock mb-3">
                     <i class="fas fa-exclamation-triangle"></i>
-                    Stock limité ({{ product.stock }} restants)
+                    Plus que {{ product.stock }} en stock
                 </div>
                 {% else %}
                 <div class="stock-indicator out-of-stock mb-3">
@@ -920,10 +924,10 @@ function selectVariant(element) {
     if (stockIndicator) {
         if (variantStock > 10) {
             stockIndicator.className = 'stock-indicator in-stock mb-3';
-            stockIndicator.innerHTML = '<i class="fas fa-check-circle"></i> En stock (' + variantStock + ' disponibles)';
+            stockIndicator.innerHTML = '<i class="fas fa-check-circle"></i> En stock';
         } else if (variantStock > 0) {
             stockIndicator.className = 'stock-indicator low-stock mb-3';
-            stockIndicator.innerHTML = '<i class="fas fa-exclamation-triangle"></i> Stock limité (' + variantStock + ' restants)';
+            stockIndicator.innerHTML = '<i class="fas fa-exclamation-triangle"></i> Plus que ' + variantStock + ' en stock';
         } else {
             stockIndicator.className = 'stock-indicator out-of-stock mb-3';
             stockIndicator.innerHTML = '<i class="fas fa-times-circle"></i> Rupture de stock';

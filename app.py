@@ -99,6 +99,7 @@ def create_app(config_name='development'):
     # Créer les tables
     from models.coupon import Coupon
     from models.admin_notification import AdminNotification
+    from models.newsletter import NewsletterSubscriber
     with app.app_context():
         db.create_all()
         _add_missing_columns()
