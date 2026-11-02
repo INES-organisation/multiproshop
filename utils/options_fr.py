@@ -177,3 +177,34 @@ def translate_option(label):
     text = _TERM_RE.sub(lambda m: TERMS[re.sub(r'\s+', ' ', m.group(1).lower())], text)
     text = _swap(re.sub(r'\s+', ' ', text).strip(' .'))
     return text[:1].upper() + text[1:] if text else label
+
+
+_SIZE_WORD = re.compile(r'^(\d?x{0,3}[sl]|xxs|xs|m|eu|us|uk|cm|mm|ml|pcs|pc)$', re.I)
+
+
+def _french_vocab():
+    words = set()
+    for value in list(TERMS.values()) + list(_SIMPLE_COLORS.values()) + list(_FEMININE.values()):
+        words.update(w.lower() for w in re.findall(rf'[{_L}’\']+', value))
+    words |= _NOUNS_F | _NOUNS_M | _FR_COLORS | {'et', 'de', 'des', 'du', 'la', 'le', 'les', 'avec', 'sans', 'pour', 'en'}
+    return words
+
+
+_FR_VOCAB = None
+
+
+def needs_translation(label):
+    """Le traducteur local laisse-t-il des mots anglais (ou inconnus) dans ce libellé ?
+    Sert à n'envoyer à DeepL que ce qu'il ne sait pas traduire."""
+    global _FR_VOCAB
+    if _FR_VOCAB is None:
+        _FR_VOCAB = _french_vocab()
+    if not label or not isinstance(label, str):
+        return False
+    if len([w for w in re.findall(rf'[{_L}]+', label) if len(w) >= 2]) >= 3:
+        return True  # expression (« Coffee cup set ») : le mot à mot local ne suffit pas
+    for word in re.findall(rf'[{_L}]+', translate_option(label)):
+        w = word.lower()
+        if len(w) >= 3 and w not in _FR_VOCAB and not _SIZE_WORD.match(w) and not word.isupper():
+            return True
+    return False

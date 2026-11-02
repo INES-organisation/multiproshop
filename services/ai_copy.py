@@ -140,11 +140,12 @@ def option_labels(product):
     return labels[:60]
 
 
-def generate(product):
-    """Textes français pour un produit (dict validé). Lève CopyError si INES ou Claude échoue."""
+def generate(product, with_options=True):
+    """Textes français pour un produit (dict validé). Lève CopyError si INES ou Claude échoue.
+    with_options=False : les libellés d'options sont déjà traduits (DeepL), Claude ne les reçoit pas."""
     if not enabled():
         raise CopyError('INES_API_KEY absente : rédaction par Claude impossible')
-    options = option_labels(product)
+    options = option_labels(product) if with_options else []
     prompt = PROMPT.format(
         name=product.name, category=product.category.name if product.category else '',
         material=product.material or '', options=' | '.join(options) or 'aucune',

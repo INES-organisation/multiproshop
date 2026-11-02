@@ -243,9 +243,11 @@ def go_live(product):
                 logger.error(f'[Publication] File de tâches indisponible : {e}')
                 raise
         return 'queued'
-    product.is_active = True
     if product.published_at is None:
+        from services.translate import translate_options
+        translate_options(product)  # libellés encore en anglais : DeepL s'il est configuré dans INES
         product.published_at = datetime.utcnow()
+    product.is_active = True
     return 'live'
 
 
@@ -260,8 +262,10 @@ def write_and_publish(product_id):
     if product is None:
         return {'error': 'produit introuvable'}
     url = f'/admin/products/edit/{product.id}'
+    from services.translate import translate_options
+    options_done = translate_options(product) is not None  # DeepL d'abord pour les libellés, Claude sinon
     try:
-        data = ai_copy.generate(product)
+        data = ai_copy.generate(product, with_options=not options_done)
         ai_copy.apply(product, data)
     except Exception as e:
         db.session.rollback()
@@ -277,7 +281,7 @@ def write_and_publish(product_id):
     cache.delete(PENDING_KEY % product.id)
     cache.delete('menu_category_ids')
     try:
-        cache.delete(f'flask_cache_view//products/{product.id}')
+        cache.delete(f'view//products/{product.id}')  # Flask-Caching ajoute lui-même le préfixe flask_cache_
     except Exception:
         pass
     notify('publication', f'En ligne : {product.name[:80]}', 'Fiche rédigée en français par Claude, à relire si besoin.',
