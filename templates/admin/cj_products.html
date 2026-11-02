@@ -1032,7 +1032,7 @@ function syncProducts() {
         overlay.classList.remove('show');
         
         if (data.success) {
-            alert(`✓ ${data.synced} produits synchronisés`);
+            alert('✓ ' + data.message);
             loadProducts();
         } else {
             showError('Erreur: ' + data.message);

@@ -87,6 +87,25 @@ def sync_categories():
         }), 500
 
 
+def _cj_category_id(category_id):
+    """La page envoie l'identifiant de la catégorie de la boutique (« 1550 ») ou « all » ; CJ attend le sien
+    (cj_category_id ou correspondance category_mapping). Renvoie l'identifiant CJ, None pour tout le
+    catalogue, ou (None, message) si la catégorie n'a pas d'équivalent CJ."""
+    if not category_id or str(category_id) == 'all':
+        return None
+    if not str(category_id).isdigit():
+        return str(category_id)  # déjà un identifiant CJ
+    from models.category import Category
+    from routes.admin import _cj_category_for
+    category = db.session.get(Category, int(category_id))
+    if category is None:
+        return None, 'Catégorie introuvable.'
+    cj_id, message = _cj_category_for(category)
+    if cj_id:
+        return cj_id
+    return None, message or f"La catégorie « {category.name} » n'est liée à aucune catégorie CJ (voir Correspondances)."
+
+
 @bp.route('/sync/products', methods=['POST'])
 @login_required
 def sync_products():
@@ -99,6 +118,10 @@ def sync_products():
         data = request.get_json() or {}
         category_id = data.get('category_id')
         limit = data.get('limit', 100)
+        cj_category = _cj_category_id(category_id)
+        if isinstance(cj_category, tuple):
+            return jsonify({'success': False, 'synced': 0, 'message': cj_category[1]}), 400
+        category_id = cj_category
         
         logger.info(f"[Admin] Demande sync produits (cat: {category_id}, limit: {limit})")
         

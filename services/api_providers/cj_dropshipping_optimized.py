@@ -434,7 +434,9 @@ class CJDropshippingApiOptimized:
             response = self._make_request('GET', 'product/list', params=params)
             
             if not response or response.get('result') is False:
-                return {'products': [], 'total': 0, 'page': page}
+                # error : distingue « CJ n'a pas répondu » d'une catégorie vraiment vide
+                return {'products': [], 'total': 0, 'page': page,
+                        'error': (response or {}).get('message') or "CJ n'a pas répondu"}
             
             data = response.get('data', {})
             products_list = data.get('list', [])
@@ -455,7 +457,7 @@ class CJDropshippingApiOptimized:
             
         except Exception as e:
             logger.error(f"[CJ API] Erreur get_products: {e}")
-            return {'products': [], 'total': 0, 'page': page}
+            return {'products': [], 'total': 0, 'page': page, 'error': str(e)}
     
     def get_products_v2(self, page: int = 1, page_size: int = 20, keyword: str = None, category_id: str = None) -> Dict:
         """
