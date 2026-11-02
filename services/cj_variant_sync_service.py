@@ -131,6 +131,13 @@ class CjVariantSyncService:
             color = v.get('color') or None
             size = v.get('size') or v.get('variantSize') or None
             
+            if not color and not size and variant_key:
+                # La clé CJ (« Khaki-4XL ») ne contient que les options ; le nom contient aussi le titre du produit
+                from utils.variant_keys import split_variant_key
+                parsed = split_variant_key(variant_key)
+                if parsed:
+                    color, size = parsed
+
             if not color and not size and variant_name:
                 parts = variant_name.split('-') if '-' in variant_name else variant_name.split()
                 if len(parts) >= 2:

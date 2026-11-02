@@ -869,11 +869,13 @@ def edit_product(product_id):
             if product.is_active and not was_active:
                 # Même contrôles que le bouton Publier ; un prix saisi à la main n'est pas remplacé par la grille
                 problem = _publish_problem(product, reprice=abs((old_price or 0) - product.price) < 0.005)
+                product.is_active = False
                 if problem:
-                    product.is_active = False
                     flash(f'Modifications enregistrées, mais produit non publié : {problem}', 'error')
-                elif product.published_at is None:
-                    product.published_at = datetime.utcnow()
+                else:
+                    from services.publication import go_live
+                    if go_live(product) == 'queued':
+                        flash('Claude rédige la fiche en français : le produit passera en ligne dans une minute environ.', 'info')
             product.is_featured = 'is_featured' in request.form
             product.is_new = 'is_new' in request.form
             
@@ -932,14 +934,21 @@ def toggle_product_status(product_id):
             db.session.commit()  # garder le stock et les tarifs relus chez CJ
             flash(f'« {product.name} » non activé : {problem}', 'error')
             return redirect(request.referrer if (request.referrer or '').find('/admin/') >= 0 else url_for('admin.products'))
-    product.is_active = not product.is_active
-    if product.is_active and product.published_at is None:
-        product.published_at = datetime.utcnow()  # activé depuis l'admin : il rejoint la sélection en ligne
+    state = 'live'
+    if product.is_active:
+        product.is_active = False
+    else:
+        from services.publication import go_live
+        state = go_live(product)
     
     try:
         db.session.commit()
-        status = "activé" if product.is_active else "désactivé"
-        flash(f'Produit "{product.name}" {status} !', 'success')
+        if state == 'queued':
+            flash(f'« {product.name} » : vérifications CJ faites, Claude rédige la fiche en français. '
+                  'Le produit passera en ligne dans une minute environ.', 'info')
+        else:
+            status = "activé" if product.is_active else "désactivé"
+            flash(f'Produit "{product.name}" {status} !', 'success')
     except Exception as e:
         db.session.rollback()
         flash(f'Erreur: {str(e)}', 'error')
@@ -1173,6 +1182,7 @@ def bulk_products():
     else:
         refused = []
         changed = 0
+        queued = 0
         import time as _time
         deadline = _time.time() + 40  # chaque produit CJ coûte des appels CJ : rester sous le délai web
         for p in products:
@@ -1181,11 +1191,17 @@ def bulk_products():
                 if problem:
                     refused.append(f'#{p.id} ({problem})')
                     continue
-            p.is_active = action == 'activate'
-            if p.is_active and p.published_at is None:
-                p.published_at = datetime.utcnow()
+            if action == 'activate' and not p.is_active:
+                from services.publication import go_live
+                if go_live(p) == 'queued':
+                    queued += 1
+                    continue
+            else:
+                p.is_active = action == 'activate'
             changed += 1
         message = f"{changed} produit(s) {'activé(s)' if action == 'activate' else 'désactivé(s)'}"
+        if queued:
+            message += f" ; {queued} en cours de rédaction par Claude, en ligne d'ici quelques minutes"
         if refused:
             flash('Non activés : ' + ' ; '.join(refused[:10]) + (' …' if len(refused) > 10 else ''), 'error')
     db.session.commit()
