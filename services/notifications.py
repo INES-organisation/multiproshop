@@ -8,6 +8,7 @@ logger = logging.getLogger(__name__)
 KINDS = {
     'order': 'Commande payée', 'cj_order_error': 'Commande CJ en échec', 'stock': 'Rupture',
     'margin': 'Marge', 'dispute': 'Litige CJ', 'cj_status': 'Suivi CJ', 'publication': 'Publication',
+    'error': 'Erreur du site', 'backup': 'Sauvegarde',
 }
 
 
@@ -22,6 +23,8 @@ def notify(kind, title, message=None, url=None, level='info', dedupe=None, commi
         db.session.add(n)
         if commit:
             db.session.commit()
+        if level == 'danger':
+            _email_admins(n)
         return n
     except Exception as e:  # noqa: BLE001
         logger.error("Notification non enregistrée (%s) : %s", title, e)
@@ -30,6 +33,26 @@ def notify(kind, title, message=None, url=None, level='info', dedupe=None, commi
         except Exception:  # noqa: BLE001
             pass
         return None
+
+
+def _email_admins(n):
+    """Une alerte « danger » (paiement, commande CJ, erreur au panier, sauvegarde) part aussi par e-mail
+    aux administrateurs : la cloche de l'admin ne suffit pas si personne ne s'y connecte."""
+    try:
+        from flask import current_app
+        if current_app.testing:
+            return
+        from models.role import Role
+        from models.user import User
+        from markupsafe import escape
+        from utils.email import send_email
+        emails = [u.email for u in User.query.join(Role).filter(Role.name == 'admin').all() if u.email]
+        link = f'<p><a href="https://multiproshop.com{n.url}">Ouvrir dans l\'admin</a></p>' if n.url else ''
+        for email in emails:
+            send_email(subject=f'[MultiProShop] {n.title}', to=email,
+                       html=f'<p><strong>{escape(n.title)}</strong></p><p>{escape(n.message or "")}</p>{link}')
+    except Exception as e:  # noqa: BLE001
+        logger.error("Alerte e-mail non envoyée (%s) : %s", n.title, e)
 
 
 def unread_count():

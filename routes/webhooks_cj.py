@@ -3,8 +3,10 @@ Routes pour les webhooks CJ Dropshipping
 Réception et traitement des notifications en temps réel
 """
 from flask import Blueprint, request, jsonify
-import logging
+import hmac
 import json
+import logging
+import os
 
 logger = logging.getLogger(__name__)
 
@@ -32,6 +34,16 @@ def webhook_message():
     - VARIANT: Mise à jour variante
     - ORDERSPLIT: Division commande
     """
+    # CJ ne signe pas ses webhooks : l'adresse déclarée chez CJ porte un jeton secret
+    # (…/webhooks/cj/message?token=<CJ_WEBHOOK_TOKEN>). Sans lui, n'importe qui pourrait marquer
+    # une commande expédiée ou annulée et déclencher des e-mails clients.
+    expected = os.getenv('CJ_WEBHOOK_TOKEN', '')
+    if expected:
+        if not hmac.compare_digest(request.args.get('token', ''), expected):
+            logger.warning(f"Webhook CJ refusé : jeton absent ou faux ({request.remote_addr})")
+            return jsonify({'success': False, 'error': 'forbidden'}), 403
+    else:
+        logger.warning("CJ_WEBHOOK_TOKEN non défini : webhook CJ accepté sans vérification")
     try:
         # Récupérer les données (format JSON uniquement)
         if not request.is_json:

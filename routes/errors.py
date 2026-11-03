@@ -42,5 +42,25 @@ def handle_exception(error):
     # En production, logger l'erreur
     import logging
     logging.error(f'Unhandled exception: {error}', exc_info=True)
+    _alert(error)
     
     return render_template('errors/500.html'), 500
+
+
+def _alert(error):
+    """Erreur 500 → notification dans l'admin (cloche), une seule par page et type d'erreur tant qu'elle
+    n'est pas lue : une erreur au panier ou au paiement ne doit plus passer inaperçue."""
+    from flask import current_app
+    if current_app.testing:
+        return
+    try:
+        import traceback
+        from services.notifications import notify
+        where = f"{request.method} {request.path}"
+        level = 'danger' if request.path.startswith(('/cart', '/checkout', '/paiement', '/webhooks')) else 'warning'
+        last = traceback.extract_tb(error.__traceback__)[-1] if error.__traceback__ else None
+        origin = f" ({last.filename.rsplit('/', 1)[-1]}:{last.lineno})" if last else ''
+        notify('error', f'Erreur 500 : {where}'[:200], f'{type(error).__name__} : {error}'[:500] + origin,
+               level=level, dedupe=f'err:{request.path}:{type(error).__name__}'[:120])
+    except Exception:  # noqa: BLE001 — l'alerte ne doit jamais aggraver l'erreur
+        pass

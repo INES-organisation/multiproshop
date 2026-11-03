@@ -56,3 +56,16 @@ Mise à jour : `cd /opt/multiproshop && git pull && docker compose -f deploy/doc
 
 Retour arrière : retirer le bloc nginx et recharger nginx, puis
 `docker compose -f deploy/docker-compose.yml down` (la base et les images envoyées sont conservées).
+
+## Sécurité et sauvegardes
+
+- **Webhook CJ** : définir `CJ_WEBHOOK_TOKEN` (chaîne aléatoire, ex. `openssl rand -hex 24`) dans `deploy/.env`,
+  puis déclarer chez CJ l'adresse `https://multiproshop.com/webhooks/cj/message?token=<CJ_WEBHOOK_TOKEN>`
+  (`CJ_WEBHOOK_URL=… python scripts/setup_cj_webhooks.py`). Sans jeton, les webhooks sont acceptés avec un
+  avertissement dans les logs ; avec, tout appel sans le bon jeton reçoit 403.
+- **Sauvegarde** : `deploy/backup.sh` (pg_dump quotidien, 14 jours gardés dans `/home/ubuntu/multiproshop-backups`),
+  en cron : `15 4 * * * /opt/multiproshop/deploy/backup.sh >> /home/ubuntu/multiproshop-backups/backup.log 2>&1`.
+  Copie hors VPS : configurer un remote `rclone` puis `BACKUP_RCLONE_REMOTE=<remote>:<dossier>` dans `deploy/.env`.
+  Un échec crée une alerte « Sauvegarde » dans l'admin et un e-mail aux administrateurs.
+- **Alertes** : toute erreur 500 crée une notification admin (une par page et type d'erreur tant qu'elle n'est
+  pas lue) ; les alertes « danger » (panier, paiement, commande CJ, sauvegarde) partent aussi par e-mail.
