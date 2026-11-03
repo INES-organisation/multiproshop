@@ -2,8 +2,6 @@
 Configuration pytest pour les tests
 """
 import pytest
-import os
-import tempfile
 from app import create_app
 from extensions import db
 from models.user import User
@@ -13,35 +11,19 @@ from models.category import Category
 
 @pytest.fixture
 def app():
-    """Créer une instance de l'application pour les tests"""
-    # Créer un fichier de base de données temporaire
-    db_fd, db_path = tempfile.mkstemp()
-    
-    # Configuration de test
-    test_config = {
-        'TESTING': True,
-        'SQLALCHEMY_DATABASE_URI': f'sqlite:///{db_path}',
-        'SECRET_KEY': 'test-secret-key',
-        'WTF_CSRF_ENABLED': False,  # Désactiver CSRF pour les tests
-        'SERVER_NAME': 'localhost.localdomain'
-    }
-    
-    # Créer l'application
-    app = create_app()
-    app.config.update(test_config)
-    
-    # Créer les tables
+    """Application de test : config « testing » (SQLite en mémoire), base remise à zéro à chaque test.
+    L'ancienne version modifiait SQLALCHEMY_DATABASE_URI après create_app(), trop tard : le moteur
+    était déjà créé, et les données s'accumulaient d'un test à l'autre."""
+    app = create_app('testing')
+    app.config.update({'TESTING': True, 'WTF_CSRF_ENABLED': False})
     with app.app_context():
+        db.drop_all()
         db.create_all()
-        
-        # Créer des données de test
         _create_test_data()
-    
     yield app
-    
-    # Nettoyage
-    os.close(db_fd)
-    os.unlink(db_path)
+    with app.app_context():
+        db.session.remove()
+        db.drop_all()
 
 
 @pytest.fixture
@@ -114,6 +96,8 @@ def _create_test_data():
     # Créer des produits
     product1 = Product(
         name='iPhone 13',
+        slug='iphone-13',
+        sku='IPHONE-13',
         description='Smartphone Apple',
         price=799.99,
         stock=10,
@@ -122,6 +106,8 @@ def _create_test_data():
     )
     product2 = Product(
         name='T-Shirt',
+        slug='t-shirt',
+        sku='T-SHIRT',
         description='T-shirt en coton',
         price=19.99,
         stock=50,
@@ -130,6 +116,8 @@ def _create_test_data():
     )
     product3 = Product(
         name='Produit inactif',
+        slug='produit-inactif',
+        sku='PRODUIT-INACTIF',
         description='Produit désactivé',
         price=9.99,
         stock=0,
