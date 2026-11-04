@@ -261,6 +261,7 @@ def register_blueprints(app):
     from routes.health import health_bp
     from routes.api_docs import api_docs_bp
     from routes.faq import faq_bp
+    from routes.partner_api import partner_api
     
     app.register_blueprint(shipping_bp)
     app.register_blueprint(product_variants_bp)
@@ -268,6 +269,7 @@ def register_blueprints(app):
     app.register_blueprint(health_bp)
     app.register_blueprint(api_docs_bp)
     app.register_blueprint(faq_bp)
+    app.register_blueprint(partner_api)  # sites partenaires WAO (tonyalpha80.com…)
     
     # === BLUEPRINTS DE TEST (seulement en dev) ===
     if app.config.get('DEBUG', False):
