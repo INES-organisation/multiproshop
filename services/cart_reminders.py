@@ -105,7 +105,7 @@ def send_due(now=None):
                                total=sum(l['price'] * l['quantity'] for l in lines),
                                restore_url=f'{site_url}/cart/reprendre/{reminder.token}',
                                stop_url=f'{site_url}/cart/relances/stop/{reminder.token}')
-        if _send_via_ines(reminder.email, SUBJECTS[step], html):
+        if _send_via_ines(reminder.email, SUBJECTS[step], html, 'panier'):
             reminder.steps_sent = step + 1
             reminder.last_sent_at = now
             sent += 1

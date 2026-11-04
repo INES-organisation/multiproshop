@@ -72,7 +72,7 @@ def send_due(now=None, limit=50):
         html = render_template('emails/review_request.html', order=order, items=items,
                                review_url=f'{site_url}/avis/{request_.token}',
                                stop_url=f'{site_url}/avis/{request_.token}/non-merci')
-        if _send_via_ines(order.customer_email, SUBJECT, html):
+        if _send_via_ines(order.customer_email, SUBJECT, html, 'avis'):
             request_.sent_at = now
             sent += 1
         else:

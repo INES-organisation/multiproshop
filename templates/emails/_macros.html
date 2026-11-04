@@ -1,0 +1,15 @@
+{# Éléments communs des e-mails (mise en page : utils/email.py layout()). Styles en ligne obligatoires. #}
+{% macro button(label, url) -%}
+<table role="presentation" cellpadding="0" cellspacing="0" style="margin:8px 0 22px;"><tr>
+<td style="background:#f59e0b;border-radius:8px;"><a href="{{ url }}" style="display:inline-block;padding:14px 28px;font-size:15px;font-weight:700;color:#1f2937;text-decoration:none;">{{ label }}</a></td>
+</tr></table>
+{%- endmacro %}
+{% macro box() -%}
+<div style="margin:0 0 20px;padding:16px 20px;background:#faf8f4;border:1px solid #ece7dc;border-radius:10px;color:#1f2937;">{{ caller() }}</div>
+{%- endmacro %}
+{% macro product_line(name, detail, image_url) -%}
+<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="border-bottom:1px solid #ece7dc;"><tr>
+{% if image_url %}<td width="64" style="padding:10px 12px 10px 0;"><img src="{{ image_url }}" width="56" height="56" alt="" style="display:block;border-radius:8px;object-fit:cover;"></td>{% endif %}
+<td style="padding:10px 0;font-size:14px;color:#1f2937;"><strong>{{ name }}</strong>{% if detail %}<br><span style="color:#4b5563;">{{ detail }}</span>{% endif %}</td>
+</tr></table>
+{%- endmacro %}
