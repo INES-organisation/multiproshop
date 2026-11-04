@@ -19,7 +19,8 @@ compress = Compress()
 def _add_missing_columns():
     """db.create_all ne modifie pas les tables existantes : colonnes ajoutées depuis, créées ici une fois"""
     from sqlalchemy import inspect, text
-    wanted = {'order': [('discount_amount', 'FLOAT DEFAULT 0'), ('coupon_code', 'VARCHAR(40)')]}
+    wanted = {'order': [('discount_amount', 'FLOAT DEFAULT 0'), ('coupon_code', 'VARCHAR(40)')],
+              'user': [('ines_sub', 'VARCHAR(64)')]}
     try:
         inspector = inspect(db.engine)
         for table, columns in wanted.items():
@@ -28,6 +29,8 @@ def _add_missing_columns():
                 if name not in existing:
                     with db.engine.begin() as conn:
                         conn.execute(text(f'ALTER TABLE "{table}" ADD COLUMN {name} {ddl}'))
+        with db.engine.begin() as conn:
+            conn.execute(text('CREATE UNIQUE INDEX IF NOT EXISTS ix_user_ines_sub ON "user" (ines_sub)'))
     except Exception as e:  # un autre processus l'a peut-être ajoutée au même moment
         print(f"[schema] colonnes non ajoutées : {e}")
 
