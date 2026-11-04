@@ -65,6 +65,8 @@ class Product(db.Model):
     cj_raw_data = db.Column(db.Text, nullable=True)  # Données brutes CJ (JSON) pour audit
     cj_last_sync = db.Column(db.DateTime, nullable=True)  # Dernière sync complète CJ
     stock_checked = db.Column(db.Boolean, default=False)  # True si stock vérifié par API CJ
+    # Vitrines (projets) qui affichent ce produit, ex. « tonyalpha,digita » : /api/catalog/<projet>
+    projects = db.Column(db.String(200), nullable=True)
     
     # Dates
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
