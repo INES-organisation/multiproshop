@@ -39,7 +39,10 @@ def webhook_message():
     # une commande expédiée ou annulée et déclencher des e-mails clients.
     expected = os.getenv('CJ_WEBHOOK_TOKEN', '')
     if expected:
-        if not hmac.compare_digest(request.args.get('token', ''), expected):
+        # En-tête X-CJ-Webhook-Token (renvoi par le hub INES : le jeton n'apparaît pas dans les journaux
+        # d'accès) ou ?token= (adresse déclarée directement chez CJ, qui n'envoie pas d'en-tête)
+        given = request.headers.get('X-CJ-Webhook-Token') or request.args.get('token', '')
+        if not hmac.compare_digest(given, expected):
             logger.warning(f"Webhook CJ refusé : jeton absent ou faux ({request.remote_addr})")
             return jsonify({'success': False, 'error': 'forbidden'}), 403
     else:

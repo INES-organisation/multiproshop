@@ -64,7 +64,8 @@ Retour arrière : retirer le bloc nginx et recharger nginx, puis
   et la file d'1 appel/s communs à toutes les boutiques. Sans la variable, appels directs à CJ comme avant.
 - **Webhook CJ** : définir `CJ_WEBHOOK_TOKEN` (chaîne aléatoire, ex. `openssl rand -hex 24`) dans `deploy/.env`.
   Avec le hub, c'est INES qui reçoit les webhooks du compte CJ et les renvoie ici : saisir dans INES
-  › Intégrations `MULTIPROSHOP_CJ_FORWARD_URL = https://multiproshop.com/webhooks/cj/message?token=<CJ_WEBHOOK_TOKEN>`.
+  › Intégrations `MULTIPROSHOP_CJ_FORWARD_URL = https://multiproshop.com/webhooks/cj/message` et
+  `MULTIPROSHOP_CJ_FORWARD_TOKEN = <CJ_WEBHOOK_TOKEN>` (envoyé en en-tête `X-CJ-Webhook-Token`, absent des journaux).
   Sans jeton, les webhooks sont acceptés avec un avertissement dans les logs ; avec, tout appel sans le bon
   jeton reçoit 403.
 - **Sauvegarde** : `deploy/backup.sh` (pg_dump quotidien, 14 jours gardés dans `/home/ubuntu/multiproshop-backups`),
