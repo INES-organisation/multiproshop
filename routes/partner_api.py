@@ -60,8 +60,16 @@ def _visible():
     return Product.query.filter(Product.published.is_(True), Product.is_active.is_(True))
 
 
+def _stock(product, variant=None):
+    """Même règle que le panier MPS : sans stock connu pour la variante (CJ ne le donne pas
+    toujours), celui du produit."""
+    if variant is not None and (variant.stock or 0) > 0:
+        return variant.stock
+    return product.stock or 0
+
+
 def _variant_json(v):
-    return {'id': v.id, 'color': v.color, 'size': v.size, 'price': v.price, 'stock': v.stock or 0,
+    return {'id': v.id, 'color': v.color, 'size': v.size, 'price': v.price, 'stock': _stock(v.product, v),
             'image_url': v.image_url}
 
 
@@ -143,7 +151,7 @@ def _items(raw):
                 raise ValueError(f'Variante indisponible pour « {p.name} »')
         elif any(v.active for v in p.variants):
             raise ValueError(f'Choisissez une option pour « {p.name} »')
-        stock = (variant.stock if variant else p.stock) or 0
+        stock = _stock(p, variant)
         if stock < qty:
             raise ValueError(f'Stock insuffisant pour « {p.name} »')
         price = variant.price if variant and variant.price else p.price

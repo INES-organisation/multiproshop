@@ -121,3 +121,15 @@ def test_confirm_and_list(client, app, payment, monkeypatch):
     assert client.post('/api/partner/orders/confirm', headers=AUTH, json={'session_id': 'autre'}).status_code == 404
     orders = client.get('/api/partner/orders?email=marie@example.re', headers=AUTH).get_json()['orders']
     assert [o['order_number'] for o in orders] == [data['order_number']]
+
+
+def test_variant_without_stock_uses_product_stock(client, app):
+    from models.product_variant import ProductVariant
+    with app.app_context():
+        p = Product.query.filter_by(name='T-Shirt').first()
+        db.session.add(ProductVariant(product_id=p.id, cj_vid='V1', color='Noir', size='M', price=21.0, stock=0))
+        db.session.commit()
+        pid, vid = p.id, ProductVariant.query.first().id
+    assert client.get(f'/api/partner/products/{pid}').get_json()['variants'][0]['stock'] == 50
+    r = client.post('/api/partner/shipping', headers=AUTH, json={'items': [{'product_id': pid, 'variant_id': vid}]})
+    assert r.status_code == 200 and r.get_json()['subtotal'] == 21.0
