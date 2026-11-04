@@ -226,6 +226,8 @@ class CJDropshippingApiOptimized:
         Returns:
             Dict avec la réponse ou None si échec
         """
+        if os.getenv('CJ_VIA_INES') == '1':
+            return self._via_ines(method, endpoint, **kwargs)
         token = self.get_access_token()
         if not token:
             return None
@@ -349,6 +351,25 @@ class CJDropshippingApiOptimized:
         
         return None
     
+    def _via_ines(self, method: str, endpoint: str, **kwargs) -> Optional[Dict]:
+        """Appel CJ à travers le hub d'INES (CJ_VIA_INES=1) : INES détient le compte CJ, son jeton et la
+        file d'attente d'1 appel/s, communs à toutes les boutiques. Même réponse JSON que CJ en direct,
+        None en cas d'échec (comme _make_request)."""
+        url = os.getenv('INES_API_URL', 'http://ines-backend:8000').rstrip('/') + '/api/v1/external/cj/api/' + endpoint.lstrip('/')
+        body = kwargs.get('json', kwargs.get('data'))
+        try:
+            r = requests.request(method.upper(), url, params={**(kwargs.get('params') or {}), 'site': 'multiproshop'},
+                                 json=body if method.upper() == 'POST' else None,
+                                 headers={'Authorization': 'Bearer ' + os.getenv('INES_API_KEY', '')},
+                                 timeout=15 if self.fail_fast else 60)  # le hub attend jusqu'à 20 s son tour
+        except requests.RequestException as e:
+            logger.error(f"[CJ via INES] {method} {endpoint} : {e}")
+            return None
+        if r.status_code != 200:
+            logger.warning(f"[CJ via INES] {method} {endpoint} : HTTP {r.status_code} {r.text[:200]}")
+            return None
+        return r.json()
+
     def get_categories(self) -> List[Dict]:
         """
         Récupérer les catégories CJ avec structure hiérarchique

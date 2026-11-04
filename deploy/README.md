@@ -59,10 +59,14 @@ Retour arrière : retirer le bloc nginx et recharger nginx, puis
 
 ## Sécurité et sauvegardes
 
-- **Webhook CJ** : définir `CJ_WEBHOOK_TOKEN` (chaîne aléatoire, ex. `openssl rand -hex 24`) dans `deploy/.env`,
-  puis déclarer chez CJ l'adresse `https://multiproshop.com/webhooks/cj/message?token=<CJ_WEBHOOK_TOKEN>`
-  (`CJ_WEBHOOK_URL=… python scripts/setup_cj_webhooks.py`). Sans jeton, les webhooks sont acceptés avec un
-  avertissement dans les logs ; avec, tout appel sans le bon jeton reçoit 403.
+- **CJ via le hub INES** : `CJ_VIA_INES=1` dans `deploy/.env` fait passer tous les appels CJ par INES
+  (`/api/v1/external/cj/api/…?site=multiproshop`, avec `INES_API_KEY`) : INES détient le compte CJ, son jeton
+  et la file d'1 appel/s communs à toutes les boutiques. Sans la variable, appels directs à CJ comme avant.
+- **Webhook CJ** : définir `CJ_WEBHOOK_TOKEN` (chaîne aléatoire, ex. `openssl rand -hex 24`) dans `deploy/.env`.
+  Avec le hub, c'est INES qui reçoit les webhooks du compte CJ et les renvoie ici : saisir dans INES
+  › Intégrations `MULTIPROSHOP_CJ_FORWARD_URL = https://multiproshop.com/webhooks/cj/message?token=<CJ_WEBHOOK_TOKEN>`.
+  Sans jeton, les webhooks sont acceptés avec un avertissement dans les logs ; avec, tout appel sans le bon
+  jeton reçoit 403.
 - **Sauvegarde** : `deploy/backup.sh` (pg_dump quotidien, 14 jours gardés dans `/home/ubuntu/multiproshop-backups`),
   en cron : `15 4 * * * /opt/multiproshop/deploy/backup.sh >> /home/ubuntu/multiproshop-backups/backup.log 2>&1`.
   Copie hors VPS : configurer un remote `rclone` puis `BACKUP_RCLONE_REMOTE=<remote>:<dossier>` dans `deploy/.env`.
