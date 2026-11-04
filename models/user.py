@@ -10,6 +10,7 @@ class User(UserMixin, db.Model):
     password_hash = db.Column(db.String(255), nullable=False)
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
     role_id = db.Column(db.Integer, db.ForeignKey('role.id'))
+    ines_sub = db.Column(db.String(64), unique=True, nullable=True)  # compte WAO lié (« Se connecter avec INES »)
     
     def set_password(self, password):
         self.password_hash = generate_password_hash(password)

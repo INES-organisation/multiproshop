@@ -241,6 +241,14 @@
                                     Créer mon compte
                                 </button>
                             </form>
+{% if ines_sso_enabled %}
+                            <div class="text-center mt-3" style="color:#666;">ou</div>
+                            <a href="{{ url_for('auth.ines_start') }}" class="btn-modern w-100 btn-modern-lg mt-3" style="display:block;text-align:center;text-decoration:none;border:2px solid var(--primary-color);color:var(--primary-color);background:transparent;">
+                                <i class="fas fa-user-circle"></i>
+                                Se connecter avec INES
+                            </a>
+                            <p class="text-center mt-2" style="color:#666;font-size:.85rem;">Un seul compte WAO pour INES, DIGITA, MultiProShop et Tony Alpha.</p>
+                            {% endif %}
                             
                             <!-- Links -->
                             <div class="text-center mt-4">
