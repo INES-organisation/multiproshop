@@ -20,6 +20,7 @@ stripe==7.8.0
 Pillow==10.1.0
 APScheduler==3.10.4
 celery==5.3.4
+kombu==5.3.7  # épinglé : kombu 5.6+ exige redis-py ≥ 6.1, le worker ne démarre plus avec redis 5.0.1
 redis==5.0.1
 psutil==5.9.6
 prometheus-client==0.19.0
