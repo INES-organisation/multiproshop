@@ -1,46 +1,13 @@
-<!DOCTYPE html>
-<html lang="fr">
-<head>
-    <meta charset="UTF-8">
-    <style>
-        body { font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; }
-        .header { background: linear-gradient(135deg, #10b981 0%, #059669 100%); color: white; padding: 30px; text-align: center; border-radius: 10px 10px 0 0; }
-        .content { background: #f9f9f9; padding: 30px; border-radius: 0 0 10px 10px; }
-        .info-box { background: white; padding: 20px; border-radius: 8px; margin: 20px 0; }
-        .button { display: inline-block; padding: 12px 30px; background: #10b981; color: white; text-decoration: none; border-radius: 5px; }
-    </style>
-</head>
-<body>
-    <div class="header">
-        <h1>📦 Commande Expédiée !</h1>
-    </div>
-    <div class="content">
-        <p>Bonjour <strong>{{ order.shipping_first_name }}</strong>,</p>
-        <p>Bonne nouvelle ! Votre commande <strong>{{ order.order_number }}</strong> a été expédiée.</p>
-        
-        {% set tracking_number = tracking_number or order.cj_tracking_number %}
-        {% if tracking_number %}
-        <div class="info-box">
-            <p><strong>Numéro de suivi{% if order.cj_logistics_name %} ({{ order.cj_logistics_name }}){% endif %} :</strong> {{ tracking_number }}<br>
-            <a href="https://t.17track.net/fr#nums={{ tracking_number|urlencode }}">Suivre le colis</a></p>
-        </div>
-        {% endif %}
-        
-        <div class="info-box">
-            <p><strong>Adresse de livraison :</strong><br>
-            {{ order.shipping_address }}<br>
-            {{ order.shipping_postal_code }} {{ order.shipping_city }}</p>
-        </div>
-        
-        <p>Le colis arrive en général sous <strong>{{ delivery_days }}</strong> après l'expédition. Le suivi peut mettre 2 à 3 jours à s'activer.</p>
-        
-        <center>
-            <a href="{{ site_url }}/suivi-commande" class="button">Suivre ma commande</a>
-        </center>
-        
-        <p style="text-align: center; color: #999; font-size: 12px; margin-top: 30px;">
-            Merci de votre confiance !<br>L'équipe MultiProShop
-        </p>
-    </div>
-</body>
-</html>
+{% from 'emails/_macros.html' import button, box %}
+<p style="margin:0 0 16px;">Bonjour {{ order.shipping_first_name }},</p>
+<p style="margin:0 0 20px;">Bonne nouvelle : votre commande <strong style="color:#1f2937;">{{ order.order_number }}</strong> est en route.</p>
+{% set tracking_number = tracking_number or order.cj_tracking_number %}
+{% if tracking_number %}
+{% call box() %}<span style="color:#4b5563;font-size:13px;">Numéro de suivi{% if order.cj_logistics_name %} · {{ order.cj_logistics_name }}{% endif %}</span><br><strong style="font-size:17px;letter-spacing:.03em;">{{ tracking_number }}</strong>{% endcall %}
+{{ button('Suivre mon colis', 'https://t.17track.net/fr#nums=' ~ (tracking_number|urlencode)) }}
+{% endif %}
+{% call box() %}<span style="color:#4b5563;font-size:13px;">Adresse de livraison</span><br>{{ order.shipping_address }}<br>{{ order.shipping_postal_code }} {{ order.shipping_city }}{% endcall %}
+<p style="margin:0 0 16px;">Le colis arrive en général sous <strong style="color:#1f2937;">{{ delivery_days }}</strong> après l'expédition. Le suivi peut mettre 2 à 3 jours à s'activer.</p>
+{% if tracking_number %}<p style="margin:0 0 16px;"><a href="{{ site_url }}/suivi-commande" style="color:#b45309;font-weight:600;">Voir ma commande sur MultiProShop →</a></p>
+{% else %}{{ button('Suivre ma commande', site_url ~ '/suivi-commande') }}{% endif %}
+<p style="margin:0 0 16px;">Merci de votre confiance,<br><strong style="color:#1f2937;">L'équipe MultiProShop</strong></p>

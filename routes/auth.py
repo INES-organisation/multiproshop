@@ -1,6 +1,7 @@
 from flask import Blueprint, render_template, redirect, url_for, flash, request
 from flask_login import login_user, logout_user, login_required, current_user
 from services.auth_service import AuthService
+from services import ines_sso
 
 auth = Blueprint('auth', __name__, url_prefix='/auth')
 
@@ -20,7 +21,7 @@ def register():
             flash(message)
             return redirect(url_for('auth.register'))
     
-    return render_template('pages/register.html')
+    return render_template('pages/register.html', ines_sso_enabled=ines_sso.enabled())
 
 @auth.route('/connexion', methods=['GET', 'POST'])
 def login():
@@ -36,7 +37,52 @@ def login():
         else:
             flash(message)
     
-    return render_template('pages/login.html')
+    return render_template('pages/login.html', ines_sso_enabled=ines_sso.enabled())
+
+# « Se connecter avec INES » (connexion unique WAO, 04/11/2026). Compte retrouvé par son
+# identifiant INES, sinon lié par e-mail (INES ne transmet que des e-mails vérifiés), sinon créé
+# sans mot de passe utilisable (la personne peut en définir un par « mot de passe oublié »).
+@auth.route('/ines')
+def ines_start():
+    from flask import session
+    if not ines_sso.enabled():
+        return redirect(url_for('auth.login'))
+    return redirect(ines_sso.authorize_url(session, url_for('auth.ines_callback', _external=True)))
+
+
+def _user_from_ines(info):
+    import re
+    import secrets
+    from extensions import db
+    from models.user import User
+    user = User.query.filter_by(ines_sub=info['sub']).first()
+    if user:
+        return user
+    user = User.query.filter(db.func.lower(User.email) == info['email']).first()
+    if not user:
+        base = re.sub(r'[^A-Za-z0-9._-]', '', info.get('preferred_username') or info['email'].split('@')[0])[:40] or 'client'
+        username = base
+        while User.query.filter_by(username=username).first():
+            username = f"{base}-{secrets.token_hex(2)}"
+        user = User(username=username, email=info['email'])
+        user.set_password(secrets.token_urlsafe(32))
+        db.session.add(user)
+    user.ines_sub = info['sub']
+    db.session.commit()
+    return user
+
+
+@auth.route('/ines/callback')
+def ines_callback():
+    from flask import session
+    try:
+        info, _ = ines_sso.fetch_identity(session, request.args)
+    except ines_sso.SSOError as e:
+        flash(str(e))
+        return redirect(url_for('auth.login'))
+    login_user(_user_from_ines(info))
+    return redirect(url_for('main.index'))
+
 
 @auth.route('/admin-login', methods=['GET', 'POST'])
 def admin_login():

@@ -1,64 +1,15 @@
-<!DOCTYPE html>
-<html lang="fr">
-<head>
-    <meta charset="UTF-8">
-    <style>
-        body { font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; color: #1f2937; }
-        .header { background: #1f2937; color: white; padding: 24px; text-align: center; border-radius: 10px 10px 0 0; }
-        .content { background: #f9f9f9; padding: 24px; border-radius: 0 0 10px 10px; }
-        .line { display: table; width: 100%; background: white; border-radius: 8px; margin: 10px 0; padding: 10px; }
-        .line img { width: 70px; height: 70px; object-fit: cover; border-radius: 6px; vertical-align: middle; }
-        .line span { vertical-align: middle; padding-left: 10px; }
-        .button { display: inline-block; padding: 14px 32px; background: #10b981; color: white; text-decoration: none; border-radius: 6px; font-weight: bold; }
-        .small { color: #6b7280; font-size: 12px; text-align: center; margin-top: 24px; }
-    </style>
-</head>
-<body>
-    <div class="header">
-        <h1 style="margin: 0; font-size: 22px;">
-            {% if step == 0 %}Vous avez oublié quelque chose ?{% elif step == 1 %}Votre panier est toujours là{% else %}Dernier rappel pour votre panier{% endif %}
-        </h1>
-    </div>
-    <div class="content">
-        {% if step == 0 %}
-        <p>Bonjour,</p>
-        <p>Vous avez laissé ces articles dans votre panier sur MultiProShop. Nous les avons gardés pour vous :</p>
-        {% elif step == 1 %}
-        <p>Bonjour,</p>
-        <p>Une hésitation ? Vos articles vous attendent toujours :</p>
-        {% else %}
-        <p>Bonjour,</p>
-        <p>Votre panier ne sera plus gardé très longtemps et le stock de nos fournisseurs bouge vite :</p>
-        {% endif %}
-
-        {% for line in lines %}
-        <div class="line">
-            {% if line.product.image_url %}<img src="{{ line.product.image_url }}" alt="">{% endif %}
-            <span><strong>{{ line.product.name }}</strong>{% if line.variant %} ({{ line.variant.display_name }}){% endif %}<br>
-            {{ line.quantity }} × {{ "%.2f"|format(line.price) }} €</span>
-        </div>
-        {% endfor %}
-        <p style="text-align: right;"><strong>Total : {{ "%.2f"|format(total) }} €</strong>{% if total >= free_shipping_threshold %} — livraison offerte possible en France{% endif %}</p>
-
-        {% if step == 1 %}
-        <ul>
-            <li>Paiement sécurisé par Stripe</li>
-            <li>Livraison suivie en {{ delivery_days }}{% if total < free_shipping_threshold %}, offerte en France dès {{ "%.0f"|format(free_shipping_threshold) }} € selon le panier{% endif %}</li>
-            <li>{{ return_days }} jours pour changer d'avis</li>
-        </ul>
-        {% endif %}
-
-        <center style="margin: 24px 0;">
-            <a href="{{ restore_url }}" class="button">Finaliser ma commande</a>
-        </center>
-
-        <p>Une question avant de commander ? Répondez simplement à cet e-mail ou écrivez-nous à {{ seller.email }}.</p>
-
-        <p class="small">
-            Vous recevez ce rappel car vous avez commencé une commande sur multiproshop.com avec cette adresse.<br>
-            <a href="{{ stop_url }}">Ne plus recevoir de rappel pour ce panier</a><br>
-            {{ seller.company }} ({{ seller.trade_name }}), {{ seller.address }}, {{ seller.postal_code }} {{ seller.city }}
-        </p>
-    </div>
-</body>
-</html>
+{% from 'emails/_macros.html' import button, product_line %}
+<p style="margin:0 0 16px;">Bonjour,</p>
+<p style="margin:0 0 16px;">{% if step == 0 %}Vous avez laissé ces articles dans votre panier. Nous les avons gardés pour vous :{% elif step == 1 %}Une hésitation ? Vos articles vous attendent toujours :{% else %}Votre panier ne sera plus gardé très longtemps et le stock de nos fournisseurs bouge vite :{% endif %}</p>
+{% for line in lines %}{{ product_line(line.product.name, (line.variant.display_name ~ ' · ' if line.variant else '') ~ line.quantity ~ ' × ' ~ "%.2f"|format(line.price) ~ ' €', line.product.image_url) }}{% endfor %}
+<p style="margin:12px 0 20px;text-align:right;font-size:16px;color:#1f2937;"><strong>Total : {{ "%.2f"|format(total) }} €</strong>{% if total >= free_shipping_threshold %}<br><span style="font-size:13px;color:#059669;">Livraison offerte possible en France</span>{% endif %}</p>
+{% if step == 1 %}
+<table role="presentation" cellpadding="0" cellspacing="0" style="margin:0 0 20px;font-size:14px;color:#1f2937;">
+<tr><td style="padding:3px 10px 3px 0;color:#f59e0b;">✓</td><td>Paiement sécurisé par Stripe</td></tr>
+<tr><td style="padding:3px 10px 3px 0;color:#f59e0b;">✓</td><td>Livraison suivie en {{ delivery_days }}{% if total < free_shipping_threshold %}, offerte en France dès {{ "%.0f"|format(free_shipping_threshold) }} € selon le panier{% endif %}</td></tr>
+<tr><td style="padding:3px 10px 3px 0;color:#f59e0b;">✓</td><td>{{ return_days }} jours pour changer d'avis</td></tr>
+</table>
+{% endif %}
+{{ button('Finaliser ma commande', restore_url) }}
+<p style="margin:0 0 16px;">Une question avant de commander ? Écrivez-nous à {{ seller.email }}.</p>
+<p style="margin:0 0 8px;font-size:12px;color:#6b7280;">Vous recevez ce rappel car vous avez commencé une commande sur multiproshop.com avec cette adresse. <a href="{{ stop_url }}" style="color:#6b7280;">Ne plus recevoir de rappel pour ce panier</a></p>

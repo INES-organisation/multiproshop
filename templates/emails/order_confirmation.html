@@ -1,165 +1,27 @@
-<!DOCTYPE html>
-<html lang="fr">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Confirmation de commande</title>
-    <style>
-        body {
-            font-family: Arial, sans-serif;
-            line-height: 1.6;
-            color: #333;
-            max-width: 600px;
-            margin: 0 auto;
-            padding: 20px;
-        }
-        .header {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            color: white;
-            padding: 30px;
-            text-align: center;
-            border-radius: 10px 10px 0 0;
-        }
-        .content {
-            background: #f9f9f9;
-            padding: 30px;
-            border-radius: 0 0 10px 10px;
-        }
-        .order-info {
-            background: white;
-            padding: 20px;
-            border-radius: 8px;
-            margin: 20px 0;
-        }
-        .order-number {
-            font-size: 24px;
-            font-weight: bold;
-            color: #667eea;
-            margin-bottom: 10px;
-        }
-        .items-table {
-            width: 100%;
-            border-collapse: collapse;
-            margin: 20px 0;
-        }
-        .items-table th {
-            background: #667eea;
-            color: white;
-            padding: 12px;
-            text-align: left;
-        }
-        .items-table td {
-            padding: 12px;
-            border-bottom: 1px solid #ddd;
-        }
-        .total-row {
-            font-weight: bold;
-            font-size: 18px;
-            color: #667eea;
-        }
-        .button {
-            display: inline-block;
-            padding: 12px 30px;
-            background: #667eea;
-            color: white;
-            text-decoration: none;
-            border-radius: 5px;
-            margin: 20px 0;
-        }
-        .footer {
-            text-align: center;
-            color: #999;
-            font-size: 12px;
-            margin-top: 30px;
-            padding-top: 20px;
-            border-top: 1px solid #ddd;
-        }
-    </style>
-</head>
-<body>
-    <div class="header">
-        <h1>✅ Commande Confirmée !</h1>
-        <p>Merci pour votre achat</p>
-    </div>
-    
-    <div class="content">
-        <p>Bonjour <strong>{{ order.shipping_first_name }}</strong>,</p>
-        
-        <p>Nous avons bien reçu votre commande et nous vous en remercions !</p>
-        
-        <div class="order-info">
-            <div class="order-number">{{ order.order_number }}</div>
-            <p><strong>Date :</strong> {{ order.created_at.strftime('%d/%m/%Y à %H:%M') }}</p>
-            <p><strong>Statut :</strong> 
-                {% if order.payment_status == 'paid' %}
-                <span style="color: #10b981;">✓ Payée</span>
-                {% else %}
-                <span style="color: #f59e0b;">En attente de paiement</span>
-                {% endif %}
-            </p>
-        </div>
-        
-        <h3>Articles commandés</h3>
-        <table class="items-table">
-            <thead>
-                <tr>
-                    <th>Produit</th>
-                    <th>Qté</th>
-                    <th>Prix</th>
-                </tr>
-            </thead>
-            <tbody>
-                {% for item in order.order_items %}
-                <tr>
-                    <td>{{ item.product.name }}</td>
-                    <td>{{ item.quantity }}</td>
-                    <td>{{ "%.2f"|format(item.price * item.quantity) }}€</td>
-                </tr>
-                {% endfor %}
-                <tr>
-                    <td colspan="2"><strong>Sous-total</strong></td>
-                    <td><strong>{{ "%.2f"|format(order.subtotal) }}€</strong></td>
-                </tr>
-                {% if order.discount_amount %}
-                <tr>
-                    <td colspan="2"><strong>Code {{ order.coupon_code }}</strong></td>
-                    <td><strong>-{{ "%.2f"|format(order.discount_amount) }}€</strong></td>
-                </tr>
-                {% endif %}
-                <tr>
-                    <td colspan="2"><strong>Livraison</strong></td>
-                    <td><strong>{{ "%.2f"|format(order.shipping_cost) }}€</strong></td>
-                </tr>
-                <tr class="total-row">
-                    <td colspan="2">TOTAL (TVA non applicable, art. 293 B du CGI)</td>
-                    <td>{{ "%.2f"|format(order.total_price) }}€</td>
-                </tr>
-            </tbody>
-        </table>
-        
-        <h3>Adresse de livraison</h3>
-        <div class="order-info">
-            <p>
-                <strong>{{ order.shipping_first_name }} {{ order.shipping_last_name }}</strong><br>
-                {{ order.shipping_address }}<br>
-                {{ order.shipping_postal_code }} {{ order.shipping_city }}<br>
-                {{ order.shipping_country }}
-            </p>
-        </div>
-        
-        <p>Votre commande est transmise à notre fournisseur. Le délai de livraison est celui du transporteur choisi au paiement{% if order.shipping_method %} ({{ order.shipping_method }}){% endif %} : vous recevrez un e-mail avec le numéro de suivi dès l'expédition.</p>
-        
-        <center>
-            <a href="{{ site_url }}/suivi-commande" class="button">Suivre ma commande</a>
-        </center>
-        
-        <div class="footer">
-            <p>Merci de votre confiance !</p>
-            <p>L'équipe MultiProShop</p>
-            <p style="margin-top: 20px;">
-                <small>Cet email a été envoyé automatiquement, merci de ne pas y répondre.</small>
-            </p>
-        </div>
-    </div>
-</body>
-</html>
+{% from 'emails/_macros.html' import button, box %}
+<p style="margin:0 0 16px;">Bonjour {{ order.shipping_first_name }},</p>
+<p style="margin:0 0 20px;">Merci pour votre commande ! Nous l'avons bien reçue et la transmettons à notre fournisseur.</p>
+{% call box() %}
+<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="font-size:14px;">
+<tr><td style="color:#4b5563;padding:2px 0;">Commande</td><td align="right" style="font-weight:700;">{{ order.order_number }}</td></tr>
+<tr><td style="color:#4b5563;padding:2px 0;">Date</td><td align="right">{{ order.created_at.strftime('%d/%m/%Y à %H:%M') }}</td></tr>
+<tr><td style="color:#4b5563;padding:2px 0;">Paiement</td><td align="right">{% if order.payment_status == 'paid' %}<span style="color:#059669;font-weight:600;">Payée</span>{% else %}<span style="color:#d97706;font-weight:600;">En attente</span>{% endif %}</td></tr>
+</table>
+{% endcall %}
+<h2 style="margin:24px 0 8px;font-size:16px;color:#1f2937;">Articles commandés</h2>
+<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="font-size:14px;color:#1f2937;">
+{% for item in order.order_items %}
+<tr><td style="padding:10px 0;border-bottom:1px solid #ece7dc;">{{ item.product.name }} <span style="color:#4b5563;">× {{ item.quantity }}</span></td>
+<td align="right" style="padding:10px 0;border-bottom:1px solid #ece7dc;white-space:nowrap;">{{ "%.2f"|format(item.price * item.quantity) }} €</td></tr>
+{% endfor %}
+<tr><td style="padding:8px 0 2px;color:#4b5563;">Sous-total</td><td align="right" style="padding:8px 0 2px;">{{ "%.2f"|format(order.subtotal) }} €</td></tr>
+{% if order.discount_amount %}<tr><td style="padding:2px 0;color:#4b5563;">Code {{ order.coupon_code }}</td><td align="right" style="padding:2px 0;color:#059669;">−{{ "%.2f"|format(order.discount_amount) }} €</td></tr>{% endif %}
+<tr><td style="padding:2px 0;color:#4b5563;">Livraison{% if order.shipping_method %} ({{ order.shipping_method }}){% endif %}</td><td align="right" style="padding:2px 0;">{{ "%.2f"|format(order.shipping_cost) }} €</td></tr>
+<tr><td style="padding:12px 0 0;font-size:16px;font-weight:700;border-top:2px solid #1f2937;">Total</td><td align="right" style="padding:12px 0 0;font-size:16px;font-weight:700;border-top:2px solid #1f2937;">{{ "%.2f"|format(order.total_price) }} €</td></tr>
+<tr><td colspan="2" style="padding:4px 0 0;font-size:12px;color:#6b7280;">TVA non applicable, art. 293 B du CGI</td></tr>
+</table>
+<h2 style="margin:24px 0 8px;font-size:16px;color:#1f2937;">Livraison</h2>
+{% call box() %}<strong>{{ order.shipping_first_name }} {{ order.shipping_last_name }}</strong><br>{{ order.shipping_address }}<br>{{ order.shipping_postal_code }} {{ order.shipping_city }}<br>{{ order.shipping_country }}{% endcall %}
+<p style="margin:0 0 16px;">Vous recevrez un e-mail avec le numéro de suivi dès l'expédition.</p>
+{{ button('Suivre ma commande', site_url ~ '/suivi-commande') }}
+<p style="margin:0 0 16px;">Merci de votre confiance,<br><strong style="color:#1f2937;">L'équipe MultiProShop</strong></p>

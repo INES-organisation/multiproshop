@@ -20,7 +20,8 @@ def _add_missing_columns():
     """db.create_all ne modifie pas les tables existantes : colonnes ajoutées depuis, créées ici une fois"""
     from sqlalchemy import inspect, text
     wanted = {'order': [('discount_amount', 'FLOAT DEFAULT 0'), ('coupon_code', 'VARCHAR(40)')],
-              'product': [('projects', 'VARCHAR(200)')]}
+              'product': [('projects', 'VARCHAR(200)')],
+              'user': [('ines_sub', 'VARCHAR(64)')]}
     try:
         inspector = inspect(db.engine)
         for table, columns in wanted.items():
@@ -29,6 +30,8 @@ def _add_missing_columns():
                 if name not in existing:
                     with db.engine.begin() as conn:
                         conn.execute(text(f'ALTER TABLE "{table}" ADD COLUMN {name} {ddl}'))
+        with db.engine.begin() as conn:
+            conn.execute(text('CREATE UNIQUE INDEX IF NOT EXISTS ix_user_ines_sub ON "user" (ines_sub)'))
     except Exception as e:  # un autre processus l'a peut-être ajoutée au même moment
         print(f"[schema] colonnes non ajoutées : {e}")
 
@@ -262,6 +265,7 @@ def register_blueprints(app):
     from routes.health import health_bp
     from routes.api_docs import api_docs_bp
     from routes.faq import faq_bp
+    from routes.partner_api import partner_api
     
     app.register_blueprint(shipping_bp)
     app.register_blueprint(product_variants_bp)
@@ -269,6 +273,7 @@ def register_blueprints(app):
     app.register_blueprint(health_bp)
     app.register_blueprint(api_docs_bp)
     app.register_blueprint(faq_bp)
+    app.register_blueprint(partner_api)  # sites partenaires WAO (tonyalpha80.com…)
     
     # === BLUEPRINTS DE TEST (seulement en dev) ===
     if app.config.get('DEBUG', False):
