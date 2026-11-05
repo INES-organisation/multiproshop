@@ -41,6 +41,13 @@
                                 </label>
                                 <input type="text" class="admin-form-control" id="brand" name="brand" value="{{ product.brand if product else '' }}" placeholder="Ex: Samsung">
                             </div>
+                            <div class="admin-form-group">
+                                <label class="admin-form-label" for="projects">
+                                    <i class="fas fa-store"></i> Vitrines (projets)
+                                </label>
+                                <input type="text" class="admin-form-control" id="projects" name="projects" value="{{ (product.projects or '') if product else '' }}" placeholder="Ex: tonyalpha, digita">
+                                <small>Sites qui affichent aussi ce produit, séparés par des virgules (API /api/catalog/&lt;projet&gt;).</small>
+                            </div>
                         </div>
                     </div>
                     

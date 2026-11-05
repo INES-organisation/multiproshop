@@ -2,10 +2,13 @@
 API Routes pour les produits et variantes
 Expose les données produits pour le frontend
 """
-from flask import Blueprint, jsonify, request
+import re
+
+from flask import Blueprint, jsonify, request, url_for
+from sqlalchemy import literal
 from models.product import Product
 from models.product_variant import ProductVariant
-from extensions import db
+from extensions import db, cache
 import logging
 
 logger = logging.getLogger(__name__)
@@ -204,3 +207,36 @@ def get_variant(variant_id):
             'success': False,
             'message': str(e)
         }), 500
+
+
+_PROJECT = re.compile(r'^[a-z0-9-]{1,30}$')
+
+
+def clean_projects(raw):
+    """« TonyAlpha, digita ,, x y » → « digita,tonyalpha » : identifiants valides, sans doublon."""
+    return ','.join(sorted({p for p in (x.strip().lower() for x in (raw or '').split(',')) if _PROJECT.match(p)}))
+
+
+@bp.route('/catalog/<project>', methods=['GET'])
+@cache.cached(timeout=300, query_string=True)
+def catalog(project):
+    """Catalogue d'une vitrine (TonyAlpha80, DIGITA, Sérénis…) : produits en ligne marqués pour ce projet
+    dans l'admin (champ « Vitrines »). Public, comme les fiches du site. ?page=1&per_page=24&q=mot"""
+    if not _PROJECT.match(project):
+        return jsonify({'success': False, 'message': 'Projet invalide'}), 400
+    page = max(request.args.get('page', 1, type=int), 1)
+    per_page = min(max(request.args.get('per_page', 24, type=int), 1), 100)
+    q = Product.query.filter(Product.is_active.is_(True),
+                             (literal(',') + Product.projects + literal(',')).like(f'%,{project},%'))
+    if request.args.get('q'):
+        q = q.filter(Product.name.ilike(f"%{request.args['q'][:100]}%"))
+    pg = q.order_by(Product.is_featured.desc(), Product.id.desc()).paginate(page=page, per_page=per_page, error_out=False)
+    resp = jsonify({'success': True, 'project': project, 'page': page, 'total': pg.total, 'products': [{
+        'id': p.id, 'name': p.name, 'slug': p.slug, 'short_description': p.short_description,
+        'price': p.price, 'compare_price': p.compare_price, 'image_url': p.image_url,
+        'images': p.get_images_list(), 'category': p.category.name if p.category else None,
+        'in_stock': (p.stock or 0) > 0,
+        'url': url_for('products.product_detail', product_id=p.id, _external=True),
+    } for p in pg.items]})
+    resp.headers['Access-Control-Allow-Origin'] = '*'  # données publiques, lisibles depuis le navigateur des vitrines
+    return resp

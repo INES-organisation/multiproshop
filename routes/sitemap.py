@@ -32,9 +32,17 @@ def sitemap():
         }
     ]
     
-    # Ajouter les catégories (exclure les catégories CJ)
+    # Catégories visibles qui ont des produits en ligne, directement ou dans une sous-catégorie
+    # active (la page catégorie les affiche) : une page vide n'a rien à faire dans le sitemap.
+    parents = {c.id: c.parent_id for c in Category.query.with_entities(Category.id, Category.parent_id)
+               .filter(Category.is_active == True)}
+    filled = set()
+    for (cid,) in Product.query.with_entities(Product.category_id).filter(Product.is_active == True).distinct():
+        while cid in parents and cid not in filled:
+            filled.add(cid)
+            cid = parents[cid]
     categories = Category.query.filter_by(is_active=True, visible=True).all()
-    for category in categories:
+    for category in (c for c in categories if c.id in filled):
         urls.append({
             'loc': f'/products/category/{category.id}',
             'lastmod': category.updated_at.strftime('%Y-%m-%d') if getattr(category, 'updated_at', None) else datetime.utcnow().strftime('%Y-%m-%d'),

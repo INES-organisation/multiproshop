@@ -8,5 +8,6 @@
 {% endif %}
 {% call box() %}<span style="color:#4b5563;font-size:13px;">Adresse de livraison</span><br>{{ order.shipping_address }}<br>{{ order.shipping_postal_code }} {{ order.shipping_city }}{% endcall %}
 <p style="margin:0 0 16px;">Le colis arrive en général sous <strong style="color:#1f2937;">{{ delivery_days }}</strong> après l'expédition. Le suivi peut mettre 2 à 3 jours à s'activer.</p>
-{% if not tracking_number %}{{ button('Suivre ma commande', site_url ~ '/suivi-commande') }}{% endif %}
+{% if tracking_number %}<p style="margin:0 0 16px;"><a href="{{ site_url }}/suivi-commande" style="color:#b45309;font-weight:600;">Voir ma commande sur MultiProShop →</a></p>
+{% else %}{{ button('Suivre ma commande', site_url ~ '/suivi-commande') }}{% endif %}
 <p style="margin:0 0 16px;">Merci de votre confiance,<br><strong style="color:#1f2937;">L'équipe MultiProShop</strong></p>

@@ -20,6 +20,7 @@ def _add_missing_columns():
     """db.create_all ne modifie pas les tables existantes : colonnes ajoutées depuis, créées ici une fois"""
     from sqlalchemy import inspect, text
     wanted = {'order': [('discount_amount', 'FLOAT DEFAULT 0'), ('coupon_code', 'VARCHAR(40)')],
+              'product': [('projects', 'VARCHAR(200)')],
               'user': [('ines_sub', 'VARCHAR(64)')]}
     try:
         inspector = inspect(db.engine)

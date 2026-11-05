@@ -787,6 +787,7 @@ def create_product():
             stock = int(request.form.get('stock', 0))
             category_id = int(request.form['category_id'])
             brand = request.form.get('brand', '')
+            from routes.api_products import clean_projects
             weight = float(request.form.get('weight', 0)) or None
             is_active = 'is_active' in request.form
             is_featured = 'is_featured' in request.form
@@ -804,6 +805,7 @@ def create_product():
                 stock=stock,
                 category_id=category_id,
                 brand=brand,
+                projects=clean_projects(request.form.get('projects', '')) or None,
                 weight=weight,
                 is_active=is_active,
                 is_featured=is_featured,
@@ -864,6 +866,8 @@ def edit_product(product_id):
             product.stock = int(request.form.get('stock', 0))
             product.category_id = int(request.form['category_id'])
             product.brand = request.form.get('brand', '')
+            from routes.api_products import clean_projects
+            product.projects = clean_projects(request.form.get('projects', '')) or None
             product.weight = float(request.form.get('weight', 0)) or None
             product.is_active = 'is_active' in request.form
             if product.is_active and not was_active:
