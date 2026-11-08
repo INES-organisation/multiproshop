@@ -21,7 +21,9 @@ import os
 from functools import wraps
 
 from flask import Blueprint, current_app, g, jsonify, request
-from sqlalchemy import or_
+from sqlalchemy import literal, or_
+
+from routes.api_products import _PROJECT
 
 from extensions import db
 from models.category import Category
@@ -99,6 +101,13 @@ def catalogue():
     except ValueError:
         return jsonify({'error': 'Paramètres invalides'}), 400
     query = _visible()
+    # ?project=tonyalpha : seulement les produits marqués pour cette vitrine (champ « Vitrines » de l'admin)
+    project = (request.args.get('project') or '').strip().lower()
+    if project:
+        if not _PROJECT.match(project):
+            return jsonify({'error': 'Projet invalide'}), 400
+        query = query.filter((literal(',') + Product.projects + literal(',')).like(f'%,{project},%'))
+    base = query  # compte par catégorie sur toute la vitrine, sans la recherche ni la catégorie choisie
     q = (request.args.get('q') or '').strip()[:100]
     if q:
         like = f'%{q}%'
@@ -108,15 +117,15 @@ def catalogue():
     order = {'price_asc': Product.price.asc(), 'price_desc': Product.price.desc(),
              'popular': Product.sales_count.desc()}.get(request.args.get('sort'), Product.published_at.desc())
     pagination = query.order_by(order, Product.id.desc()).paginate(page=page, per_page=per_page, error_out=False)
-    counts = dict(db.session.query(Product.category_id, db.func.count(Product.id))
-                  .filter(Product.published.is_(True), Product.is_active.is_(True))
-                  .group_by(Product.category_id).all())
+    counts = dict(base.with_entities(Product.category_id, db.func.count(Product.id))
+                  .order_by(None).group_by(Product.category_id).all())
     categories = [{'id': c.id, 'name': c.name_fr or c.name, 'count': counts[c.id]}
                   for c in Category.query.filter(Category.id.in_(list(counts))).all()]
     resp = jsonify({'products': [_product_json(p) for p in pagination.items], 'total': pagination.total,
                     'page': page, 'pages': pagination.pages,
                     'categories': sorted(categories, key=lambda c: c['name'])})
     resp.headers['Cache-Control'] = 'public, max-age=300'
+    resp.headers['Access-Control-Allow-Origin'] = '*'  # données publiques, lisibles depuis le navigateur des vitrines
     return resp
 
 
@@ -295,3 +304,37 @@ def list_orders():
     orders = (_partner_order(g.partner_site, customer_email=email)
               .filter(Order.payment_status != 'pending').order_by(Order.created_at.desc()).limit(50).all())
     return jsonify({'orders': [_order_json(o) for o in orders]})
+
+
+@partner_api.route('/stats')
+@partner_required
+def stats():
+    """Chiffres de la boutique pour les moniteurs d'INES (jeton PARTNER_TOKEN_INES), en lecture seule."""
+    if g.partner_site != 'ines':
+        return jsonify({'error': 'Réservé à INES'}), 403
+    from datetime import datetime, timedelta
+    now = datetime.utcnow()
+    paid = Order.query.filter(Order.payment_status == 'paid')
+
+    def period(days):
+        orders = paid.filter(Order.paid_at >= now - timedelta(days=days)).all()
+        margins = [m for m in (o.product_margin() for o in orders) if m is not None]
+        return {'orders': len(orders), 'revenue': round(sum(o.total_price or 0 for o in orders), 2),
+                'margin': round(sum(margins), 2), 'margin_unknown': len(orders) - len(margins)}
+
+    sites = {'multiproshop': paid.filter(~Order.admin_notes.like('Commande passée sur %') | Order.admin_notes.is_(None)).count()}
+    for site in set(_partners()) - {'ines'}:
+        sites[site] = _partner_order(site).filter(Order.payment_status == 'paid').count()
+    online = _visible()
+    last_sync = db.session.query(db.func.max(Product.cj_last_sync)).scalar()
+    return jsonify({
+        'generated_at': now.isoformat() + 'Z',
+        'sales': {'today': period(1), 'week': period(7), 'month': period(30)},
+        'paid_orders_by_site': sites,
+        # payées mais pas encore passées chez CJ : à surveiller (paiement reçu, rien d'envoyé)
+        'to_send_to_cj': paid.filter(Order.cj_order_id.is_(None), Order.status.notin_(['cancelled', 'delivered'])).count(),
+        'shipped_in_transit': Order.query.filter(Order.status == 'shipped').count(),
+        'products_online': online.count(),
+        'products_out_of_stock': online.filter(db.func.coalesce(Product.stock, 0) <= 0).count(),
+        'last_cj_sync': last_sync.isoformat() + 'Z' if last_sync else None,
+    })
