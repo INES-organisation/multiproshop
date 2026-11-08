@@ -74,5 +74,13 @@ Retour arrière : retirer le bloc nginx et recharger nginx, puis
   en cron : `15 4 * * * /opt/multiproshop/deploy/backup.sh >> /home/ubuntu/multiproshop-backups/backup.log 2>&1`.
   Copie hors VPS : configurer un remote `rclone` puis `BACKUP_RCLONE_REMOTE=<remote>:<dossier>` dans `deploy/.env`.
   Un échec crée une alerte « Sauvegarde » dans l'admin et un e-mail aux administrateurs.
+  Avant tout déploiement qui touche la base, faire aussi une sauvegarde manuelle :
+  `docker exec ines-postgres pg_dump -U multiproshop -d multiproshop | gzip > /home/ubuntu/multiproshop-backups/avant_prNN_$(date -u +%Y%m%d_%H%M).sql.gz`.
+  Restauration, après un arrêt des conteneurs web et worker : `gunzip -c <fichier> | docker exec -i ines-postgres psql -U multiproshop -d multiproshop`,
+  sur une base vidée au préalable.
+- **Cache** : ne jamais vider tout Redis, car il contient aussi le jeton CJ partagé avec INES. Pour rafraîchir une page,
+  supprimer seulement sa clé `flask_cache_view//<chemin>`, par exemple `flask_cache_view//sitemap.xml`.
+- **Journal** : ce qui a été fait en production (données modifiées, réglages, incidents) est tenu dans
+  `docs/JOURNAL_EXPLOITATION.md`.
 - **Alertes** : toute erreur 500 crée une notification admin (une par page et type d'erreur tant qu'elle n'est
   pas lue) ; les alertes « danger » (panier, paiement, commande CJ, sauvegarde) partent aussi par e-mail.
