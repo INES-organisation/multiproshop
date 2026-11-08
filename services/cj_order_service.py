@@ -129,15 +129,17 @@ class CjOrderService:
     def _from_country(order: Order) -> str:
         """Entrepôt de départ de la méthode choisie au paiement (Chine par défaut)"""
         from services.shipping_service import ShippingService
+        from services import providers
         items = [{'product': item.product, 'quantity': item.quantity,
                   'cj_vid': item.variant.cj_vid if item.variant is not None else None}
-                 for item in order.order_items if item.product is not None]
+                 for item in order.order_items if item.product is not None and providers.of(item.product) == 'cj']
+        method = providers.method_for(order.shipping_method, 'cj')
         try:
             methods = ShippingService()._cart_freight(items, order.shipping_country) or []
         except Exception as e:
             logger.warning(f"[CjOrderService] Entrepôt de départ inconnu pour {order.order_number}: {e}")
             methods = []
-        return next((m.get('from', 'CN') for m in methods if m['code'] == order.shipping_method), 'CN')
+        return next((m.get('from', 'CN') for m in methods if m['code'] == method), 'CN')
 
     def _prepare_order_data(self, order: Order) -> Optional[Dict]:
         """
@@ -149,6 +151,7 @@ class CjOrderService:
         Returns:
             dict: Données formatées pour CJ ou None
         """
+        from services import providers
         try:
             # Préparer la liste des produits
             products = []
@@ -156,6 +159,8 @@ class CjOrderService:
             for item in order.order_items:
                 product = item.product
                 
+                if product is not None and providers.of(product) != 'cj':
+                    continue  # article d'un autre fournisseur, commandé chez lui
                 if not product or not product.cj_pid:
                     logger.warning(f"[CjOrderService] Produit {item.product_id} n'est pas un produit CJ")
                     continue
@@ -198,8 +203,8 @@ class CjOrderService:
             }
             
             # Ajouter la méthode de livraison si disponible
-            if order.shipping_method:
-                order_data['logisticsName'] = order.shipping_method
+            if providers.method_for(order.shipping_method, 'cj'):
+                order_data['logisticsName'] = providers.method_for(order.shipping_method, 'cj')
                 order_data['fromCountryCode'] = self._from_country(order)
             
             return order_data

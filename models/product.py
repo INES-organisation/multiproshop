@@ -67,6 +67,8 @@ class Product(db.Model):
     stock_checked = db.Column(db.Boolean, default=False)  # True si stock vérifié par API CJ
     # Vitrines (projets) qui affichent ce produit, ex. « tonyalpha,digita » : /api/partner/catalogue?project=<projet>
     projects = db.Column(db.String(200), nullable=True)
+    # Fournisseur qui expédie ce produit (services/providers.py) ; vide = CJ
+    provider = db.Column(db.String(30), nullable=True)
     
     # Dates
     created_at = db.Column(db.DateTime, default=datetime.utcnow)

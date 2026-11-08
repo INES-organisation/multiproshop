@@ -1,6 +1,6 @@
 # Écosystème MultiProShop, INES et vitrines
 
-*État au 08/11/2026.* Ce document décrit qui fait quoi entre INES, MultiProShop (MPS) et les sites de vente (TonyAlpha80, DIGITA, Sérénis), où se règle chaque chose et comment vérifier que tout fonctionne.
+*État au 08/11/2026 (soir).* Ce document décrit qui fait quoi entre INES, MultiProShop (MPS) et les sites de vente (TonyAlpha80, DIGITA, Sérénis), où se règle chaque chose et comment vérifier que tout fonctionne. L'historique des opérations faites en production (données modifiées, réglages, incidents) est dans [JOURNAL_EXPLOITATION.md](JOURNAL_EXPLOITATION.md).
 
 ## Qui fait quoi
 
@@ -54,11 +54,23 @@ Toutes les routes sont sous `/api/partner`.
 
 Admin MPS › **Sourcing CJ** (`/admin/cj-sourcing`) : lien du produit, nom, adresse de la photo, prix cible facultatif. MPS envoie la demande à CJ (`product/sourcing/create`, via le hub INES). « Actualiser » relit l'état des demandes en cours (`product/sourcing/queryList`, un appel par demande, 20 au plus). Une fois le produit trouvé, il s'importe en brouillon avec la catégorie choisie, comme depuis « Rechercher sur CJ ». CJ ne documente que les états 3 (trouvé) et 5 (échec) : toute autre valeur est affichée comme en cours, avec le libellé de CJ.
 
-## Autres fournisseurs (à venir)
+## Plusieurs fournisseurs
 
-Les fiches vidaXL/dropXL, BigBuy, Syncee et Printful sont dans INES › `/admin/integrations`, catégorie E-commerce, pour y saisir les clés. **Elles ne sont pas encore utilisées.** Il faut d'abord que les commandes MPS ne dépendent plus d'un seul fournisseur (produit → fournisseur, port par fournisseur, panier qui mélange plusieurs fournisseurs), puis étendre le hub CJ d'INES à un hub de fournisseurs, sur le même principe.
+- Chaque produit a un **fournisseur** : admin MPS › fiche produit › champ « Fournisseur » (colonne `product.provider`, vide = CJ). Tous les produits actuels sont chez CJ.
+- `services/providers.py` regroupe le panier par fournisseur :
+  - **port** : chaque fournisseur donne ses tarifs. Un panier d'un seul fournisseur garde ses méthodes habituelles. Un panier mixte reçoit une seule méthode, qui additionne la moins chère de chaque fournisseur, avec un code du type `cj:CJPacket|bigbuy:GLS` ;
+  - **commande** : après paiement, chaque fournisseur reçoit sa part. CJ ne reçoit que ses articles, avec sa propre méthode de livraison.
+- Un fournisseur pas encore branché ne propose aucun port : ses produits ne peuvent pas être achetés. Si une commande payée en contient quand même, l'admin reçoit une alerte « Commande … à passer à la main ».
+- **Brancher un fournisseur** (BigBuy, vidaXL…) : ajouter sa fonction de tarifs dans `QUOTERS` et sa fonction de commande dans `PLACERS`, de préférence en passant par un hub dans INES comme pour CJ.
+  - Ses clés se saisissent dans INES › `/admin/integrations`, catégorie E-commerce : `VIDAXL_API_KEY`, `BIGBUY_API_KEY`, `SYNCEE_API_KEY`, `PRINTFUL_API_KEY`. Elles ne sont pas encore utilisées.
+- À venir : le choix du fournisseur selon le pays de livraison. Les DOM sont hors du territoire TVA de l'UE : la livraison vers La Réunion est à vérifier chez chaque fournisseur européen, et CJ restera probablement le fournisseur pour la Réunion.
+- Premier choix conseillé : BigBuy, qui a une API dropshipping, ou vidaXL, qui a des entrepôts aux Pays-Bas et en Pologne. Il faut d'abord ouvrir un compte chez eux.
 
-Premier choix : vidaXL, qui a des entrepôts aux Pays-Bas et en Pologne, une API et peu de recouvrement avec CJ. Les DOM sont hors du territoire TVA de l'UE : la livraison vers La Réunion est à vérifier chez chaque fournisseur, et CJ restera probablement le fournisseur pour la Réunion.
+## Contenu et pages
+
+- **Fiches produits** : toutes en français, rédigées automatiquement à la publication. La fiche 1573, publiée à la main avant cette rédaction, a été réécrite le 08/11. Certaines photos CJ gardent du texte chinois.
+- **Médiateur de la consommation** : CM2C (49 rue de Ponthieu, 75008 Paris, www.cm2c.net). Il est cité dans les mentions légales (section 7) et dans les CGV.
+- **Mobile** : sous 576 px, l'en-tête se réduit quand on fait défiler la page vers le bas (de 138 à 57 px) et revient quand on remonte.
 
 ## Dépendances figées
 
@@ -68,8 +80,11 @@ Premier choix : vidaXL, qui a des entrepôts aux Pays-Bas et en Pologne, une API
 
 ## Déploiement et vérifications
 
-- **MPS** : `ssh ines-vps 'cd /opt/multiproshop && git pull --ff-only origin main && docker compose -f deploy/docker-compose.yml --env-file deploy/.env up -d --build'`.
-  - Sauvegarde de nuit à 4 h 15 (`deploy/backup.sh`, cron du VPS). Faire une sauvegarde manuelle avant chaque déploiement.
+- **MPS** : `ssh ines-vps /opt/multiproshop/deploy/deploy.sh`. Le script :
+  - sauvegarde la base, et s'arrête si la sauvegarde échoue ;
+  - garde les journaux des conteneurs 30 jours dans `/home/ubuntu/multiproshop-logs`, car Docker les efface quand il recrée un conteneur ;
+  - récupère `main`, puis reconstruit et redémarre.
+  - Sauvegarde de nuit à 4 h 15 (`deploy/backup.sh`, cron du VPS).
 - **INES** : `ssh ines-vps 'cd /opt/ines && ./scripts/deploy.sh'`. Le script lance aussi les migrations alembic.
 - **Surveillance** : Uptime Kuma, avec alertes Telegram. La surveillance d'INES (table `uptime_checks`) est lancée par le cron du VPS toutes les 5 minutes. Ne pas retirer cette ligne : c'est son seul déclencheur.
 - **Tests MPS** : `FLASK_ENV=testing python -m pytest tests/test_scenarios.py -q`. Chaque fichier `tests/scenarios/sc_*.py` est un parcours autonome.

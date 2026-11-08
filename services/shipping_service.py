@@ -65,8 +65,28 @@ class ShippingService:
             logger.warning(f"[Shipping] Impossible d'initialiser API CJ: {e}")
     
     def calculate_shipping(self, cart_items: List[Dict], country_code: str = 'FR') -> Dict:
+        """Port du panier, fournisseur par fournisseur (services/providers.py). Un panier d'un seul
+        fournisseur garde ses méthodes ; sinon une méthode combinée qui additionne les ports.
+        Un fournisseur sans tarif vers ce pays rend tout le panier non livrable."""
+        from services import providers
+        groups = providers.group(cart_items)
+        if not groups:
+            return self._fallback_response(cart_items, country_code)
+        results = {}
+        for name, items in groups.items():
+            quote = self._calculate_cj if name == 'cj' else providers.QUOTERS.get(name)
+            result = quote(items, country_code) if quote else None
+            if not result or not result.get('methods'):
+                return self._fallback_response(cart_items, country_code)
+            results[name] = result
+        if len(results) == 1:
+            return result
+        return {'success': True, 'methods': providers.combine({n: r['methods'] for n, r in results.items()}),
+                'total_weight': self._calculate_total_weight(cart_items), 'source': 'multi'}
+
+    def _calculate_cj(self, cart_items: List[Dict], country_code: str = 'FR') -> Dict:
         """
-        Calculer les frais de livraison pour un panier.
+        Calculer les frais de livraison CJ pour un panier.
         Stratégie hybride : DB cache → API CJ refresh → fallback.
         
         Args:
@@ -640,46 +660,3 @@ class ShippingService:
         # Trier par code (PREMIUM < EXPRESS < STANDARD)
         priority = {'PREMIUM': 1, 'EXPRESS': 2, 'STANDARD': 3}
         return min(methods, key=lambda m: priority.get(m['code'], 999))
-    
-    def combine_shipping_for_multiple_suppliers(self, cart_items: List[Dict], 
-                                               country_code: str = 'FR') -> Dict:
-        """
-        Combiner les frais de livraison pour plusieurs fournisseurs
-        Inspiré de TonyAlpha80 - gestion panier multi-fournisseurs
-        """
-        # Séparer les items par fournisseur
-        cj_items = [item for item in cart_items if self._is_cj_product(item)]
-        other_items = [item for item in cart_items if not self._is_cj_product(item)]
-        
-        total_shipping = 0
-        methods_by_supplier = {}
-        
-        # Calculer pour CJ
-        if cj_items:
-            cj_result = self.calculate_shipping(cj_items, country_code)
-            if cj_result['success'] and cj_result['methods']:
-                cheapest_cj = self.get_cheapest_method(cj_result['methods'])
-                total_shipping += cheapest_cj['price']
-                methods_by_supplier['cj'] = cheapest_cj
-        
-        # Calculer pour autres fournisseurs (à implémenter)
-        if other_items:
-            # Pour l'instant, utiliser méthode standard
-            total_shipping += 4.99
-            methods_by_supplier['other'] = {
-                'code': 'STANDARD',
-                'name': 'Livraison Standard',
-                'price': 4.99,
-                'source': 'fallback'
-            }
-        
-        return {
-            'success': True,
-            'total_shipping': total_shipping,
-            'methods_by_supplier': methods_by_supplier,
-            'combined': True
-        }
-    
-    def _is_cj_product(self, item: Dict) -> bool:
-        """Vérifier si un item est un produit CJ"""
-        return bool(item.get('cj_pid') or item.get('product', {}).get('cj_pid'))
