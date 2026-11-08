@@ -54,7 +54,7 @@ bash /opt/ines/scripts/add-custom-domain.sh multiproshop.com
 docker exec ines-nginx nginx -t && docker exec ines-nginx nginx -s reload
 ```
 
-Mise à jour : `cd /opt/multiproshop && git pull && docker compose -f deploy/docker-compose.yml --env-file deploy/.env up -d --build`
+Mise à jour : `/opt/multiproshop/deploy/deploy.sh` (sauvegarde, journaux gardés, puis `git pull` et `up -d --build`)
 
 Retour arrière : retirer le bloc nginx et recharger nginx, puis
 `docker compose -f deploy/docker-compose.yml down` (la base et les images envoyées sont conservées).

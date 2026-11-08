@@ -160,25 +160,8 @@ def fulfill(order_id, session):
     except Exception as e:  # noqa: BLE001 — un e-mail raté ne doit pas annuler la commande
         logger.error("E-mail de confirmation non envoyé pour %s : %s", order.order_number, e)
 
-    try:
-        from models.api_provider import ApiProvider
-        from services.api_providers.cj_dropshipping_optimized import CJDropshippingProvider
-        from services.cj_order_service import CjOrderService
-
-        provider = ApiProvider.query.filter_by(name='CJ Dropshipping', is_active=True).first()
-        if provider:
-            result = CjOrderService(CJDropshippingProvider(provider=provider)).create_cj_order(order.id)
-            if not result.get('success'):
-                logger.error("Commande CJ non créée pour %s : %s", order.order_number, result.get('message'))
-                notify('cj_order_error', f'Commande CJ non créée : {order.order_number}', result.get('message'),
-                       url=f'/admin/orders/{order.id}', level='danger')
-        else:
-            notify('cj_order_error', f'Commande CJ à passer à la main : {order.order_number}',
-                   'Fournisseur CJ inactif ou introuvable.', url=f'/admin/orders/{order.id}', level='danger')
-    except Exception as e:  # noqa: BLE001 — la commande reste payée, à passer à la main sur CJ
-        logger.error("Commande CJ non créée pour %s : %s", order.order_number, e)
-        notify('cj_order_error', f'Commande CJ non créée : {order.order_number}', str(e),
-               url=f'/admin/orders/{order.id}', level='danger')
+    from services import providers
+    providers.dispatch(order)
     return True
 
 

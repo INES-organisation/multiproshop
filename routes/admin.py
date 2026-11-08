@@ -6,6 +6,7 @@ from extensions import db
 from models.role import Role
 from models.user import User
 from models.category import Category
+from services.providers import LABELS as PROVIDER_LABELS, clean as provider_code
 
 admin_bp = Blueprint('admin', __name__, url_prefix='/admin')
 
@@ -806,6 +807,7 @@ def create_product():
                 category_id=category_id,
                 brand=brand,
                 projects=clean_projects(request.form.get('projects', '')) or None,
+                provider=provider_code(request.form.get('provider')),
                 weight=weight,
                 is_active=is_active,
                 is_featured=is_featured,
@@ -836,7 +838,7 @@ def create_product():
             db.session.rollback()
             flash(f'Erreur lors de la création du produit: {str(e)}', 'error')
     
-    return render_template('admin/product_form.html', product=None, categories=categories)
+    return render_template('admin/product_form.html', product=None, categories=categories, providers=PROVIDER_LABELS)
 
 @admin_bp.route('/products/edit/<int:product_id>', methods=['GET', 'POST'])
 @login_required
@@ -868,6 +870,7 @@ def edit_product(product_id):
             product.brand = request.form.get('brand', '')
             from routes.api_products import clean_projects
             product.projects = clean_projects(request.form.get('projects', '')) or None
+            product.provider = provider_code(request.form.get('provider'))
             product.weight = float(request.form.get('weight', 0)) or None
             product.is_active = 'is_active' in request.form
             if product.is_active and not was_active:
@@ -902,7 +905,7 @@ def edit_product(product_id):
             db.session.rollback()
             flash(f'Erreur lors de la modification: {str(e)}', 'error')
     
-    return render_template('admin/product_form.html', product=product, categories=categories)
+    return render_template('admin/product_form.html', product=product, categories=categories, providers=PROVIDER_LABELS)
 
 @admin_bp.route('/products/delete/<int:product_id>', methods=['POST'])
 @login_required

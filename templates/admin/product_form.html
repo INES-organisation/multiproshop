@@ -46,7 +46,19 @@
                                     <i class="fas fa-store"></i> Vitrines (projets)
                                 </label>
                                 <input type="text" class="admin-form-control" id="projects" name="projects" value="{{ (product.projects or '') if product else '' }}" placeholder="Ex: tonyalpha, digita">
-                                <small>Sites qui affichent aussi ce produit, séparés par des virgules (API /api/partner/catalogue?project=(API /api/catalog/&lt;projet&gt;)lt;projet(API /api/catalog/&lt;projet&gt;)gt;).</small>
+                                <small>Sites qui affichent aussi ce produit, séparés par des virgules (API /api/partner/catalogue?project=&lt;projet&gt;).</small>
+                            </div>
+                            <div class="admin-form-group">
+                                <label class="admin-form-label" for="provider">
+                                    <i class="fas fa-truck"></i> Fournisseur
+                                </label>
+                                {% set current_provider = (product.provider if product else None) or 'cj' %}
+                                <select class="admin-form-control" id="provider" name="provider">
+                                    {% for code, label in providers.items() %}
+                                    <option value="{{ code }}" {{ 'selected' if code == current_provider }}>{{ label }}</option>
+                                    {% endfor %}
+                                </select>
+                                <small>Il expédie ce produit : le port et la commande passent par lui. Un fournisseur pas encore branché ne propose pas de port, le produit ne peut donc pas être acheté.</small>
                             </div>
                         </div>
                     </div>
