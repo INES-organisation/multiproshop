@@ -99,6 +99,7 @@ def create_app(config_name='development'):
     from models.product_variant import ProductVariant
     from models.cart_reminder import CartReminder
     from models.review_request import ReviewRequest
+    from models.cj_sourcing import CjSourcing
     
     # Créer les tables
     from models.coupon import Coupon

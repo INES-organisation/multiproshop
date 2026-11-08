@@ -154,7 +154,36 @@ document.getElementById('menuToggle')?.addEventListener('click', function() {
     document.body.style.overflow = 'hidden';
 });
 
-// Toggle User Menu
+// Écran étroit : en-tête réduit en descendant, complet en remontant ou en haut de page. Le
+// navigateur recale la page quand la hauteur de l'en-tête change (scroll anchoring) : on ignore
+// ces défilements pendant l'animation, sinon l'en-tête s'ouvrirait et se fermerait en boucle.
+(function () {
+    const header = document.querySelector('.modern-header');
+    const small = window.matchMedia('(max-width: 576px)');
+    if (!header) return;
+    let lastY = window.scrollY, ticking = false, lockedUntil = 0;
+    function set(compact) {
+        if (header.classList.contains('is-compact') === compact) return;
+        header.classList.toggle('is-compact', compact);
+        lockedUntil = performance.now() + 350;
+        setTimeout(function () { lastY = window.scrollY; }, 360);
+    }
+    function update() {
+        ticking = false;
+        if (performance.now() < lockedUntil) return;
+        const y = window.scrollY, search = document.getElementById('headerSearchInput');
+        if (!small.matches || y < 60 || document.activeElement === search) set(false);
+        else if (y > lastY + 12) set(true);
+        else if (y < lastY - 40) set(false);
+        else return; // petit mouvement : on garde l'état et le point de référence
+        lastY = y;
+    }
+    window.addEventListener('scroll', function () {
+        if (!ticking) { ticking = true; requestAnimationFrame(update); }
+    }, { passive: true });
+})();
+
+// Toggle User Menu// Toggle User Menu
 const userToggle = document.getElementById('userMenuToggle');
 const userDropdown = document.getElementById('userDropdown');
 

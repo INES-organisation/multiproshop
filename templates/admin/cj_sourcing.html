@@ -1,0 +1,90 @@
+{% extends 'admin/layout_admin_modern.html' %}
+
+{% block title %}Sourcing CJ{% endblock %}
+
+{% block content %}
+<div class="mb-4">
+    <h1 style="font-weight: 800; margin-bottom: 0.5rem;"><i class="fas fa-binoculars"></i> Sourcing CJ</h1>
+    <p style="color: #999; margin: 0;">Un produit vu sur AliExpress, 1688 ou Taobao ? CJ le trouve, l'ajoute à son catalogue et l'expédie comme les autres (un seul colis, même suivi). Une fois trouvé, importez-le en brouillon, traduisez-le puis activez-le.</p>
+</div>
+
+<div class="admin-card mb-4">
+    <div class="admin-card-body">
+        <form method="POST" action="{{ url_for('admin.cj_sourcing') }}">
+            <div class="row g-3">
+                <div class="col-md-6">
+                    <label class="form-label" for="product_url">Lien du produit</label>
+                    <input type="url" class="admin-form-control" id="product_url" name="product_url" maxlength="200" placeholder="https://www.aliexpress.com/item/…">
+                </div>
+                <div class="col-md-6">
+                    <label class="form-label" for="product_name">Nom du produit *</label>
+                    <input type="text" class="admin-form-control" id="product_name" name="product_name" maxlength="200" required>
+                </div>
+                <div class="col-md-6">
+                    <label class="form-label" for="product_image">Adresse de la photo *</label>
+                    <input type="url" class="admin-form-control" id="product_image" name="product_image" maxlength="200" required placeholder="clic droit sur la photo › Copier l'adresse de l'image">
+                </div>
+                <div class="col-md-2">
+                    <label class="form-label" for="price">Prix cible ($)</label>
+                    <input type="number" class="admin-form-control" id="price" name="price" min="0" step="0.01">
+                </div>
+                <div class="col-md-4">
+                    <label class="form-label" for="remark">Remarque pour CJ</label>
+                    <input type="text" class="admin-form-control" id="remark" name="remark" maxlength="200" placeholder="couleur, taille, quantité attendue…">
+                </div>
+            </div>
+            <button type="submit" class="admin-btn admin-btn-primary mt-3">Envoyer la demande à CJ</button>
+        </form>
+    </div>
+</div>
+
+<div class="admin-card">
+    <div class="admin-card-body">
+        <div class="d-flex justify-content-between align-items-center mb-3">
+            <h2 style="font-size: 1.1rem; font-weight: 700; margin: 0;">Mes demandes</h2>
+            <form method="POST" action="{{ url_for('admin.cj_sourcing_refresh') }}">
+                <button type="submit" class="admin-btn admin-btn-sm admin-btn-info"><i class="fas fa-sync"></i> Actualiser</button>
+            </form>
+        </div>
+        <table class="admin-table">
+            <thead>
+                <tr><th scope="col">Produit</th><th scope="col">Envoyée le</th><th scope="col">État</th><th scope="col">Action</th></tr>
+            </thead>
+            <tbody>
+                {% for r in requests %}
+                <tr>
+                    <td>
+                        <img src="{{ r.product_image }}" alt="" width="48" height="48" style="object-fit: cover; border-radius: 6px; vertical-align: middle;" loading="lazy">
+                        {% if r.product_url %}<a href="{{ r.product_url }}" target="_blank" rel="noopener noreferrer">{{ r.product_name }}</a>{% else %}{{ r.product_name }}{% endif %}
+                        <div style="color: #999; font-size: 0.8rem;">n° CJ {{ r.cj_sourcing_id }}{% if r.price_usd %} · cible {{ "%.2f"|format(r.price_usd) }} ${% endif %}</div>
+                    </td>
+                    <td>{{ r.created_at.strftime('%d/%m/%Y') }}</td>
+                    <td>
+                        {% if r.found %}<span class="admin-badge admin-badge-success">Trouvé</span>
+                        {% elif r.failed %}<span class="admin-badge admin-badge-danger">Échec</span>
+                        <div style="font-size: 0.8rem;">{{ r.fail_reason or r.status_label or '' }}</div>
+                        {% else %}<span class="admin-badge admin-badge-warning">{{ r.status_label or 'En cours' }}</span>{% endif %}
+                    </td>
+                    <td>
+                        {% if r.found and imported.get(r.cj_product_id) %}
+                        <a href="{{ url_for('admin.edit_product', product_id=imported[r.cj_product_id].id) }}" class="admin-badge admin-badge-success">Déjà en boutique</a>
+                        {% elif r.found %}
+                        <form method="POST" action="{{ url_for('admin.cj_search_import') }}" class="d-flex gap-2">
+                            <input type="hidden" name="pid" value="{{ r.cj_product_id }}">
+                            <select class="admin-form-control" name="category_id" required aria-label="Catégorie de destination">
+                                <option value="">Catégorie…</option>
+                                {% for c in categories %}<option value="{{ c.id }}">{{ c.name_fr or c.name }}</option>{% endfor %}
+                            </select>
+                            <button type="submit" class="admin-btn admin-btn-sm admin-btn-primary">Importer</button>
+                        </form>
+                        {% else %}—{% endif %}
+                    </td>
+                </tr>
+                {% else %}
+                <tr><td colspan="4" style="text-align: center; padding: 2rem; color: #999;">Aucune demande pour l'instant.</td></tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endblock %}
