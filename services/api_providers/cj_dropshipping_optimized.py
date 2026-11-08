@@ -558,6 +558,30 @@ class CJDropshippingApiOptimized:
         items = data.get('list') or data.get('content') or data.get('records') or []
         return {'list': items, 'total': data.get('total') or data.get('totalRecords') or len(items)}
 
+    def create_sourcing(self, product_name: str, product_image: str, product_url: str = None,
+                        price: float = None, remark: str = None) -> Dict:
+        """Demande de sourcing (product/sourcing/create). Renvoie {'id': cjSourcingId} ou {'error': message}."""
+        body = {'productName': product_name[:200], 'productImage': product_image[:200]}
+        if product_url:
+            body['productUrl'] = product_url[:200]
+        if price:
+            body['price'] = price
+        if remark:
+            body['remark'] = remark[:200]
+        response = self._make_request('POST', 'product/sourcing/create', json=body)
+        data = (response or {}).get('data') or {}
+        if not response or response.get('result') is False or not data.get('cjSourcingId'):
+            return {'error': (response or {}).get('message') or 'CJ ne répond pas'}
+        return {'id': str(data['cjSourcingId'])}
+
+    def query_sourcing(self, sourcing_id: str) -> Optional[Dict]:
+        """État d'une demande (product/sourcing/queryList). Un id par appel : le hub d'INES ne transmet
+        qu'une valeur par paramètre. ponytail: 1 appel par demande en cours ; pour des dizaines de demandes,
+        passer plusieurs sourceIds (100 max) une fois le hub capable de répéter un paramètre."""
+        response = self._make_request('GET', 'product/sourcing/queryList', params={'sourceIds': sourcing_id})
+        items = (response or {}).get('data') or []
+        return items[0] if isinstance(items, list) and items else None
+
     def get_product_details(self, pid: str) -> Optional[Dict]:
         """Récupérer les détails complets d'un produit"""
         try:

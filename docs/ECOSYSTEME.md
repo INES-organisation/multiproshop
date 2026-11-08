@@ -50,6 +50,10 @@ Toutes les routes sont sous `/api/partner`.
 - Réglages côté INES (`/admin/integrations`) : `MULTIPROSHOP_STATS_URL` (adresse de `/api/partner/stats`) et `MULTIPROSHOP_STATS_TOKEN`, de même valeur que `PARTNER_TOKEN_INES` côté MPS.
 - Une autre boutique se branche de la même façon : `<PREFIXE>STATS_URL` et `<PREFIXE>STATS_TOKEN`, avec les préfixes `TONYALPHA_`, `DIGITA_` et `SERENIS_`.
 
+## Sourcing CJ (produits AliExpress, 1688, Taobao…)
+
+Admin MPS › **Sourcing CJ** (`/admin/cj-sourcing`) : lien du produit, nom, adresse de la photo, prix cible facultatif. MPS envoie la demande à CJ (`product/sourcing/create`, via le hub INES). « Actualiser » relit l'état des demandes en cours (`product/sourcing/queryList`, un appel par demande, 20 au plus). Une fois le produit trouvé, il s'importe en brouillon avec la catégorie choisie, comme depuis « Rechercher sur CJ ». CJ ne documente que les états 3 (trouvé) et 5 (échec) : toute autre valeur est affichée comme en cours, avec le libellé de CJ.
+
 ## Autres fournisseurs (à venir)
 
 Les fiches vidaXL/dropXL, BigBuy, Syncee et Printful sont dans INES › `/admin/integrations`, catégorie E-commerce, pour y saisir les clés. **Elles ne sont pas encore utilisées.** Il faut d'abord que les commandes MPS ne dépendent plus d'un seul fournisseur (produit → fournisseur, port par fournisseur, panier qui mélange plusieurs fournisseurs), puis étendre le hub CJ d'INES à un hub de fournisseurs, sur le même principe.

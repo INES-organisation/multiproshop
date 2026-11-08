@@ -1160,6 +1160,62 @@ def cj_search_import():
     return redirect(url_for('admin.edit_product', product_id=product.id))
 
 
+@admin_bp.route('/cj-sourcing', methods=['GET', 'POST'])
+@login_required
+@admin_required
+def cj_sourcing():
+    """Sourcing CJ : demander à CJ de trouver un produit (lien AliExpress, 1688, Taobao…), suivre la
+    demande, puis l'importer en brouillon comme depuis « Rechercher sur CJ »."""
+    from models.cj_sourcing import CjSourcing
+    if request.method == 'POST':
+        f = request.form
+        name, image, url = f.get('product_name', '').strip(), f.get('product_image', '').strip(), f.get('product_url', '').strip()
+        if not name or not image.startswith(('http://', 'https://')) or (url and not url.startswith(('http://', 'https://'))):
+            flash("Nom et adresse de l'image obligatoires ; les liens doivent commencer par http(s)://.", 'error')
+            return redirect(url_for('admin.cj_sourcing'))
+        price = f.get('price', type=float)
+        res = _cj_api().create_sourcing(name, image, url or None, price if price and price > 0 else None,
+                                        f.get('remark', '').strip() or None)
+        if 'error' in res:
+            flash(f"CJ a refusé la demande : {res['error']}", 'error')
+        else:
+            db.session.add(CjSourcing(cj_sourcing_id=res['id'], product_name=name[:200], product_url=url[:200] or None,
+                                      product_image=image[:200], price_usd=price, remark=f.get('remark', '').strip()[:200] or None))
+            db.session.commit()
+            flash('Demande envoyée à CJ. Le résultat arrive en général sous 1 à 3 jours : « Actualiser » pour le relire.', 'success')
+        return redirect(url_for('admin.cj_sourcing'))
+    from models.product import Product
+    requests_ = CjSourcing.query.order_by(CjSourcing.created_at.desc()).limit(200).all()
+    imported = {p.cj_pid: p for p in Product.query.filter(
+        Product.cj_pid.in_([r.cj_product_id for r in requests_ if r.cj_product_id])).all()}
+    categories = Category.query.filter_by(is_active=True).order_by(Category.name).all()
+    return render_template('admin/cj_sourcing.html', requests=requests_, imported=imported, categories=categories)
+
+
+@admin_bp.route('/cj-sourcing/actualiser', methods=['POST'])
+@login_required
+@admin_required
+def cj_sourcing_refresh():
+    """Relit chez CJ l'état des demandes encore en cours (20 au plus : 1 appel CJ par demande)."""
+    from datetime import datetime
+    from sqlalchemy import or_
+    from models.cj_sourcing import CjSourcing
+    api = _cj_api()
+    pending = CjSourcing.query.filter(or_(CjSourcing.status.is_(None), CjSourcing.status.notin_(['3', '5']))) \
+        .order_by(CjSourcing.created_at).limit(20).all()
+    for r in pending:
+        item = api.query_sourcing(r.cj_sourcing_id)
+        r.checked_at = datetime.utcnow()
+        if item:
+            r.status = str(item.get('sourceStatus') or '')[:10] or None
+            r.status_label = (item.get('sourceStatusStr') or '')[:100] or None
+            r.cj_product_id = (item.get('cjProductId') or '')[:50] or None
+            r.fail_reason = (item.get('failReasonStr') or '')[:500] or None
+    db.session.commit()
+    flash(f'{len(pending)} demande(s) relue(s) chez CJ.', 'success')
+    return redirect(url_for('admin.cj_sourcing'))
+
+
 @admin_bp.route('/products/bulk', methods=['POST'])
 @login_required
 @admin_required
