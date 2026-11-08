@@ -1,6 +1,6 @@
 # Écosystème MultiProShop, INES et vitrines
 
-*État au 08/11/2026 (soir).* Ce document décrit qui fait quoi entre INES, MultiProShop (MPS) et les sites de vente (TonyAlpha80, DIGITA, Sérénis), où se règle chaque chose et comment vérifier que tout fonctionne.
+*État au 08/11/2026 (soir).* Ce document décrit qui fait quoi entre INES, MultiProShop (MPS) et les sites de vente (TonyAlpha80, DIGITA, Sérénis), où se règle chaque chose et comment vérifier que tout fonctionne. L'historique des opérations faites en production (données modifiées, réglages, incidents) est dans [JOURNAL_EXPLOITATION.md](JOURNAL_EXPLOITATION.md).
 
 ## Qui fait quoi
 
