@@ -3,6 +3,8 @@
 Même méthode que Digita : un projet compose séparé dans `/opt/multiproshop`, branché sur le
 réseau Docker d'INES, servi par `ines-nginx`. Aucun port publié, aucun nouveau serveur SQL ou Redis.
 
+Vue d'ensemble (INES, hub CJ, vitrines, chiffres pour INES, fournisseurs) : [docs/ECOSYSTEME.md](../docs/ECOSYSTEME.md).
+
 | Élément | Où | Mémoire |
 | --- | --- | --- |
 | Site (gunicorn, 2 × 4 threads) | conteneur `multiproshop-web` | ≈ 160 Mo (limite 384 Mo) |
