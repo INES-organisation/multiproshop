@@ -1246,6 +1246,80 @@
     }
 }
 
+/* Petit mobile (360 px…) : en-tête resserré, et réduit à la ligne logo / panier / compte quand on
+   descend dans la page (classe is-compact posée par header_modern.html) ; recherche et bandeau
+   reviennent dès qu'on remonte. */
+@media (max-width: 576px) {
+    .header-container {
+        padding: .35rem .6rem !important;
+        row-gap: .35rem !important;
+    }
+
+    .header-action,
+    .user-toggle {
+        padding: .25rem !important;
+        gap: 0;
+    }
+
+    .action-icon {
+        font-size: 1.35rem;
+    }
+
+    .menu-toggle {
+        width: 34px;
+        height: 34px;
+    }
+
+    .logo-img {
+        height: 34px;
+    }
+
+    .search-form {
+        margin: 0 !important;
+    }
+
+    .search-wrapper {
+        padding: .15rem .15rem .15rem .75rem;
+    }
+
+    .search-input {
+        padding: .35rem 0 .35rem .25rem;
+        font-size: 16px; /* 16 px : pas de zoom automatique d'iOS à la saisie */
+    }
+
+    .search-btn {
+        padding: .45rem .75rem;
+    }
+
+    .promo-banner {
+        font-size: .72rem;
+        line-height: 1.25;
+        padding: .2rem .6rem;
+        display: block;
+        text-align: center;
+    }
+
+    .modern-header .header-center,
+    .modern-header .header-nav {
+        max-height: 120px;
+        transition: max-height .2s ease, opacity .2s ease;
+    }
+
+    .modern-header.is-compact .header-center,
+    .modern-header.is-compact .header-nav {
+        max-height: 0;
+        opacity: 0;
+        overflow: hidden;
+    }
+}
+
+@media (max-width: 576px) and (prefers-reduced-motion: reduce) {
+    .modern-header .header-center,
+    .modern-header .header-nav {
+        transition: none;
+    }
+}
+
 /* ===================================
    FLASH MESSAGES
    =================================== */
