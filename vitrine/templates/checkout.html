@@ -1,0 +1,30 @@
+{% extends 'base.html' %}
+{% block title %}Commande — {{ site.name }}{% endblock %}
+{% block content %}
+<h1>Commande</h1>
+<form method="post">
+  <label for="country">Pays de livraison</label>
+  <select id="country" name="country" onchange="this.form.submit()">
+    {% for code, label in countries.items() %}<option value="{{ code }}" {{ 'selected' if form.country == code }}>{{ label }}</option>{% endfor %}
+  </select>
+  <noscript><button class="btn" type="submit" name="step" value="country">Mettre à jour la livraison</button></noscript>
+  <fieldset style="border:0;padding:0;margin:16px 0">
+    <legend><strong>Livraison</strong></legend>
+    {% for m in shipping.methods %}
+    <label><input type="radio" name="shipping_method" value="{{ m.code }}" style="width:auto" {{ 'checked' if form.shipping_method == m.code or (not form.shipping_method and loop.first) }}>
+      {{ m.name }} : {{ 'offerte' if m.price == 0 else ('%.2f'|format(m.price)|replace('.', ',') ~ ' €') }}{% if m.delivery_time %}, {{ m.delivery_time }} jours{% endif %}</label>
+    {% else %}
+    <p class="note">Pas de livraison possible vers ce pays pour ce panier.</p>
+    {% endfor %}
+  </fieldset>
+  <div class="form2">
+    {% for key, label, type, auto in [('first_name','Prénom','text','given-name'),('last_name','Nom','text','family-name'),('email','E-mail','email','email'),('phone','Téléphone','tel','tel'),('address','Adresse','text','street-address'),('city','Ville','text','address-level2'),('postal_code','Code postal','text','postal-code')] %}
+    <div><label for="{{ key }}">{{ label }}</label><input id="{{ key }}" name="{{ key }}" type="{{ type }}" autocomplete="{{ auto }}" value="{{ form[key] }}" required></div>
+    {% endfor %}
+  </div>
+  <label for="notes">Remarque (facultatif)</label>
+  <textarea id="notes" name="notes" rows="2">{{ form.notes }}</textarea>
+  <p class="note">Sous-total : {{ '%.2f'|format(shipping.subtotal)|replace('.', ',') }} €. Le montant final, livraison comprise, s'affiche sur la page de paiement sécurisé.</p>
+  <p><button class="btn" type="submit" name="step" value="pay" {{ 'disabled' if not shipping.methods }}>Payer</button></p>
+</form>
+{% endblock %}

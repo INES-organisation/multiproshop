@@ -10,7 +10,7 @@ LOGS=${MPS_LOG_DIR:-/home/ubuntu/multiproshop-logs}
 mkdir -p "$LOGS"
 ./deploy/backup.sh
 stamp=$(date +%Y-%m-%d_%H%M)
-for c in multiproshop-web multiproshop-worker; do
+for c in multiproshop-web multiproshop-worker serenis-web; do
   docker logs --timestamps "$c" 2>&1 | gzip > "$LOGS/${c}_$stamp.log.gz" || true
 done
 find "$LOGS" -name '*.log.gz' -mtime +30 -delete

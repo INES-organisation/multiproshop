@@ -50,6 +50,40 @@ services:
       - multiproshop-uploads:/app/static/uploads
       - multiproshop-instance:/app/instance
 
+  # Vitrine Sérénis (vitrine/app.py) : même image, sans les secrets de MPS ; elle ne parle qu'à
+  # l'API partenaire. Servie par ines-nginx sur serenis.multiproshop.com. Une autre niche = un bloc
+  # de plus avec ses propres VITRINE_*.
+  serenis-web:
+    build:
+      context: ..
+      dockerfile: Dockerfile
+    image: multiproshop-web:${MULTIPROSHOP_IMAGE_TAG:-latest}
+    container_name: serenis-web
+    command: gunicorn vitrine.app:app --bind 0.0.0.0:8000 --workers 1 --threads 4 --timeout 60 --access-logfile -
+    environment:
+      - VITRINE_PROJECT=serenis
+      - VITRINE_NAME=Sérénis
+      - VITRINE_URL=https://serenis.multiproshop.com
+      - MPS_API=http://multiproshop-web:8000/api/partner
+      - VITRINE_TOKEN=${PARTNER_TOKEN_SERENIS:-}
+      - SECRET_KEY=${SERENIS_SECRET_KEY:-}
+    depends_on:
+      - multiproshop-web
+    networks:
+      - ines
+    restart: unless-stopped
+    mem_limit: 128m
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request;urllib.request.urlopen('http://127.0.0.1:8000/health')"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+
 volumes:
   multiproshop-uploads:
   multiproshop-instance:

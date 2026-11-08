@@ -1,0 +1,32 @@
+{% extends 'base.html' %}
+{% block title %}{{ p.name }} — {{ site.name }}{% endblock %}
+{% block description %}{{ p.short_description or site.tagline }}{% endblock %}
+{% block content %}
+<div class="product">
+  <div>
+    <img src="{{ p.image_url }}" alt="{{ p.name }}">
+    {% if p.images %}<div class="thumbs">{% for img in p.images[:8] %}<img src="{{ img }}" alt="" loading="lazy">{% endfor %}</div>{% endif %}
+  </div>
+  <div>
+    <h1>{{ p.name }}</h1>
+    <p class="price">{{ '%.2f'|format(p.price_from)|replace('.', ',') }} €</p>
+    {% if p.short_description %}<p>{{ p.short_description }}</p>{% endif %}
+    <form method="post" action="{{ url_for('cart_add') }}">
+      <input type="hidden" name="product_id" value="{{ p.id }}">
+      {% if p.variants %}
+      <label for="variant">Modèle</label>
+      <select id="variant" name="variant_id" required>
+        {% for v in p.variants if v.stock > 0 %}
+        <option value="{{ v.id }}">{{ [v.color, v.size]|select|join(' / ') or 'Modèle ' ~ loop.index }} — {{ '%.2f'|format(v.price or p.price)|replace('.', ',') }} €</option>
+        {% endfor %}
+      </select>
+      {% endif %}
+      <label for="quantity">Quantité</label>
+      <input id="quantity" name="quantity" type="number" min="1" max="20" value="1" style="max-width:100px">
+      <p><button class="btn" type="submit">Ajouter au panier</button></p>
+    </form>
+    <p class="note">Expédié depuis l'entrepôt de notre fournisseur : le délai est indiqué à l'étape de la livraison.</p>
+    <div>{{ p.description|safe if p.description else '' }}</div>
+  </div>
+</div>
+{% endblock %}
