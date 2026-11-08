@@ -36,7 +36,7 @@ partner_api = Blueprint('partner_api', __name__, url_prefix='/api/partner')
 MAX_PER_PAGE = 60
 MAX_ITEMS = 30
 CUSTOMER_FIELDS = ('first_name', 'last_name', 'email', 'phone', 'address', 'city', 'postal_code')
-SITE_LABELS = {'tonyalpha': 'tonyalpha80.com (ALIAS)'}
+SITE_LABELS = {'tonyalpha': 'tonyalpha80.com (ALIAS)', 'serenis': 'serenis.multiproshop.com'}
 
 
 def _partners():
@@ -92,6 +92,17 @@ def _product_json(p, full=False):
     return data
 
 
+def _in_project(query):
+    """?project=<vitrine> : seulement les produits marqués pour cette vitrine (champ « Vitrines » de l'admin).
+    Renvoie None si le nom est invalide."""
+    project = (request.args.get('project') or '').strip().lower()
+    if not project:
+        return query
+    if not _PROJECT.match(project):
+        return None
+    return query.filter((literal(',') + Product.projects + literal(',')).like(f'%,{project},%'))
+
+
 @partner_api.route('/catalogue')
 def catalogue():
     try:
@@ -100,13 +111,9 @@ def catalogue():
         category_id = int(request.args['category']) if request.args.get('category') else None
     except ValueError:
         return jsonify({'error': 'Paramètres invalides'}), 400
-    query = _visible()
-    # ?project=tonyalpha : seulement les produits marqués pour cette vitrine (champ « Vitrines » de l'admin)
-    project = (request.args.get('project') or '').strip().lower()
-    if project:
-        if not _PROJECT.match(project):
-            return jsonify({'error': 'Projet invalide'}), 400
-        query = query.filter((literal(',') + Product.projects + literal(',')).like(f'%,{project},%'))
+    query = _in_project(_visible())
+    if query is None:
+        return jsonify({'error': 'Projet invalide'}), 400
     base = query  # compte par catégorie sur toute la vitrine, sans la recherche ni la catégorie choisie
     q = (request.args.get('q') or '').strip()[:100]
     if q:
@@ -131,7 +138,8 @@ def catalogue():
 
 @partner_api.route('/products/<int:product_id>')
 def product(product_id):
-    p = _visible().filter(Product.id == product_id).first()
+    query = _in_project(_visible())
+    p = query.filter(Product.id == product_id).first() if query is not None else None
     if not p:
         return jsonify({'error': 'Produit introuvable'}), 404
     return jsonify(_product_json(p, full=True))

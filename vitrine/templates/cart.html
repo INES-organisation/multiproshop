@@ -1,0 +1,22 @@
+{% extends 'base.html' %}
+{% block title %}Panier — {{ site.name }}{% endblock %}
+{% block content %}
+<h1>Panier</h1>
+{% if lines %}
+<table>
+  {% for line in lines %}
+  <tr>
+    <td style="width:72px"><img src="{{ line.image_url }}" alt="" width="64" height="64" style="object-fit:cover;border-radius:6px"></td>
+    <td>{{ line.name }}{% if line.options %}<div class="note">{{ line.options }}</div>{% endif %}</td>
+    <td>× {{ line.quantity }}</td>
+    <td class="price">{{ '%.2f'|format(line.total)|replace('.', ',') }} €</td>
+    <td><form method="post" action="{{ url_for('cart_remove', index=loop.index0) }}"><button type="submit" class="note" style="background:none;border:0;cursor:pointer;text-decoration:underline">Retirer</button></form></td>
+  </tr>
+  {% endfor %}
+</table>
+<p class="price">Sous-total : {{ '%.2f'|format(subtotal)|replace('.', ',') }} €</p>
+<p><a class="btn" href="{{ url_for('checkout') }}">Commander</a></p>
+{% else %}
+<p>Votre panier est vide. <a href="{{ url_for('index') }}">Voir la boutique</a></p>
+{% endif %}
+{% endblock %}

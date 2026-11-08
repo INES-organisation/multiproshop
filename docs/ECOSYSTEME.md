@@ -8,7 +8,7 @@
 |---|---|---|
 | **INES** (ines.weballone.com) | Configuration et suivi : clés des fournisseurs, compte CJ unique, paiement Stripe, e-mails, moniteurs | `/opt/ines`, dépôt INES-organisation/INES |
 | **MultiProShop** (multiproshop.com) | Gestion et vente : catalogue, prix, commandes, envoi des commandes chez CJ, e-mails clients | `/opt/multiproshop`, dépôt INES-organisation/multiproshop |
-| **Vitrines** (tonyalpha80.com…) | Affichent une sélection du catalogue MPS. Le client paie et suit sa commande chez elles ; MPS encaisse et commande | Leur propre dépôt |
+| **Vitrines** (tonyalpha80.com, serenis.multiproshop.com…) | Affichent une sélection du catalogue MPS. Le client paie et suit sa commande chez elles ; MPS encaisse et commande | Leur propre dépôt |
 
 Les trois tournent sur le même VPS (`ssh ines-vps`).
 
@@ -36,6 +36,16 @@ Toutes les routes sont sous `/api/partner`.
 - **Rattacher un produit à une vitrine** : admin MPS › fiche produit › champ « Vitrines (projets) », par exemple `tonyalpha, serenis`. La saisie est normalisée en minuscules et sans doublon.
 - Sans `?project=`, une vitrine reçoit tout le catalogue publié. C'est le cas de TonyAlpha80 aujourd'hui.
 - Les prix, le port et le montant à payer sont toujours recalculés par MPS, jamais repris de la vitrine.
+
+## Vitrines de niche (Sérénis)
+
+- `vitrine/app.py` est une petite boutique Flask qui affiche les produits d'un projet MPS et passe ses commandes par l'API partenaire. MPS reste le vendeur : prix, paiement, commande CJ, e-mails. Le pied de page le dit, et renvoie aux CGV et aux mentions légales de MPS.
+- **Sérénis** : service `serenis-web` de `deploy/docker-compose.yml`, même image que MPS, sans ses secrets. Il est servi par ines-nginx sur `serenis.multiproshop.com`, dont le bloc est dans le nginx.conf d'INES.
+  - Réglages dans `deploy/.env` de MPS : `PARTNER_TOKEN_SERENIS` (jeton de la vitrine) et `SERENIS_SECRET_KEY` (sessions).
+  - Certificat : `sudo certbot certonly --webroot -w /opt/ines/certbot-webroot -d serenis.multiproshop.com --deploy-hook /opt/ines/scripts/certbot-custom-domain-hook.sh`.
+  - Produits : champ « Vitrines (projets) » = `serenis` dans la fiche admin. La vitrine n'affiche que ceux-là, même par lien direct.
+  - Plan : une petite vitrine avant le Black Friday, puis en janvier le catalogue complet, avec ses lots « Rituel du soir ». Le document de départ est `LANCEMENT_MPS_NICHE_DROPSHIPPING.md` (docs INES, Business et croissance).
+- **Une autre niche** : même service, copié avec d'autres `VITRINE_*` (projet, nom, slogan, couleur, adresse) et son propre jeton.
 
 ## Chiffres de MPS dans les moniteurs d'INES
 

@@ -1,0 +1,25 @@
+{% extends 'base.html' %}
+{% block content %}
+<section class="hero">
+  <h1>{{ site.name }}</h1>
+  <p>{{ site.tagline }}</p>
+</section>
+{% if data.categories|length > 1 %}
+<nav class="chips" aria-label="Collections">
+  <a class="chip {{ '' if args.get('category') else 'on' }}" href="{{ url_for('index') }}">Tout</a>
+  {% for c in data.categories %}
+  <a class="chip {{ 'on' if args.get('category') == c.id|string }}" href="{{ url_for('index', category=c.id) }}">{{ c.name }}</a>
+  {% endfor %}
+</nav>
+{% endif %}
+<div class="grid">
+  {% for p in data.products %}
+  <a class="card" href="{{ url_for('product', product_id=p.id) }}">
+    <img src="{{ p.image_url }}" alt="{{ p.name }}" loading="lazy">
+    <div><div>{{ p.name }}</div><div class="price">{% if p.price_from < p.price %}dès {% endif %}{{ '%.2f'|format(p.price_from)|replace('.', ',') }} €</div></div>
+  </a>
+  {% else %}
+  <p>La boutique ouvre très bientôt.</p>
+  {% endfor %}
+</div>
+{% endblock %}
