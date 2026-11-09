@@ -19,6 +19,29 @@ def _new_code():
             return code
 
 
+def sync_to_ines(email, source, action='subscribe'):
+    """Recopie l'inscription (ou la désinscription) dans la liste newsletter de la boutique côté INES
+    (Listmonk, Communications › Campagnes), en arrière-plan. Jamais bloquant : la liste de MPS fait foi."""
+    import logging
+    import os
+    from threading import Thread
+
+    import requests
+    if not os.getenv('INES_API_KEY'):
+        return
+    site = 'multiproshop' if source in (None, '', 'site', 'footer', 'popup') else source
+
+    def send():
+        url = os.getenv('INES_API_URL', 'http://ines-backend:8000').rstrip('/') + '/api/v1/external/newsletter'
+        try:
+            requests.post(url, json={'site': site, 'email': email, 'action': action},
+                          headers={'Authorization': 'Bearer ' + os.getenv('INES_API_KEY', '')},
+                          timeout=20).raise_for_status()
+        except requests.RequestException as e:
+            logging.getLogger(__name__).warning("Newsletter non recopiée dans INES (%s, %s) : %s", email, action, e)
+    Thread(target=send, daemon=True).start()
+
+
 def subscribe(email, source='site'):
     """Inscrit l'adresse (ou la réinscrit) et renvoie (abonné, coupon, nouveau ?). ValueError si l'adresse est invalide."""
     from models.coupon import Coupon
@@ -40,6 +63,7 @@ def subscribe(email, source='site'):
         db.session.add(coupon)
         sub.coupon_code = coupon.code
     db.session.commit()
+    sync_to_ines(email, sub.source or source)
     return sub, coupon, created
 
 
@@ -71,4 +95,5 @@ def unsubscribe(token):
     if sub and not sub.unsubscribed_at:
         sub.unsubscribed_at = datetime.utcnow()
         db.session.commit()
+        sync_to_ines(sub.email, sub.source, 'unsubscribe')
     return sub

@@ -406,15 +406,32 @@ def stats():
         return {'orders': len(orders), 'revenue': round(sum(o.total_price or 0 for o in orders), 2),
                 'margin': round(sum(margins), 2), 'margin_unknown': len(orders) - len(margins)}
 
-    sites = {'multiproshop': paid.filter(~Order.admin_notes.like('Commande passée sur %') | Order.admin_notes.is_(None)).count()}
+    own = paid.filter(~Order.admin_notes.like('Commande passée sur %') | Order.admin_notes.is_(None))
+    sites = {'multiproshop': own.count()}
+    month = now - timedelta(days=30)
+
+    def site_month(query):
+        orders = query.filter(Order.paid_at >= month).all()
+        margins = [m for m in (o.product_margin() for o in orders) if m is not None]
+        return {'orders': len(orders), 'revenue': round(sum(o.total_price or 0 for o in orders), 2),
+                'margin': round(sum(margins), 2)}
+    by_site = {'multiproshop': site_month(own)}
     for site in set(_partners()) - {'ines'}:
-        sites[site] = _partner_order(site).filter(Order.payment_status == 'paid').count()
+        site_paid = _partner_order(site).filter(Order.payment_status == 'paid')
+        sites[site] = site_paid.count()
+        by_site[site] = site_month(site_paid)
+    from models.newsletter import NewsletterSubscriber
+    active = NewsletterSubscriber.query.filter(NewsletterSubscriber.unsubscribed_at.is_(None))
+    by_source = dict(active.with_entities(NewsletterSubscriber.source, db.func.count(NewsletterSubscriber.id))
+                     .group_by(NewsletterSubscriber.source).all())
     online = _visible()
     last_sync = db.session.query(db.func.max(Product.cj_last_sync)).scalar()
     return jsonify({
         'generated_at': now.isoformat() + 'Z',
         'sales': {'today': period(1), 'week': period(7), 'month': period(30)},
         'paid_orders_by_site': sites,
+        'month_by_site': by_site,  # 30 derniers jours, par boutique
+        'newsletter': {'subscribers': active.count(), 'by_source': {k or 'site': v for k, v in by_source.items()}},
         # payées mais pas encore passées chez CJ : à surveiller (paiement reçu, rien d'envoyé)
         'to_send_to_cj': paid.filter(Order.cj_order_id.is_(None), Order.status.notin_(['cancelled', 'delivered'])).count(),
         'shipped_in_transit': Order.query.filter(Order.status == 'shipped').count(),

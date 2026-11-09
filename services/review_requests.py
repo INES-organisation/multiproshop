@@ -46,7 +46,7 @@ def reviewable_items(request_):
 
 def send_due(now=None, limit=50):
     """Envoie les demandes d'avis arrivées à échéance ; renvoie le nombre d'e-mails envoyés"""
-    from utils.email import _send_via_ines
+    from utils.email import _send_via_ines, brand_for
 
     now = now or datetime.utcnow()
     already = db.session.query(ReviewRequest.order_id)
@@ -72,7 +72,7 @@ def send_due(now=None, limit=50):
         html = render_template('emails/review_request.html', order=order, items=items,
                                review_url=f'{site_url}/avis/{request_.token}',
                                stop_url=f'{site_url}/avis/{request_.token}/non-merci')
-        if _send_via_ines(order.customer_email, SUBJECT, html, 'avis'):
+        if _send_via_ines(order.customer_email, SUBJECT, html, 'avis', brand_for(order)):
             request_.sent_at = now
             sent += 1
         else:

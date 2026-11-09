@@ -11,7 +11,7 @@ from models.order import Order, OrderItem
 from models.review_request import ReviewRequest
 import utils.email as ue
 sent = []
-ue._send_via_ines = lambda to, subject, html, template=None: sent.append((to, subject, html)) or True
+ue._send_via_ines = lambda to, subject, html, template=None, brand=None: sent.append((to, subject, html)) or True
 with app.app_context():
     db.create_all()
     cat = Category(name='M', slug='m', is_active=True, visible=True, level=1); db.session.add(cat); db.session.flush()
