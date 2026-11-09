@@ -169,4 +169,22 @@ with mps.app_context():
     notify('dispute', 'Litige CJ 42 : en cours', level='warning')
 st = mps.test_client().get('/api/partner/stats', headers={'Authorization': 'Bearer ' + 'i' * 32}).get_json()
 assert st['alerts']['disputes_30d'] == 1 and st['alerts']['latest'][0]['title'] == 'Litige CJ 42 : en cours', st['alerts']
+# Remboursement et contestation Stripe transmis par INES
+ines = {'Authorization': 'Bearer ' + 'i' * 32}
+with mps.app_context():
+    o = Order.query.order_by(Order.id.desc()).first()
+    o.payment_status, oid, num = 'paid', o.id, o.order_number
+    db.session.commit()
+pe = lambda body: mps.test_client().post('/api/partner/payment-events', json=body, headers=ines)
+assert pe({'type': 'charge.refunded', 'order_id': oid, 'order_number': 'X'}).get_json()['ignored']
+r = pe({'type': 'charge.refunded', 'id': 'ch_1', 'order_id': oid, 'order_number': num, 'amount': 3990, 'amount_refunded': 3990})
+assert r.status_code == 200, r.get_json()
+r = pe({'type': 'charge.dispute.created', 'id': 'dp_1', 'order_id': oid, 'order_number': num, 'amount': 3990,
+        'status': 'needs_response', 'reason': 'fraudulent'})
+assert r.status_code == 200, r.get_json()
+with mps.app_context():
+    assert Order.query.get(oid).payment_status == 'refunded'
+st = mps.test_client().get('/api/partner/stats', headers=ines).get_json()
+assert st['alerts']['disputes_30d'] == 2 and st['alerts']['latest'][0]['title'].startswith('Contestation bancaire'), st['alerts']
+assert mps.test_client().post('/api/partner/payment-events', json={}, headers={'Authorization': 'Bearer ' + 's' * 32}).status_code in (401, 403)
 print('e-mails et chiffres Sérénis OK')

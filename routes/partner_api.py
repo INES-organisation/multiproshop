@@ -390,6 +390,38 @@ def newsletter():
                     'min_subtotal': coupon.min_subtotal}), 201 if created else 200
 
 
+@partner_api.route('/payment-events', methods=['POST'])
+@partner_required
+def payment_event():
+    """Remboursement ou litige Stripe d'une commande, transmis par le webhook Stripe d'INES (jeton INES)."""
+    if g.partner_site != 'ines':
+        return jsonify({'error': 'Réservé à INES'}), 403
+    from services.notifications import notify
+    data = request.get_json(silent=True) or {}
+    kind, number = str(data.get('type') or ''), str(data.get('order_number') or '')[:32]
+    order = Order.query.filter_by(order_number=number).first() if number else None
+    if not order or str(order.id) != str(data.get('order_id')):
+        return jsonify({'ignored': 'commande inconnue'}), 200  # 200 : Stripe n'a pas à relancer
+    euros = (data.get('amount_refunded') if kind == 'charge.refunded' else data.get('amount')) or 0
+    euros = f"{int(euros) / 100:.2f} €" if str(euros).isdigit() else ''
+    url = f"/admin/orders/{order.id}"
+    if kind == 'charge.refunded':
+        full = str(data.get('amount_refunded')) == str(data.get('amount'))
+        if full and order.payment_status == 'paid':
+            order.payment_status = 'refunded'
+        notify('refund', f"Remboursement {'total' if full else 'partiel'} {order.order_number}", euros, url,
+               'warning', dedupe=f"refund:{data.get('id')}:{data.get('amount_refunded')}")
+    elif kind.startswith('charge.dispute.'):
+        status = str(data.get('status') or '')[:40]
+        notify('stripe_dispute', f"Contestation bancaire {order.order_number} ({status})",
+               f"{euros} · motif : {str(data.get('reason') or '?')[:60]}", url,
+               'info' if status == 'won' else 'danger', dedupe=f"dispute:{data.get('id')}:{status}")
+    else:
+        return jsonify({'error': 'Type inconnu'}), 400
+    db.session.commit()
+    return jsonify({'ok': True})
+
+
 @partner_api.route('/stats')
 @partner_required
 def stats():
@@ -435,7 +467,7 @@ def stats():
         'month_by_site': by_site,  # 30 derniers jours, par boutique
         # litiges CJ et alertes de la boutique (commande CJ refusée, marge, stock…), pour INES
         'alerts': {
-            'disputes_30d': Alert.query.filter(Alert.kind == 'dispute', Alert.created_at >= month).count(),
+            'disputes_30d': Alert.query.filter(Alert.kind.in_(['dispute', 'stripe_dispute']), Alert.created_at >= month).count(),
             'unread': alerts.filter(Alert.read_at.is_(None)).count(),
             'latest': [{'kind': a.kind, 'level': a.level, 'title': a.title,
                         'at': a.created_at.isoformat() + 'Z' if a.created_at else None}
