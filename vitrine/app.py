@@ -124,6 +124,11 @@ def globals_():
             'free_shipping': free_shipping()}
 
 
+@app.errorhandler(404)
+def not_found(_e):
+    return render_template('error.html', message="Cette page n'existe pas ou plus."), 404
+
+
 @app.errorhandler(ApiError)
 def api_error(e):
     return render_template('error.html', message=str(e)), 503

@@ -12,21 +12,22 @@
 .hero-visual img{border-radius:28px;aspect-ratio:1;object-fit:cover;width:100%;box-shadow:0 40px 80px -30px rgba(0,0,0,.6)}
 .hero-visual .tag{position:absolute;left:-18px;bottom:28px;background:var(--sand);color:var(--night);border-radius:16px;padding:12px 16px;box-shadow:var(--shadow);font-size:.88rem;max-width:230px}
 .hero-visual .tag strong{display:block;font-family:var(--serif);font-size:1.05rem;font-weight:500}
-@media (max-width:860px){.hero .wrap{grid-template-columns:1fr;padding-top:44px;padding-bottom:56px;gap:32px}.hero-visual .tag{left:12px}}
+@media (max-width:860px){.hero .wrap{grid-template-columns:1fr;padding-top:44px;padding-bottom:56px;gap:32px}.hero-visual .tag{position:static;display:block;max-width:none;margin-top:14px}}
 .promises-band{background:var(--card);border-bottom:1px solid var(--line)}.promises-band .wrap{padding-top:26px;padding-bottom:26px}
 .moments{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:20px}
-.moment{position:relative;border-radius:var(--radius);overflow:hidden;aspect-ratio:4/5;text-decoration:none;color:#fff;background:var(--night)}
-.moment img{width:100%;height:100%;object-fit:cover;opacity:.82;transition:transform .5s,opacity .3s}
-.moment:hover img{transform:scale(1.04);opacity:.7}
-.moment div{position:absolute;inset:auto 0 0 0;padding:22px;background:linear-gradient(transparent,rgba(18,27,49,.85))}
+.moment{display:flex;flex-direction:column;border-radius:var(--radius);overflow:hidden;text-decoration:none;color:#fff;background:var(--night)}
+.moment .pic{position:relative;aspect-ratio:4/3;overflow:hidden;background:var(--sand-2)}
+.moment img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;transition:transform .5s}
+.moment:hover img{transform:scale(1.04)}
+.moment div.txt{padding:16px 20px 18px}
 .moment h3{color:#fff;margin:0}.moment span{font-size:.88rem;color:#dfe3ee}
 .rituals{display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:22px}
 .ritual{background:var(--card);border:1px solid var(--line);border-radius:24px;padding:18px;display:flex;flex-direction:column;gap:14px;text-decoration:none;transition:box-shadow .2s,transform .2s}
 .ritual:hover{box-shadow:var(--shadow);transform:translateY(-3px)}
-.ritual .collage{display:grid;grid-template-columns:2fr 1fr;grid-template-rows:1fr 1fr;gap:8px;aspect-ratio:3/2}
-.ritual .collage img{width:100%;height:100%;object-fit:cover;border-radius:14px;background:var(--sand-2)}
+.ritual .collage{display:grid;grid-template-columns:2fr 1fr;grid-template-rows:repeat(2,minmax(0,1fr));gap:8px;aspect-ratio:3/2;overflow:hidden}
+.ritual .collage img{min-width:0;min-height:0;width:100%;height:100%;object-fit:cover;border-radius:14px;background:var(--sand-2)}
 .ritual .collage img:first-child{grid-row:span 2}
-.ritual .collage.two{grid-template-columns:1fr 1fr;grid-template-rows:1fr}.ritual .collage.two img:first-child{grid-row:auto}
+.ritual .collage.two{grid-template-columns:1fr 1fr;grid-template-rows:minmax(0,1fr)}.ritual .collage.two img:first-child{grid-row:auto}
 .ritual .foot{display:flex;justify-content:space-between;align-items:center;gap:12px;margin-top:auto}
 .ritual ul{margin:0;padding-left:18px;color:var(--muted);font-size:.9rem}
 .chips{display:flex;gap:8px;flex-wrap:wrap}
@@ -73,8 +74,8 @@
   <div class="moments">
     {% for c in categories %}
     <a class="moment" href="{{ url_for('index', category=c.id) }}#boutique">
-      {% if covers.get(c.id) %}<img src="{{ covers[c.id] }}" alt="" loading="lazy">{% endif %}
-      <div><h3>{{ c.name }}</h3><span>{{ c.count }} produit{{ 's' if c.count > 1 }}</span></div>
+      <div class="pic">{% if covers.get(c.id) %}<img src="{{ covers[c.id] }}" alt="" loading="lazy">{% endif %}</div>
+      <div class="txt"><h3>{{ c.name }}</h3><span>{{ c.count }} produit{{ 's' if c.count > 1 }}</span></div>
     </a>
     {% endfor %}
   </div>
