@@ -420,6 +420,8 @@ def stats():
         site_paid = _partner_order(site).filter(Order.payment_status == 'paid')
         sites[site] = site_paid.count()
         by_site[site] = site_month(site_paid)
+    from models.admin_notification import AdminNotification as Alert
+    alerts = Alert.query.filter(Alert.level.in_(['warning', 'danger']))
     from models.newsletter import NewsletterSubscriber
     active = NewsletterSubscriber.query.filter(NewsletterSubscriber.unsubscribed_at.is_(None))
     by_source = dict(active.with_entities(NewsletterSubscriber.source, db.func.count(NewsletterSubscriber.id))
@@ -431,6 +433,14 @@ def stats():
         'sales': {'today': period(1), 'week': period(7), 'month': period(30)},
         'paid_orders_by_site': sites,
         'month_by_site': by_site,  # 30 derniers jours, par boutique
+        # litiges CJ et alertes de la boutique (commande CJ refusée, marge, stock…), pour INES
+        'alerts': {
+            'disputes_30d': Alert.query.filter(Alert.kind == 'dispute', Alert.created_at >= month).count(),
+            'unread': alerts.filter(Alert.read_at.is_(None)).count(),
+            'latest': [{'kind': a.kind, 'level': a.level, 'title': a.title,
+                        'at': a.created_at.isoformat() + 'Z' if a.created_at else None}
+                       for a in alerts.order_by(Alert.created_at.desc()).limit(5)],
+        },
         'newsletter': {'subscribers': active.count(), 'by_source': {k or 'site': v for k, v in by_source.items()}},
         # payées mais pas encore passées chez CJ : à surveiller (paiement reçu, rien d'envoyé)
         'to_send_to_cj': paid.filter(Order.cj_order_id.is_(None), Order.status.notin_(['cancelled', 'delivered'])).count(),

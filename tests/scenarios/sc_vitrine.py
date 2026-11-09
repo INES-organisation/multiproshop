@@ -164,4 +164,9 @@ with mps.app_context():
 os.environ['PARTNER_TOKEN_INES'] = 'i' * 32
 st = mps.test_client().get('/api/partner/stats', headers={'Authorization': 'Bearer ' + 'i' * 32}).get_json()
 assert st['newsletter']['by_source'].get('serenis') == 1 and 'serenis' in st['month_by_site'], st
+from services.notifications import notify
+with mps.app_context():
+    notify('dispute', 'Litige CJ 42 : en cours', level='warning')
+st = mps.test_client().get('/api/partner/stats', headers={'Authorization': 'Bearer ' + 'i' * 32}).get_json()
+assert st['alerts']['disputes_30d'] == 1 and st['alerts']['latest'][0]['title'] == 'Litige CJ 42 : en cours', st['alerts']
 print('e-mails et chiffres Sérénis OK')
