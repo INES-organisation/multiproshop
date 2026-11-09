@@ -60,7 +60,7 @@ print('coût ok')
 # mot de passe oublié
 import utils.email as ue
 sent = []
-ue._send_via_ines = lambda to, subject, html, template=None: sent.append((to, html))
+ue._send_via_ines = lambda to, subject, html, template=None, brand=None: sent.append((to, html))
 import threading
 r = cl.post('/auth/forgot-password', data={'email': 'boss@example.com'})
 import time; time.sleep(0.5)

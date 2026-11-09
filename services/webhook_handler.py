@@ -640,6 +640,7 @@ class WebhookHandler:
             send_email(
                 to=order.customer_email,
                 subject=subject,
+                order=order,
                 html=html_body
             )
             
@@ -679,6 +680,7 @@ class WebhookHandler:
             send_email(
                 to=order.customer_email,
                 subject=subject,
+                order=order,
                 html=html_body
             )
             
@@ -720,6 +722,7 @@ class WebhookHandler:
             send_email(
                 to=order.customer_email,
                 subject=subject,
+                order=order,
                 html=html_body
             )
             

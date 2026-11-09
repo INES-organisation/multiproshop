@@ -16,7 +16,7 @@ METHODS = [{'code': 'STANDARD', 'name': 'Standard', 'price': 4.9, 'delivery_time
 def partner(monkeypatch, app):
     monkeypatch.setenv('PARTNER_TOKEN_TONYALPHA', TOKEN)
     from routes import partner_api
-    monkeypatch.setattr(partner_api, '_shipping_methods', lambda items, country, subtotal: METHODS)
+    monkeypatch.setattr(partner_api, '_shipping_methods', lambda items, country, subtotal, coupon_shipping=False: METHODS)
     with app.app_context():
         for p in Product.query.all():
             p.published = p.is_active

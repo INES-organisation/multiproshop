@@ -31,6 +31,7 @@ Toutes les routes sont sous `/api/partner`.
 | `GET /products/<id>` | public | Fiche avec ses variantes |
 | `POST /shipping`, `POST /orders`, `POST /orders/confirm`, `GET /orders` | jeton de la vitrine | Livraison, commande et paiement, suivi client |
 | `GET /stats` | jeton `PARTNER_TOKEN_INES` | Chiffres pour les moniteurs d'INES |
+| `POST /payment-events` | jeton `PARTNER_TOKEN_INES` | Remboursement ou contestation Stripe transmis par le webhook Stripe d'INES : commande marquée remboursée, alerte (une contestation alerte aussi par e-mail) |
 
 - **Jetons** : `PARTNER_TOKEN_<SITE>` dans `deploy/.env` de MPS, 24 caractères au minimum. La vitrine envoie le sien en `Authorization: Bearer …`.
 - **Rattacher un produit à une vitrine** : admin MPS › fiche produit › champ « Vitrines (projets) », par exemple `tonyalpha, serenis`. La saisie est normalisée en minuscules et sans doublon.

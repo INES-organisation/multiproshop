@@ -27,13 +27,46 @@ FROM_NAME = 'MultiProShop'
 ORANGE, INK, MUTED, LINE, BG = '#f59e0b', '#1f2937', '#4b5563', '#ece7dc', '#faf8f4'
 
 
+# Vitrines vendues par MPS (commande « Commande passée sur … ») : leurs e-mails portent leur nom, leur
+# couleur et leur adresse, et sont classés à leur nom dans le journal d'INES (Communications).
+BRANDS = {
+    'serenis': {'name': 'Sérénis', 'color': '#e0975a',
+                'url': os.getenv('SERENIS_PUBLIC_URL', 'https://serenis.multiproshop.com').rstrip('/')},
+}
+
+
+def brand_for(order):
+    """Marque de la vitrine où la commande a été passée, ou None (MultiProShop)"""
+    notes = ((getattr(order, 'admin_notes', None) or '') if order is not None else '').lower()
+    if not notes.startswith('commande passée sur'):
+        return None
+    return next(({**b, 'site': site} for site, b in BRANDS.items() if site in notes), None)
+
+
+def _rebrand(text, brand):
+    if not brand or not text:
+        return text
+    for old in ("L'équipe MultiProShop", 'sur MultiProShop', 'commande MultiProShop', '- MultiProShop'):
+        text = text.replace(old, old.replace('MultiProShop', brand['name']))
+    return text
+
+
 def _cfg():
     from config import Config
     return Config.SITE_URL.rstrip('/'), Config.SELLER
 
 
-def layout(title, content_html, preheader=''):
+def layout(title, content_html, preheader='', brand=None):
     site, seller = _cfg()
+    accent = brand['color'] if brand else ORANGE
+    if brand:
+        header = (f'<a href="{brand["url"]}" style="text-decoration:none;font-family:Georgia,serif;font-size:28px;'
+                  f'color:#16213a;">{escape(brand["name"])}</a>')
+        origin = f'{escape(brand["name"])}, une boutique MultiProShop'
+    else:
+        header = (f'<a href="{site}"><img src="{site}/static/images/email/logo-email.png" width="150" alt="MultiProShop" '
+                  'style="display:block;border:0;width:150px;height:auto;"></a>')
+        origin = 'multiproshop.com'
     return f"""<!DOCTYPE html>
 <html lang="fr"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
 <title>{escape(title)}</title></head>
@@ -41,8 +74,8 @@ def layout(title, content_html, preheader=''):
 <div style="display:none;max-height:0;overflow:hidden;">{escape(preheader)}</div>
 <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background:{BG};padding:32px 16px;"><tr><td align="center">
 <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="max-width:600px;background:#ffffff;border-radius:14px;overflow:hidden;border:1px solid {LINE};">
-<tr><td align="center" style="padding:24px 32px 18px;border-bottom:4px solid {ORANGE};">
-<a href="{site}"><img src="{site}/static/images/email/logo-email.png" width="150" alt="MultiProShop" style="display:block;border:0;width:150px;height:auto;"></a>
+<tr><td align="center" style="padding:24px 32px 18px;border-bottom:4px solid {accent};">
+{header}
 </td></tr>
 <tr><td style="padding:32px 32px 12px;font-size:15px;line-height:1.7;color:{MUTED};">
 <h1 style="margin:0 0 18px;font-size:22px;line-height:1.35;font-weight:700;color:{INK};">{escape(title)}</h1>
@@ -56,7 +89,7 @@ def layout(title, content_html, preheader=''):
 <a href="{site}/legal" style="color:{MUTED};">Mentions légales</a>
 </td></tr>
 </table>
-<p style="margin:16px 0 0;font-size:11px;color:#9ca3af;">E-mail automatique envoyé par multiproshop.com.</p>
+<p style="margin:16px 0 0;font-size:11px;color:#9ca3af;">E-mail automatique envoyé par {origin}.</p>
 </td></tr></table>
 </body></html>"""
 
@@ -66,7 +99,7 @@ _STYLE = re.compile(r'<style.*?</style>', re.S | re.I)
 _TITLE_TAG = re.compile(r'^\s*<h[12][^>]*>.*?</h[12]>', re.S | re.I)
 
 
-def wrap(subject, html):
+def wrap(subject, html, brand=None):
     """Met n'importe quel corps (fragment ou ancien document complet) dans la mise en page commune."""
     if 'data-mps-email' in html:
         return html
@@ -74,18 +107,19 @@ def wrap(subject, html):
     inner = _STYLE.sub('', m.group(1) if m else html)
     inner = _TITLE_TAG.sub('', inner, count=1)  # le titre est repris en tête par layout()
     title = re.sub(r'^\[MultiProShop\]\s*|\s*[-—]\s*MultiProShop\s*$', '', subject or '').strip() or 'MultiProShop'
-    return layout(title, inner).replace('<body ', '<body data-mps-email="1" ', 1)
+    return layout(_rebrand(title, brand), _rebrand(inner, brand), brand=brand).replace('<body ', '<body data-mps-email="1" ', 1)
 
 
-def _send_via_ines(to, subject, html, template=None):
+def _send_via_ines(to, subject, html, template=None, brand=None):
     if not os.getenv('INES_API_KEY'):
         logger.warning("INES non configuré, e-mail non envoyé : %s → %s", subject, to)
         return False
-    html = wrap(subject, html)
+    html = wrap(subject, html, brand)
+    subject = _rebrand(subject, brand)
     url = os.getenv('INES_API_URL', 'http://ines-backend:8000').rstrip('/') + '/api/v1/emails/transactional'
     # site/template : libellé dans le journal d'INES (Communications › Journal).
-    body = {'to': to, 'subject': subject, 'html': html, 'from_name': FROM_NAME,
-            'from_address': os.getenv('MAIL_FROM') or None, 'site': 'multiproshop', 'template': template}
+    body = {'to': to, 'subject': subject, 'html': html, 'from_name': brand['name'] if brand else FROM_NAME,
+            'from_address': os.getenv('MAIL_FROM') or None, 'site': brand['site'] if brand else 'multiproshop', 'template': template}
     try:
         requests.post(url, json=body, headers={'Authorization': 'Bearer ' + os.getenv('INES_API_KEY', '')},
                       timeout=30).raise_for_status()
@@ -96,19 +130,21 @@ def _send_via_ines(to, subject, html, template=None):
 
 
 def send_email(subject=None, recipients=None, text_body=None, html_body=None, to=None, html=None, text=None,
-               template=None):
+               template=None, order=None):
     """
     Envoyer un email (en arrière-plan), toujours dans la mise en page commune.
 
     Deux formes acceptées, toutes deux utilisées dans le code :
         send_email(subject, recipients, text_body, html_body)
         send_email(to=..., subject=..., html=..., text=...)
+    order : commande concernée, pour envoyer au nom de la vitrine où elle a été passée (brand_for).
     """
+    brand = brand_for(order)
     if to:
         recipients = [to] if isinstance(to, str) else list(to)
     html_body = html_body or html or ('<p style="white-space:pre-line;">%s</p>' % escape(text_body or text or ''))
     for recipient in recipients or []:
-        Thread(target=_send_via_ines, args=(recipient, subject, html_body, template), daemon=True).start()
+        Thread(target=_send_via_ines, args=(recipient, subject, html_body, template, brand), daemon=True).start()
 
 
 def send_order_confirmation_email(order):
@@ -140,7 +176,7 @@ Cordialement,
 L'équipe MultiProShop
 """
     
-    send_email(subject, recipients, text_body, html_body, template='commande')
+    send_email(subject, recipients, text_body, html_body, template='commande', order=order)
 
 def send_order_shipped_email(order, tracking_number=None):
     """
@@ -179,7 +215,7 @@ Cordialement,
 L'équipe MultiProShop
 """
     
-    send_email(subject, recipients, text_body, html_body, template='expedition')
+    send_email(subject, recipients, text_body, html_body, template='expedition', order=order)
 
 def send_order_delivered_email(order):
     """
@@ -208,4 +244,4 @@ Cordialement,
 L'équipe MultiProShop
 """
     
-    send_email(subject, recipients, text_body, html_body, template='livraison')
+    send_email(subject, recipients, text_body, html_body, template='livraison', order=order)

@@ -390,6 +390,38 @@ def newsletter():
                     'min_subtotal': coupon.min_subtotal}), 201 if created else 200
 
 
+@partner_api.route('/payment-events', methods=['POST'])
+@partner_required
+def payment_event():
+    """Remboursement ou litige Stripe d'une commande, transmis par le webhook Stripe d'INES (jeton INES)."""
+    if g.partner_site != 'ines':
+        return jsonify({'error': 'Réservé à INES'}), 403
+    from services.notifications import notify
+    data = request.get_json(silent=True) or {}
+    kind, number = str(data.get('type') or ''), str(data.get('order_number') or '')[:32]
+    order = Order.query.filter_by(order_number=number).first() if number else None
+    if not order or str(order.id) != str(data.get('order_id')):
+        return jsonify({'ignored': 'commande inconnue'}), 200  # 200 : Stripe n'a pas à relancer
+    euros = (data.get('amount_refunded') if kind == 'charge.refunded' else data.get('amount')) or 0
+    euros = f"{int(euros) / 100:.2f} €" if str(euros).isdigit() else ''
+    url = f"/admin/orders/{order.id}"
+    if kind == 'charge.refunded':
+        full = str(data.get('amount_refunded')) == str(data.get('amount'))
+        if full and order.payment_status == 'paid':
+            order.payment_status = 'refunded'
+        notify('refund', f"Remboursement {'total' if full else 'partiel'} {order.order_number}", euros, url,
+               'warning', dedupe=f"refund:{data.get('id')}:{data.get('amount_refunded')}")
+    elif kind.startswith('charge.dispute.'):
+        status = str(data.get('status') or '')[:40]
+        notify('stripe_dispute', f"Contestation bancaire {order.order_number} ({status})",
+               f"{euros} · motif : {str(data.get('reason') or '?')[:60]}", url,
+               'info' if status == 'won' else 'danger', dedupe=f"dispute:{data.get('id')}:{status}")
+    else:
+        return jsonify({'error': 'Type inconnu'}), 400
+    db.session.commit()
+    return jsonify({'ok': True})
+
+
 @partner_api.route('/stats')
 @partner_required
 def stats():
@@ -406,15 +438,42 @@ def stats():
         return {'orders': len(orders), 'revenue': round(sum(o.total_price or 0 for o in orders), 2),
                 'margin': round(sum(margins), 2), 'margin_unknown': len(orders) - len(margins)}
 
-    sites = {'multiproshop': paid.filter(~Order.admin_notes.like('Commande passée sur %') | Order.admin_notes.is_(None)).count()}
+    own = paid.filter(~Order.admin_notes.like('Commande passée sur %') | Order.admin_notes.is_(None))
+    sites = {'multiproshop': own.count()}
+    month = now - timedelta(days=30)
+
+    def site_month(query):
+        orders = query.filter(Order.paid_at >= month).all()
+        margins = [m for m in (o.product_margin() for o in orders) if m is not None]
+        return {'orders': len(orders), 'revenue': round(sum(o.total_price or 0 for o in orders), 2),
+                'margin': round(sum(margins), 2)}
+    by_site = {'multiproshop': site_month(own)}
     for site in set(_partners()) - {'ines'}:
-        sites[site] = _partner_order(site).filter(Order.payment_status == 'paid').count()
+        site_paid = _partner_order(site).filter(Order.payment_status == 'paid')
+        sites[site] = site_paid.count()
+        by_site[site] = site_month(site_paid)
+    from models.admin_notification import AdminNotification as Alert
+    alerts = Alert.query.filter(Alert.level.in_(['warning', 'danger']))
+    from models.newsletter import NewsletterSubscriber
+    active = NewsletterSubscriber.query.filter(NewsletterSubscriber.unsubscribed_at.is_(None))
+    by_source = dict(active.with_entities(NewsletterSubscriber.source, db.func.count(NewsletterSubscriber.id))
+                     .group_by(NewsletterSubscriber.source).all())
     online = _visible()
     last_sync = db.session.query(db.func.max(Product.cj_last_sync)).scalar()
     return jsonify({
         'generated_at': now.isoformat() + 'Z',
         'sales': {'today': period(1), 'week': period(7), 'month': period(30)},
         'paid_orders_by_site': sites,
+        'month_by_site': by_site,  # 30 derniers jours, par boutique
+        # litiges CJ et alertes de la boutique (commande CJ refusée, marge, stock…), pour INES
+        'alerts': {
+            'disputes_30d': Alert.query.filter(Alert.kind.in_(['dispute', 'stripe_dispute']), Alert.created_at >= month).count(),
+            'unread': alerts.filter(Alert.read_at.is_(None)).count(),
+            'latest': [{'kind': a.kind, 'level': a.level, 'title': a.title,
+                        'at': a.created_at.isoformat() + 'Z' if a.created_at else None}
+                       for a in alerts.order_by(Alert.created_at.desc()).limit(5)],
+        },
+        'newsletter': {'subscribers': active.count(), 'by_source': {k or 'site': v for k, v in by_source.items()}},
         # payées mais pas encore passées chez CJ : à surveiller (paiement reçu, rien d'envoyé)
         'to_send_to_cj': paid.filter(Order.cj_order_id.is_(None), Order.status.notin_(['cancelled', 'delivered'])).count(),
         'shipped_in_transit': Order.query.filter(Order.status == 'shipped').count(),

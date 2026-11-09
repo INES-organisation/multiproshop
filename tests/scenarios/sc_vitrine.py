@@ -145,3 +145,46 @@ cl.post('/panier/ajouter-rituel', data={'product_id': [pid, third_id], 'variant_
 cart_page = cl.get('/panier').get_data(as_text=True)
 assert 'Plaid' in cart_page and 'Réveil aube' in cart_page
 print('rituels Sérénis OK')
+
+# E-mails d'une commande Sérénis : au nom de Sérénis, classés « serenis » dans le journal d'INES
+import utils.email as ue
+sent = []
+ue.requests.post = lambda url, json=None, headers=None, timeout=None: (sent.append(json), type('R', (), {'raise_for_status': lambda self: None})())[1]
+os.environ['INES_API_KEY'] = 'k'
+with mps.app_context():
+    o = Order.query.order_by(Order.id.desc()).first()
+    assert ue.brand_for(o)['name'] == 'Sérénis'
+    ue._send_via_ines('a@b.fr', f'Confirmation de commande {o.order_number} - MultiProShop',
+                      "<p>Merci</p><p>L'équipe MultiProShop</p>", 'commande', ue.brand_for(o))
+    m = sent[-1]
+    assert m['site'] == 'serenis' and m['from_name'] == 'Sérénis' and m['subject'].endswith('- Sérénis'), m
+    assert "L'équipe Sérénis" in m['html'] and 'serenis.multiproshop.com' in m['html'], m['html'][:400]
+    assert ue.brand_for(Order(admin_notes=None)) is None
+# Chiffres pour INES : mois par boutique et inscrits newsletter par source
+os.environ['PARTNER_TOKEN_INES'] = 'i' * 32
+st = mps.test_client().get('/api/partner/stats', headers={'Authorization': 'Bearer ' + 'i' * 32}).get_json()
+assert st['newsletter']['by_source'].get('serenis') == 1 and 'serenis' in st['month_by_site'], st
+from services.notifications import notify
+with mps.app_context():
+    notify('dispute', 'Litige CJ 42 : en cours', level='warning')
+st = mps.test_client().get('/api/partner/stats', headers={'Authorization': 'Bearer ' + 'i' * 32}).get_json()
+assert st['alerts']['disputes_30d'] == 1 and st['alerts']['latest'][0]['title'] == 'Litige CJ 42 : en cours', st['alerts']
+# Remboursement et contestation Stripe transmis par INES
+ines = {'Authorization': 'Bearer ' + 'i' * 32}
+with mps.app_context():
+    o = Order.query.order_by(Order.id.desc()).first()
+    o.payment_status, oid, num = 'paid', o.id, o.order_number
+    db.session.commit()
+pe = lambda body: mps.test_client().post('/api/partner/payment-events', json=body, headers=ines)
+assert pe({'type': 'charge.refunded', 'order_id': oid, 'order_number': 'X'}).get_json()['ignored']
+r = pe({'type': 'charge.refunded', 'id': 'ch_1', 'order_id': oid, 'order_number': num, 'amount': 3990, 'amount_refunded': 3990})
+assert r.status_code == 200, r.get_json()
+r = pe({'type': 'charge.dispute.created', 'id': 'dp_1', 'order_id': oid, 'order_number': num, 'amount': 3990,
+        'status': 'needs_response', 'reason': 'fraudulent'})
+assert r.status_code == 200, r.get_json()
+with mps.app_context():
+    assert Order.query.get(oid).payment_status == 'refunded'
+st = mps.test_client().get('/api/partner/stats', headers=ines).get_json()
+assert st['alerts']['disputes_30d'] == 2 and st['alerts']['latest'][0]['title'].startswith('Contestation bancaire'), st['alerts']
+assert mps.test_client().post('/api/partner/payment-events', json={}, headers={'Authorization': 'Bearer ' + 's' * 32}).status_code in (401, 403)
+print('e-mails et chiffres Sérénis OK')
