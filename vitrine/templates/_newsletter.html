@@ -1,0 +1,13 @@
+<div class="newsletter">
+  <div>
+    <p class="eyebrow">Le club {{ site.name }}</p>
+    <h2>-10 % sur votre première commande</h2>
+    <p>Recevez nos idées de rituels, nos nouveautés et nos offres, une à deux fois par mois. Désinscription en un clic.</p>
+  </div>
+  <form method="post" action="{{ url_for('newsletter') }}">
+    <label class="sr-only" for="nl-email">Votre e-mail</label>
+    <div class="row"><input id="nl-email" name="email" type="email" autocomplete="email" placeholder="Votre adresse e-mail" required><button class="btn" type="submit">Je m'inscris</button></div>
+    <input type="text" name="website" tabindex="-1" autocomplete="off" class="sr-only" aria-hidden="true">
+    <label class="check"><input type="checkbox" name="consent" value="1" required> J'accepte de recevoir les e-mails de {{ site.name }}. Mon adresse n'est jamais revendue.</label>
+  </form>
+</div>

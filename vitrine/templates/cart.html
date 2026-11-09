@@ -1,22 +1,67 @@
 {% extends 'base.html' %}
-{% block title %}Panier — {{ site.name }}{% endblock %}
+{% block title %}Panier · {{ site.name }}{% endblock %}
+{% block style %}
+.cart{display:grid;grid-template-columns:1.6fr 1fr;gap:40px;padding:40px 0;align-items:start}
+@media (max-width:900px){.cart{grid-template-columns:1fr}}
+.line{display:grid;grid-template-columns:84px 1fr auto;gap:16px;align-items:center;padding:16px 0;border-bottom:1px solid var(--line)}
+.line img{width:84px;height:84px;object-fit:cover;border-radius:14px}
+.line form{display:inline}
+.line select{width:auto;padding:6px 10px}
+.textbtn{background:none;border:0;cursor:pointer;text-decoration:underline;color:var(--muted);font:inherit;font-size:.85rem;padding:0}
+.progress{height:8px;background:var(--sand-2);border-radius:99px;overflow:hidden;margin:10px 0 4px}
+.progress span{display:block;height:100%;background:var(--dawn);border-radius:99px}
+.summary{position:sticky;top:92px}
+.row{display:flex;justify-content:space-between;margin:8px 0}
+{% endblock %}
 {% block content %}
-<h1>Panier</h1>
-{% if lines %}
-<table>
-  {% for line in lines %}
-  <tr>
-    <td style="width:72px"><img src="{{ line.image_url }}" alt="" width="64" height="64" style="object-fit:cover;border-radius:6px"></td>
-    <td>{{ line.name }}{% if line.options %}<div class="note">{{ line.options }}</div>{% endif %}</td>
-    <td>× {{ line.quantity }}</td>
-    <td class="price">{{ '%.2f'|format(line.total)|replace('.', ',') }} €</td>
-    <td><form method="post" action="{{ url_for('cart_remove', index=loop.index0) }}"><button type="submit" class="note" style="background:none;border:0;cursor:pointer;text-decoration:underline">Retirer</button></form></td>
-  </tr>
-  {% endfor %}
-</table>
-<p class="price">Sous-total : {{ '%.2f'|format(subtotal)|replace('.', ',') }} €</p>
-<p><a class="btn" href="{{ url_for('checkout') }}">Commander</a></p>
-{% else %}
-<p>Votre panier est vide. <a href="{{ url_for('index') }}">Voir la boutique</a></p>
-{% endif %}
+<div class="wrap">
+  <h1 style="margin-top:40px">Votre panier</h1>
+  {% if lines %}
+  <div class="cart">
+    <div>
+      {% for line in lines %}
+      <div class="line">
+        <a href="{{ url_for('product', product_id=line.product_id) }}"><img src="{{ line.image_url }}" alt=""></a>
+        <div>
+          <a href="{{ url_for('product', product_id=line.product_id) }}" style="text-decoration:none"><strong>{{ line.name }}</strong></a>
+          {% if line.options %}<div class="note">{{ line.options }}</div>{% endif %}
+          <div style="display:flex;gap:16px;align-items:center;margin-top:8px">
+            <form method="post" action="{{ url_for('cart_quantity', index=loop.index0) }}">
+              <label class="sr-only" for="q{{ loop.index }}">Quantité</label>
+              <select id="q{{ loop.index }}" name="quantity" onchange="this.form.submit()">{% for n in range(1, 11) %}<option {{ 'selected' if n == line.quantity }}>{{ n }}</option>{% endfor %}</select>
+              <noscript><button class="textbtn" type="submit">OK</button></noscript>
+            </form>
+            <form method="post" action="{{ url_for('cart_remove', index=loop.index0) }}"><button type="submit" class="textbtn">Retirer</button></form>
+          </div>
+        </div>
+        <span class="price">{{ line.total|eur }}</span>
+      </div>
+      {% endfor %}
+      {% if suggestions %}
+      <h2 style="font-size:1.4rem;margin-top:40px">Une petite attention en plus ?</h2>
+      <div class="grid" style="grid-template-columns:repeat(auto-fill,minmax(170px,1fr))">{% for p in suggestions %}{% include '_card.html' %}{% endfor %}</div>
+      {% endif %}
+    </div>
+    <aside class="panel summary">
+      {% if free_shipping %}
+        {% if subtotal >= free_shipping %}
+        <p style="margin:0"><strong>La livraison est offerte</strong> en France.</p>
+        {% else %}
+        <p style="margin:0">Plus que <strong>{{ (free_shipping - subtotal)|eur }}</strong> pour la livraison offerte en France.</p>
+        {% endif %}
+        <div class="progress" aria-hidden="true"><span style="width:{{ [100, (subtotal / free_shipping * 100)|round|int]|min }}%"></span></div>
+      {% endif %}
+      <div class="row" style="margin-top:18px"><span>Sous-total</span><strong>{{ subtotal|eur }}</strong></div>
+      <div class="row note"><span>Livraison</span><span>calculée à l'étape suivante</span></div>
+      <a class="btn block" style="margin-top:16px" href="{{ url_for('checkout') }}">Commander</a>
+      <p class="note" style="text-align:center;margin-bottom:0">Paiement sécurisé · 14 jours pour changer d'avis</p>
+    </aside>
+  </div>
+  {% else %}
+  <div class="panel" style="text-align:center;padding:56px 24px;margin:32px 0">
+    <p>Votre panier est vide.</p>
+    <a class="btn" href="{{ url_for('index') }}#rituels">Découvrir les rituels</a>
+  </div>
+  {% endif %}
+</div>
 {% endblock %}

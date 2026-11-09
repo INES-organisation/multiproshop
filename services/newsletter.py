@@ -43,21 +43,26 @@ def subscribe(email, source='site'):
     return sub, coupon, created
 
 
-def send_welcome(sub, coupon, base_url):
+def send_welcome(sub, coupon, base_url, shop_name='MultiProShop', shop_url=None):
+    """base_url : adresse publique de MPS (lien de désinscription). shop_name / shop_url : la boutique où
+    l'abonné s'est inscrit (une vitrine comme Sérénis), MPS par défaut."""
+    from markupsafe import escape
     from utils.email import send_email
+    shop_name = escape(shop_name)
+    shop_url = shop_url or f'{base_url}/products/'
     end = coupon.ends_at.strftime('%d/%m/%Y') if coupon.ends_at else ''
     used = coupon.uses and coupon.max_uses and coupon.uses >= coupon.max_uses
     unsubscribe = f'{base_url}/newsletter/desinscription/{sub.token}'
     body = f"""
 <p>Bonjour,</p>
-<p>Merci pour votre inscription à la newsletter MultiProShop.</p>
+<p>Merci pour votre inscription à la newsletter {shop_name}.</p>
 {'' if used else f'''<p>Voici votre code de bienvenue : <strong style="font-size:18px">{coupon.code}</strong><br>
 -{int(coupon.value)} % sur votre première commande dès {coupon.min_subtotal:.0f} € d'articles, valable jusqu'au {end}.
 À saisir dans le panier, au moment du paiement.</p>'''}
-<p><a href="{base_url}/products/">Découvrir la boutique</a></p>
-<p style="color:#888;font-size:12px">Vous recevez cet e-mail car vous vous êtes inscrit sur multiproshop.com.
+<p><a href="{shop_url}">Découvrir la boutique</a></p>
+<p style="color:#888;font-size:12px">Vous recevez cet e-mail car vous vous êtes inscrit sur {shop_name}.
 <a href="{unsubscribe}">Se désinscrire</a></p>"""
-    send_email(subject='Votre code de bienvenue MultiProShop', to=sub.email, html=body)
+    send_email(subject=f'Votre code de bienvenue {shop_name}', to=sub.email, html=body)
 
 
 def unsubscribe(token):

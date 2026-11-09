@@ -1,32 +1,146 @@
 {% extends 'base.html' %}
-{% block title %}{{ p.name }} — {{ site.name }}{% endblock %}
+{% block title %}{{ p.name }} · {{ site.name }}{% endblock %}
 {% block description %}{{ p.short_description or site.tagline }}{% endblock %}
+{% block og_image %}<meta property="og:image" content="{{ p.image_url }}">{% endblock %}
+{% block style %}
+.crumbs{font-size:.85rem;color:var(--muted);padding:22px 0 0}.crumbs a{text-decoration:none}
+.product{display:grid;grid-template-columns:1.1fr 1fr;gap:56px;padding:24px 0 40px;align-items:start}
+@media (max-width:900px){.product{grid-template-columns:1fr;gap:28px}}
+.gallery{position:sticky;top:92px}
+@media (max-width:900px){.gallery{position:static}}
+.gallery .main{border-radius:24px;overflow:hidden;background:var(--sand-2);aspect-ratio:1}
+.gallery .main img{width:100%;height:100%;object-fit:cover}
+.thumbs{display:flex;gap:10px;overflow-x:auto;margin-top:12px;padding-bottom:4px}
+.thumbs button{flex:none;border:2px solid transparent;border-radius:12px;padding:0;background:none;cursor:pointer;overflow:hidden}
+.thumbs button[aria-current=true]{border-color:var(--night)}
+.thumbs img{width:72px;height:72px;object-fit:cover}
+.buy h1{font-size:clamp(1.7rem,3vw,2.4rem);margin-bottom:.3em}
+.stars{color:var(--dawn);letter-spacing:2px}
+.rating{display:flex;gap:8px;align-items:center;font-size:.9rem;color:var(--muted);text-decoration:none}
+.bigprice{font-size:1.7rem;font-weight:600;color:var(--night);margin:14px 0 4px}
+.lead{font-size:1.05rem;color:var(--muted)}
+.qty{display:flex;align-items:center;border:1.5px solid var(--line);border-radius:99px;background:#fff;width:max-content}
+.qty button{background:none;border:0;width:44px;height:48px;font-size:1.2rem;cursor:pointer;color:var(--night)}
+.qty input{width:44px;border:0;text-align:center;padding:0;-moz-appearance:textfield}
+.qty input::-webkit-inner-spin-button{display:none}
+.buyrow{display:flex;gap:12px;margin:20px 0 14px;align-items:center}.buyrow .btn{flex:1}
+.ship{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:16px 18px;display:grid;gap:10px;font-size:.92rem}
+.ship div{display:flex;gap:10px;align-items:flex-start}.ship svg{flex:none;color:var(--dawn);margin-top:2px}
+.ritual-tip{display:flex;gap:14px;align-items:center;background:var(--dawn-soft);border-radius:16px;padding:14px 16px;text-decoration:none;margin-top:16px}
+.ritual-tip img{width:56px;height:56px;border-radius:12px;object-fit:cover}
+.desc{color:var(--ink)}.desc img{border-radius:12px;margin:12px 0}
+.reviews{display:grid;grid-template-columns:280px 1fr;gap:40px}
+@media (max-width:760px){.reviews{grid-template-columns:1fr}}
+.review{border-bottom:1px solid var(--line);padding:18px 0}.review p{margin:.3em 0}
+.verified{color:var(--ok);font-size:.8rem;font-weight:600}
+.sticky-buy{display:none}
+@media (max-width:760px){.sticky-buy{display:flex;position:fixed;left:0;right:0;bottom:0;z-index:30;background:var(--card);border-top:1px solid var(--line);padding:10px 16px;gap:12px;align-items:center;justify-content:space-between;box-shadow:0 -8px 24px -12px rgba(0,0,0,.2)}body{padding-bottom:76px}}
+{% endblock %}
 {% block content %}
-<div class="product">
-  <div>
-    <img src="{{ p.image_url }}" alt="{{ p.name }}">
-    {% if p.images %}<div class="thumbs">{% for img in p.images[:8] %}<img src="{{ img }}" alt="" loading="lazy">{% endfor %}</div>{% endif %}
-  </div>
-  <div>
-    <h1>{{ p.name }}</h1>
-    <p class="price">{{ '%.2f'|format(p.price_from)|replace('.', ',') }} €</p>
-    {% if p.short_description %}<p>{{ p.short_description }}</p>{% endif %}
-    <form method="post" action="{{ url_for('cart_add') }}">
-      <input type="hidden" name="product_id" value="{{ p.id }}">
-      {% if p.variants %}
-      <label for="variant">Modèle</label>
-      <select id="variant" name="variant_id" required>
-        {% for v in p.variants if v.stock > 0 %}
-        <option value="{{ v.id }}">{{ [v.color, v.size]|select|join(' / ') or 'Modèle ' ~ loop.index }} — {{ '%.2f'|format(v.price or p.price)|replace('.', ',') }} €</option>
-        {% endfor %}
-      </select>
+{% set images = ([p.image_url] + (p.images or []))|select|unique|list %}
+<div class="wrap">
+  <nav class="crumbs" aria-label="Fil d'Ariane"><a href="{{ url_for('index') }}">Accueil</a> › {% if p.category %}<a href="{{ url_for('index', category=p.category_id) }}#boutique">{{ p.category }}</a> › {% endif %}<span>{{ p.name }}</span></nav>
+  <div class="product">
+    <div class="gallery">
+      <div class="main"><img id="main-img" src="{{ images[0] }}" alt="{{ p.name }}"></div>
+      {% if images|length > 1 %}
+      <div class="thumbs">{% for img in images[:10] %}<button type="button" data-src="{{ img }}" aria-label="Photo {{ loop.index }}" aria-current="{{ 'true' if loop.first else 'false' }}"><img src="{{ img }}" alt="" loading="lazy"></button>{% endfor %}</div>
       {% endif %}
-      <label for="quantity">Quantité</label>
-      <input id="quantity" name="quantity" type="number" min="1" max="20" value="1" style="max-width:100px">
-      <p><button class="btn" type="submit">Ajouter au panier</button></p>
-    </form>
-    <p class="note">Expédié depuis l'entrepôt de notre fournisseur : le délai est indiqué à l'étape de la livraison.</p>
-    <div>{{ p.description|safe if p.description else '' }}</div>
+    </div>
+
+    <div class="buy">
+      {% if p.category %}<p class="eyebrow">{{ p.category }}</p>{% endif %}
+      <h1>{{ p.name }}</h1>
+      {% if p.reviews and p.reviews.count %}
+      <a class="rating" href="#avis"><span class="stars" aria-hidden="true">{{ '★' * (p.reviews.average|round|int) }}{{ '☆' * (5 - p.reviews.average|round|int) }}</span>{{ p.reviews.average|string|replace('.', ',') }}/5 · {{ p.reviews.count }} avis vérifié{{ 's' if p.reviews.count > 1 }}</a>
+      {% endif %}
+      <p class="bigprice"><span id="price">{{ p.price_from|eur }}</span>{% if p.compare_price and p.compare_price > p.price %}<span class="was">{{ p.compare_price|eur }}</span>{% endif %}</p>
+      {% if p.short_description %}<p class="lead">{{ p.short_description }}</p>{% endif %}
+
+      <form method="post" action="{{ url_for('cart_add') }}" id="buy-form">
+        <input type="hidden" name="product_id" value="{{ p.id }}">
+        {% if p.variants %}
+        <label for="variant">Modèle</label>
+        <select id="variant" name="variant_id" required>
+          {% for v in p.variants if v.stock > 0 %}
+          <option value="{{ v.id }}" data-price="{{ (v.price or p.price)|eur }}" data-img="{{ v.image_url or '' }}">{{ [v.color, v.size]|select|join(' / ') or 'Modèle ' ~ loop.index }} · {{ (v.price or p.price)|eur }}</option>
+          {% endfor %}
+        </select>
+        {% endif %}
+        <div class="buyrow">
+          <div class="qty"><button type="button" data-step="-1" aria-label="Retirer un">−</button><label class="sr-only" for="quantity">Quantité</label><input id="quantity" name="quantity" type="number" min="1" max="20" value="1" inputmode="numeric"><button type="button" data-step="1" aria-label="Ajouter un">+</button></div>
+          <button class="btn" type="submit">Ajouter au panier</button>
+        </div>
+      </form>
+
+      <div class="ship">
+        {% if delivery %}<div><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M3 10h18M8 3v4M16 3v4"/></svg><span>Commandé aujourd'hui, livré <strong>{{ delivery }}</strong>, avec suivi par e-mail.</span></div>{% endif %}
+        <div><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 7h11v9H3zM14 10h4l3 3v3h-7"/></svg><span>{% if free_shipping %}{% if p.price_from >= free_shipping %}<strong>Livraison offerte</strong> en France pour ce produit.{% else %}<strong>Livraison offerte dès {{ free_shipping|eur }}</strong> : plus que {{ (free_shipping - p.price_from)|eur }} avec un deuxième article.{% endif %}{% else %}Prix de la livraison affiché avant le paiement.{% endif %}</span></div>
+        <div><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true"><path d="M3 12a9 9 0 1 0 3-6.7"/><path d="M3 4v5h5"/></svg><span>14 jours pour changer d'avis. Paiement sécurisé par Stripe.</span></div>
+      </div>
+
+      {% if ritual %}
+      <a class="ritual-tip" href="{{ url_for('ritual', index=ritual.index) }}">
+        <img src="{{ ritual.products[0].image_url }}" alt="">
+        <span><strong>Fait partie du {{ ritual.name }}</strong><br><span class="note">{{ ritual.products|length }} produits qui vont bien ensemble · Composer →</span></span>
+      </a>
+      {% endif %}
+
+      <div style="margin-top:24px">
+        <details open><summary>Description</summary><div class="desc">{{ p.description|safe if p.description else (p.short_description or '') }}</div></details>
+        <details><summary>Livraison et retours</summary><div>Expédié depuis l'entrepôt de notre fournisseur, hors de l'Union européenne, en {{ site.delivery|replace('-', ' à ') }} jours. Le numéro de suivi vous est envoyé par e-mail. Vous avez 14 jours après réception pour nous retourner le produit.</div></details>
+        <details><summary>Questions fréquentes</summary><div>{% include '_faq.html' %}</div></details>
+      </div>
+    </div>
   </div>
 </div>
+
+<section class="section tight" id="avis" style="background:var(--card);border-top:1px solid var(--line)"><div class="wrap reviews">
+  <div>
+    <p class="eyebrow">Avis clients</p>
+    {% if p.reviews and p.reviews.count %}
+    <h2>{{ p.reviews.average|string|replace('.', ',') }}/5</h2>
+    <p class="muted">{{ p.reviews.count }} avis déposé{{ 's' if p.reviews.count > 1 }} par nos clients après leur commande.</p>
+    {% else %}
+    <h2>Pas encore d'avis</h2>
+    <p class="muted">Chaque client reçoit une demande d'avis une semaine après la livraison. Les avis sont publiés tels quels.</p>
+    {% endif %}
+  </div>
+  <div>
+    {% for r in (p.reviews['items'] if p.reviews else []) %}
+    <article class="review">
+      <div><span class="stars" aria-label="{{ r.rating }} sur 5">{{ '★' * r.rating }}{{ '☆' * (5 - r.rating) }}</span> <strong>{{ r.author }}</strong>{% if r.verified %} · <span class="verified">Achat vérifié</span>{% endif %}{% if r.date %} · <span class="note">{{ r.date }}</span>{% endif %}</div>
+      {% if r.title %}<p><strong>{{ r.title }}</strong></p>{% endif %}
+      <p>{{ r.comment }}</p>
+    </article>
+    {% else %}
+    <p class="muted">Vous avez acheté ce produit ? Votre avis aidera les prochains clients.</p>
+    {% endfor %}
+  </div>
+</div></section>
+
+{% if related %}
+<section class="section tight"><div class="wrap">
+  <div class="section-head"><div><p class="eyebrow">À associer</p><h2>Complétez votre rituel</h2></div></div>
+  <div class="grid">{% for p in related %}{% include '_card.html' %}{% endfor %}</div>
+</div></section>
+{% endif %}
+
+<div class="sticky-buy"><div><div class="note" style="max-width:52vw;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{ p.name }}</div><strong class="price">{{ p.price_from|eur }}</strong></div><button class="btn" type="submit" form="buy-form">Ajouter</button></div>
+
+<script type="application/ld+json">{{ {"@context": "https://schema.org", "@type": "Product", "name": p.name, "image": images[:5], "description": p.short_description or '', "offers": {"@type": "Offer", "price": "%.2f"|format(p.price_from), "priceCurrency": "EUR", "availability": "https://schema.org/InStock" if p.stock > 0 else "https://schema.org/OutOfStock", "url": site.url ~ url_for('product', product_id=p.id)}}|tojson }}</script>
+{% endblock %}
+{% block script %}
+<script>
+(function(){
+  var main=document.getElementById('main-img');
+  document.querySelectorAll('.thumbs button').forEach(function(b){b.addEventListener('click',function(){
+    main.src=b.dataset.src;document.querySelectorAll('.thumbs button').forEach(function(x){x.setAttribute('aria-current','false')});b.setAttribute('aria-current','true');});});
+  var q=document.getElementById('quantity');
+  document.querySelectorAll('.qty button').forEach(function(b){b.addEventListener('click',function(){
+    q.value=Math.max(1,Math.min(20,(parseInt(q.value,10)||1)+parseInt(b.dataset.step,10)));});});
+  var v=document.getElementById('variant');
+  if(v){var sync=function(){var o=v.options[v.selectedIndex];if(!o)return;document.getElementById('price').textContent=o.dataset.price;if(o.dataset.img)main.src=o.dataset.img;};v.addEventListener('change',sync);sync();}
+})();
+</script>
 {% endblock %}

@@ -1,0 +1,46 @@
+{% extends 'base.html' %}
+{% block title %}{{ ritual.name }} · {{ site.name }}{% endblock %}
+{% block description %}{{ ritual.text }}{% endblock %}
+{% block style %}
+.ritual-head{padding:48px 0 24px;max-width:720px}
+.items{display:grid;gap:16px}
+.item{display:grid;grid-template-columns:120px 1fr auto;gap:20px;align-items:center;background:var(--card);border:1px solid var(--line);border-radius:20px;padding:14px}
+.item img{width:120px;height:120px;object-fit:cover;border-radius:14px}
+.item label{margin-top:8px}
+@media (max-width:640px){.item{grid-template-columns:88px 1fr}.item img{width:88px;height:88px}.item .price{grid-column:2}}
+.total{display:flex;justify-content:space-between;align-items:center;gap:16px;flex-wrap:wrap;margin-top:24px}
+{% endblock %}
+{% block content %}
+<div class="wrap">
+  <div class="ritual-head">
+    <p class="eyebrow">Rituel</p>
+    <h1>{{ ritual.name }}</h1>
+    <p class="muted" style="font-size:1.1rem">{{ ritual.text }}</p>
+  </div>
+  <form method="post" action="{{ url_for('cart_add_many') }}">
+    <div class="items">
+      {% for p in details %}
+      <div class="item">
+        <a href="{{ url_for('product', product_id=p.id) }}"><img src="{{ p.image_url }}" alt="{{ p.name }}" loading="lazy"></a>
+        <div>
+          <a class="link" href="{{ url_for('product', product_id=p.id) }}" style="text-decoration:none"><strong>{{ p.name }}</strong></a>
+          {% if p.short_description %}<div class="note">{{ p.short_description|truncate(110) }}</div>{% endif %}
+          <input type="hidden" name="product_id" value="{{ p.id }}">
+          {% if p.variants %}
+          <label for="v{{ p.id }}">Modèle</label>
+          <select id="v{{ p.id }}" name="variant_id" required>
+            {% for v in p.variants if v.stock > 0 %}<option value="{{ v.id }}">{{ [v.color, v.size]|select|join(' / ') or 'Modèle ' ~ loop.index }} · {{ (v.price or p.price)|eur }}</option>{% endfor %}
+          </select>
+          {% else %}<input type="hidden" name="variant_id" value="">{% endif %}
+        </div>
+        <span class="price">{{ p.price_from|eur }}</span>
+      </div>
+      {% endfor %}
+    </div>
+    <div class="total panel">
+      <div><strong class="price" style="font-size:1.3rem">{{ ritual.total|eur }}</strong><div class="note">{{ details|length }} produits{% if free_shipping and ritual.total >= free_shipping %} · livraison offerte en France{% endif %}{% if delivery %} · livré {{ delivery }}{% endif %}</div></div>
+      <button class="btn" type="submit">Ajouter le rituel au panier</button>
+    </div>
+  </form>
+</div>
+{% endblock %}

@@ -1,25 +1,159 @@
 {% extends 'base.html' %}
+{% block og_image %}{% if hero %}<meta property="og:image" content="{{ hero.image_url }}">{% endif %}{% endblock %}
+{% block style %}
+.hero{background:linear-gradient(180deg,#121b31 0%,#1c2a4c 45%,#3d3f63 72%,#b9775a 100%);color:var(--sand);position:relative;overflow:hidden}
+.hero::after{content:"";position:absolute;left:50%;bottom:-340px;width:900px;height:520px;transform:translateX(-50%);background:radial-gradient(ellipse at center,rgba(243,190,135,.55),transparent 62%);pointer-events:none}
+.hero .stars{position:absolute;inset:0;background-image:radial-gradient(1.2px 1.2px at 12% 18%,#fff8,transparent),radial-gradient(1px 1px at 28% 8%,#fff6,transparent),radial-gradient(1.4px 1.4px at 46% 22%,#fff7,transparent),radial-gradient(1px 1px at 63% 12%,#fff5,transparent),radial-gradient(1.3px 1.3px at 82% 26%,#fff8,transparent),radial-gradient(1px 1px at 92% 9%,#fff6,transparent),radial-gradient(1px 1px at 6% 40%,#fff4,transparent),radial-gradient(1.2px 1.2px at 74% 40%,#fff5,transparent);pointer-events:none}
+.hero .wrap{display:grid;grid-template-columns:1.05fr 1fr;gap:48px;align-items:center;padding-top:72px;padding-bottom:88px;position:relative;z-index:1}
+.hero h1{color:#fff}.hero p.lead{font-size:1.12rem;color:#d5d9e6;max-width:520px}
+.hero .actions{display:flex;gap:14px;flex-wrap:wrap;margin-top:28px;align-items:center}
+.hero .from{color:#d5d9e6;font-size:.95rem}
+.hero-visual{position:relative}
+.hero-visual img{border-radius:28px;aspect-ratio:1;object-fit:cover;width:100%;box-shadow:0 40px 80px -30px rgba(0,0,0,.6)}
+.hero-visual .tag{position:absolute;left:-18px;bottom:28px;background:var(--sand);color:var(--night);border-radius:16px;padding:12px 16px;box-shadow:var(--shadow);font-size:.88rem;max-width:230px}
+.hero-visual .tag strong{display:block;font-family:var(--serif);font-size:1.05rem;font-weight:500}
+@media (max-width:860px){.hero .wrap{grid-template-columns:1fr;padding-top:44px;padding-bottom:56px;gap:32px}.hero-visual .tag{left:12px}}
+.promises-band{background:var(--card);border-bottom:1px solid var(--line)}.promises-band .wrap{padding-top:26px;padding-bottom:26px}
+.moments{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:20px}
+.moment{position:relative;border-radius:var(--radius);overflow:hidden;aspect-ratio:4/5;text-decoration:none;color:#fff;background:var(--night)}
+.moment img{width:100%;height:100%;object-fit:cover;opacity:.82;transition:transform .5s,opacity .3s}
+.moment:hover img{transform:scale(1.04);opacity:.7}
+.moment div{position:absolute;inset:auto 0 0 0;padding:22px;background:linear-gradient(transparent,rgba(18,27,49,.85))}
+.moment h3{color:#fff;margin:0}.moment span{font-size:.88rem;color:#dfe3ee}
+.rituals{display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:22px}
+.ritual{background:var(--card);border:1px solid var(--line);border-radius:24px;padding:18px;display:flex;flex-direction:column;gap:14px;text-decoration:none;transition:box-shadow .2s,transform .2s}
+.ritual:hover{box-shadow:var(--shadow);transform:translateY(-3px)}
+.ritual .collage{display:grid;grid-template-columns:2fr 1fr;grid-template-rows:1fr 1fr;gap:8px;aspect-ratio:3/2}
+.ritual .collage img{width:100%;height:100%;object-fit:cover;border-radius:14px;background:var(--sand-2)}
+.ritual .collage img:first-child{grid-row:span 2}
+.ritual .collage.two{grid-template-columns:1fr 1fr;grid-template-rows:1fr}.ritual .collage.two img:first-child{grid-row:auto}
+.ritual .foot{display:flex;justify-content:space-between;align-items:center;gap:12px;margin-top:auto}
+.ritual ul{margin:0;padding-left:18px;color:var(--muted);font-size:.9rem}
+.chips{display:flex;gap:8px;flex-wrap:wrap}
+.chip{padding:8px 16px;border:1.5px solid var(--line);border-radius:99px;text-decoration:none;background:var(--card);font-size:.88rem;color:var(--night)}
+.chip.on{background:var(--night);color:#fff;border-color:var(--night)}
+.toolbar{display:flex;justify-content:space-between;gap:16px;flex-wrap:wrap;align-items:center;margin-bottom:24px}
+.toolbar select{width:auto;padding:9px 14px;border-radius:99px}
+.story{display:grid;grid-template-columns:1fr 1fr;gap:48px;align-items:center}
+.steps{display:grid;gap:18px;counter-reset:s}
+.step{display:flex;gap:16px;align-items:flex-start}
+.step::before{counter-increment:s;content:counter(s);flex:none;width:38px;height:38px;border-radius:50%;background:var(--dawn-soft);color:var(--night);display:grid;place-items:center;font-family:var(--serif);font-size:1.1rem}
+.step strong{display:block;color:var(--night)}
+@media (max-width:860px){.story{grid-template-columns:1fr}}
+.faq{max-width:780px}
+{% endblock %}
 {% block content %}
+{% if not filtered %}
 <section class="hero">
-  <h1>{{ site.name }}</h1>
-  <p>{{ site.tagline }}</p>
+  <div class="stars" aria-hidden="true"></div>
+  <div class="wrap">
+    <div>
+      <p class="eyebrow">Se réveiller en douceur</p>
+      <h1>Des soirs plus calmes, des matins plus doux.</h1>
+      <p class="lead">Une lumière qui monte comme un lever de soleil, un ciel étoilé au plafond, un plaid qui sent le dimanche. {{ site.name }} réunit les objets qui aident à ralentir.</p>
+      <div class="actions">
+        {% if hero %}<a class="btn" href="{{ url_for('product', product_id=hero.id) }}">Découvrir le réveil lumière</a>{% endif %}
+        <a class="btn light" href="#rituels">Voir les rituels</a>
+      </div>
+    </div>
+    {% if hero %}
+    <a class="hero-visual" href="{{ url_for('product', product_id=hero.id) }}">
+      <img src="{{ hero.image_url }}" alt="{{ hero.name }}">
+      <div class="tag"><strong>{{ hero.name }}</strong>{{ hero.price_from|eur }}{% if delivery %} · livré {{ delivery }}{% endif %}</div>
+    </a>
+    {% endif %}
+  </div>
 </section>
-{% if data.categories|length > 1 %}
-<nav class="chips" aria-label="Collections">
-  <a class="chip {{ '' if args.get('category') else 'on' }}" href="{{ url_for('index') }}">Tout</a>
-  {% for c in data.categories %}
-  <a class="chip {{ 'on' if args.get('category') == c.id|string }}" href="{{ url_for('index', category=c.id) }}">{{ c.name }}</a>
-  {% endfor %}
-</nav>
+
+<div class="promises-band"><div class="wrap">{% include '_promises.html' %}</div></div>
+
+{% if categories|length > 1 %}
+<section class="section"><div class="wrap">
+  <div class="section-head"><div><p class="eyebrow">Par où commencer</p><h2>Trouvez votre façon de ralentir</h2></div></div>
+  <div class="moments">
+    {% for c in categories %}
+    <a class="moment" href="{{ url_for('index', category=c.id) }}#boutique">
+      {% if covers.get(c.id) %}<img src="{{ covers[c.id] }}" alt="" loading="lazy">{% endif %}
+      <div><h3>{{ c.name }}</h3><span>{{ c.count }} produit{{ 's' if c.count > 1 }}</span></div>
+    </a>
+    {% endfor %}
+  </div>
+</div></section>
 {% endif %}
-<div class="grid">
-  {% for p in data.products %}
-  <a class="card" href="{{ url_for('product', product_id=p.id) }}">
-    <img src="{{ p.image_url }}" alt="{{ p.name }}" loading="lazy">
-    <div><div>{{ p.name }}</div><div class="price">{% if p.price_from < p.price %}dès {% endif %}{{ '%.2f'|format(p.price_from)|replace('.', ',') }} €</div></div>
-  </a>
-  {% else %}
-  <p>La boutique ouvre très bientôt.</p>
-  {% endfor %}
-</div>
+
+{% if rituals %}
+<section class="section" id="rituels" style="background:var(--sand-2)"><div class="wrap">
+  <div class="section-head">
+    <div><p class="eyebrow">Les rituels</p><h2>Tout ce qu'il faut, réuni pour vous</h2></div>
+    <p class="muted">Des ensembles pensés pour aller bien ensemble. Vous choisissez les modèles, on ajoute tout au panier en une fois.</p>
+  </div>
+  <div class="rituals">
+    {% for r in rituals %}
+    <a class="ritual" href="{{ url_for('ritual', index=r.index) }}">
+      <div class="collage {{ 'two' if r.products|length == 2 }}">{% for p in r.products[:3] %}<img src="{{ p.image_url }}" alt="" loading="lazy">{% endfor %}</div>
+      <div><h3>{{ r.name }}</h3><p class="muted" style="margin:0">{{ r.text }}</p></div>
+      <ul>{% for p in r.products %}<li>{{ p.name }}</li>{% endfor %}</ul>
+      <div class="foot"><span class="price">{{ r.products|length }} produits · {{ r.total|eur }}</span><span class="link">Composer →</span></div>
+    </a>
+    {% endfor %}
+  </div>
+</div></section>
+{% endif %}
+{% endif %}
+
+<section class="section" id="boutique"><div class="wrap">
+  <div class="section-head">
+    <div><p class="eyebrow">La boutique</p><h2>{% if args.get('prix') %}Idées cadeaux à moins de {{ args.get('prix') }} €{% else %}Tous nos produits{% endif %}</h2></div>
+  </div>
+  <div class="toolbar">
+    <nav class="chips" aria-label="Collections">
+      <a class="chip {{ '' if args.get('category') or args.get('prix') else 'on' }}" href="{{ url_for('index') }}#boutique">Tout</a>
+      {% for c in categories %}
+      <a class="chip {{ 'on' if args.get('category') == c.id|string }}" href="{{ url_for('index', category=c.id) }}#boutique">{{ c.name }}</a>
+      {% endfor %}
+      <a class="chip {{ 'on' if args.get('prix') == '15' }}" href="{{ url_for('index', prix=15) }}#boutique">Moins de 15 €</a>
+      <a class="chip {{ 'on' if args.get('prix') == '30' }}" href="{{ url_for('index', prix=30) }}#boutique">Moins de 30 €</a>
+    </nav>
+    <form method="get" action="{{ url_for('index') }}">
+      {% if args.get('category') %}<input type="hidden" name="category" value="{{ args.get('category') }}">{% endif %}
+      <label class="sr-only" for="sort">Trier</label>
+      <select id="sort" name="sort" onchange="this.form.submit()">
+        <option value="">Nouveautés</option>
+        <option value="popular" {{ 'selected' if args.get('sort') == 'popular' }}>Les plus vendus</option>
+        <option value="price_asc" {{ 'selected' if args.get('sort') == 'price_asc' }}>Prix croissant</option>
+        <option value="price_desc" {{ 'selected' if args.get('sort') == 'price_desc' }}>Prix décroissant</option>
+      </select>
+      <noscript><button class="btn dark" type="submit">Trier</button></noscript>
+    </form>
+  </div>
+  <div class="grid">
+    {% for p in products %}{% include '_card.html' %}
+    {% else %}
+    <p>{% if filtered %}Aucun produit ne correspond. <a class="link" href="{{ url_for('index') }}#boutique">Voir toute la boutique</a>{% else %}La boutique ouvre très bientôt.{% endif %}</p>
+    {% endfor %}
+  </div>
+</div></section>
+
+{% if not filtered %}
+<section class="section" style="background:var(--card);border-top:1px solid var(--line);border-bottom:1px solid var(--line)"><div class="wrap story">
+  <div>
+    <p class="eyebrow">Un soir {{ site.name }}</p>
+    <h2>Trois gestes pour retrouver le calme</h2>
+    <p class="muted">Pas besoin de tout changer. Quelques habitudes simples suffisent souvent à rendre le coucher plus doux et le réveil moins brutal.</p>
+  </div>
+  <div class="steps">
+    <div class="step"><div><strong>Baisser la lumière</strong>Une heure avant de dormir, remplacez le plafonnier par une lueur chaude : lampe de sel, veilleuse ou projecteur.</div></div>
+    <div class="step"><div><strong>Créer une ambiance</strong>Une brume légère, un ciel étoilé, un plaid : le corps comprend que la journée est finie.</div></div>
+    <div class="step"><div><strong>Se réveiller avec la lumière</strong>Le réveil lumière éclaire peu à peu la chambre avant l'heure, comme un lever de soleil, même en plein hiver.</div></div>
+  </div>
+</div></section>
+
+<section class="section" id="questions"><div class="wrap faq">
+  <p class="eyebrow">Questions fréquentes</p>
+  <h2>Livraison, retours et service client</h2>
+  {% include '_faq.html' %}
+</div></section>
+{% endif %}
+
+<section class="wrap" id="newsletter">{% include '_newsletter.html' %}</section>
 {% endblock %}

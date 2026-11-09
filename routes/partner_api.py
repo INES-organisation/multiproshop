@@ -11,6 +11,11 @@ qui encaisse (Stripe d'INES), passe la commande CJ (hub CJ d'INES) et envoie les
 - POST /api/partner/orders         commande en attente + session de paiement (jeton)
 - POST /api/partner/orders/confirm validation au retour du paiement (jeton)
 - GET  /api/partner/orders         commandes d'un client du partenaire (jeton)
+- POST /api/partner/newsletter     inscription à la newsletter, code de bienvenue par e-mail (jeton)
+
+Seuil de livraison offerte propre à un site : FREE_SHIPPING_THRESHOLD_<SITE> (sinon celui de MPS).
+Le port n'est offert que si la marge du panier reste positive (routes.cart._with_free_shipping).
+Codes promo : « coupon_code » dans /shipping et /orders, mêmes règles que le panier MPS.
 
 Jeton : en-tête « Authorization: Bearer … », variable PARTNER_TOKEN_<SITE> (saisie dans INES →
 /admin/integrations sous MULTIPROSHOP_PARTNER_TOKEN_<SITE>, ex. MULTIPROSHOP_PARTNER_TOKEN_TONYALPHA).
@@ -92,6 +97,28 @@ def _product_json(p, full=False):
     return data
 
 
+def _free_shipping_threshold(site):
+    raw = os.environ.get(f'FREE_SHIPPING_THRESHOLD_{(site or "").upper()}') if site else None
+    try:
+        return float(raw) if raw else current_app.config['FREE_SHIPPING_THRESHOLD']
+    except ValueError:
+        return current_app.config['FREE_SHIPPING_THRESHOLD']
+
+
+def _reviews_json(p):
+    """Avis déposés sur nos boutiques seulement (jamais ceux importés de CJ), les plus récents d'abord"""
+    from models.product_review import ProductReview
+    reviews = p.public_reviews.order_by(ProductReview.created_at.desc())
+    count = reviews.count()
+    latest = reviews.limit(10).all()
+    average = round(sum(r.rating for r in reviews.all()) / count, 1) if count else 0
+    return {'average': average, 'count': count, 'items': [{
+        'author': r.author_name, 'rating': r.rating, 'title': r.title, 'comment': r.comment,
+        'verified': bool(r.verified_purchase), 'images': r.get_images_list(),
+        'date': (r.review_date or r.created_at).date().isoformat() if (r.review_date or r.created_at) else None,
+    } for r in latest]}
+
+
 def _in_project(query):
     """?project=<vitrine> : seulement les produits marqués pour cette vitrine (champ « Vitrines » de l'admin).
     Renvoie None si le nom est invalide."""
@@ -128,8 +155,11 @@ def catalogue():
                   .order_by(None).group_by(Product.category_id).all())
     categories = [{'id': c.id, 'name': c.name_fr or c.name, 'count': counts[c.id]}
                   for c in Category.query.filter(Category.id.in_(list(counts))).all()]
+    project = (request.args.get('project') or '').strip().lower()
     resp = jsonify({'products': [_product_json(p) for p in pagination.items], 'total': pagination.total,
                     'page': page, 'pages': pagination.pages,
+                    'free_shipping': {'threshold': _free_shipping_threshold(project),
+                                      'countries': list(current_app.config['FREE_SHIPPING_COUNTRIES'])},
                     'categories': sorted(categories, key=lambda c: c['name'])})
     resp.headers['Cache-Control'] = 'public, max-age=300'
     resp.headers['Access-Control-Allow-Origin'] = '*'  # données publiques, lisibles depuis le navigateur des vitrines
@@ -142,7 +172,7 @@ def product(product_id):
     p = query.filter(Product.id == product_id).first() if query is not None else None
     if not p:
         return jsonify({'error': 'Produit introuvable'}), 404
-    return jsonify(_product_json(p, full=True))
+    return jsonify({**_product_json(p, full=True), 'reviews': _reviews_json(p)})
 
 
 def _items(raw):
@@ -176,7 +206,8 @@ def _items(raw):
     return items
 
 
-def _shipping_methods(items, country, subtotal):
+def _shipping_methods(items, country, subtotal, coupon_shipping=False):
+    """subtotal : après remise du code promo"""
     from routes.cart import _with_free_shipping
     from services.shipping_service import ShippingService
     result = ShippingService().calculate_shipping([{
@@ -184,7 +215,23 @@ def _shipping_methods(items, country, subtotal):
         'cj_vid': i['variant'].cj_vid if i['variant'] is not None else None,
         'quantity': i['quantity'], 'product': i['product'],
     } for i in items], country)
-    return _with_free_shipping(result.get('methods', []), subtotal, country, items)
+    return _with_free_shipping(result.get('methods', []), subtotal, country, items, coupon_shipping,
+                               _free_shipping_threshold(g.partner_site))
+
+
+def _promo(data, items, subtotal):
+    """Code promo envoyé par le partenaire, évalué comme dans le panier MPS (remise plafonnée sans perte)"""
+    from services import coupons
+    code = coupons.normalize(data.get('coupon_code'))
+    empty = {'code': None, 'label': '', 'discount': 0.0, 'net': subtotal, 'free_shipping': False, 'error': None}
+    if not code:
+        return empty
+    email = str((data.get('customer') or {}).get('email') or data.get('email') or '').strip() or None
+    result = coupons.evaluate(coupons.find(code), items, subtotal, email)
+    if result['error']:
+        return {**empty, 'error': result['error']}
+    return {'code': result['code'], 'label': result['label'], 'discount': result['discount'],
+            'net': round(subtotal - result['discount'], 2), 'free_shipping': result['free_shipping'], 'error': None}
 
 
 def _country(data):
@@ -204,9 +251,12 @@ def shipping():
     except ValueError as e:
         return jsonify({'error': str(e)}), 400
     subtotal = round(sum(i['price'] * i['quantity'] for i in items), 2)
+    promo = _promo(data, items, subtotal)
     methods = [{k: m.get(k) for k in ('code', 'name', 'price', 'delivery_time', 'days')}
-               for m in _shipping_methods(items, country, subtotal)]
-    return jsonify({'subtotal': subtotal, 'methods': methods})
+               for m in _shipping_methods(items, country, promo['net'], promo['free_shipping'])]
+    return jsonify({'subtotal': subtotal, 'discount': promo['discount'], 'net': promo['net'], 'methods': methods,
+                    'coupon': {k: promo[k] for k in ('code', 'label', 'error')},
+                    'free_shipping_threshold': _free_shipping_threshold(g.partner_site)})
 
 
 @partner_api.route('/orders', methods=['POST'])
@@ -230,7 +280,10 @@ def create_order():
     except ValueError as e:
         return jsonify({'error': str(e)}), 400
     subtotal = round(sum(i['price'] * i['quantity'] for i in items), 2)
-    method = next((m for m in _shipping_methods(items, country, subtotal)
+    promo = _promo(data, items, subtotal)
+    if promo['error']:
+        return jsonify({'error': promo['error']}), 409
+    method = next((m for m in _shipping_methods(items, country, promo['net'], promo['free_shipping'])
                    if m.get('code') == data.get('shipping_method')), None)
     if method is None:
         return jsonify({'error': "Cette méthode de livraison n'est plus disponible"}), 409
@@ -239,7 +292,8 @@ def create_order():
     try:
         order = Order(
             status='pending', payment_status='pending', payment_method='card',
-            subtotal=subtotal, shipping_cost=shipping_cost, tax=0, total_price=round(subtotal + shipping_cost, 2),
+            subtotal=subtotal, shipping_cost=shipping_cost, tax=0, total_price=round(promo['net'] + shipping_cost, 2),
+            discount_amount=promo['discount'], coupon_code=promo['code'],
             customer_email=customer['email'].lower(), customer_phone=customer['phone'],
             shipping_first_name=customer['first_name'], shipping_last_name=customer['last_name'],
             shipping_address=customer['address'], shipping_city=customer['city'],
@@ -312,6 +366,28 @@ def list_orders():
     orders = (_partner_order(g.partner_site, customer_email=email)
               .filter(Order.payment_status != 'pending').order_by(Order.created_at.desc()).limit(50).all())
     return jsonify({'orders': [_order_json(o) for o in orders]})
+
+
+@partner_api.route('/newsletter', methods=['POST'])
+@partner_required
+def newsletter():
+    """Inscription depuis une vitrine : même liste et même code -10 % que MPS, source = le site.
+    L'e-mail de bienvenue porte le nom et l'adresse de la vitrine ; le code s'utilise sur la vitrine."""
+    from services import newsletter as nl
+    data = request.get_json(silent=True) or {}
+    if not data.get('consent'):
+        return jsonify({'error': "Cochez la case pour accepter de recevoir nos e-mails."}), 400
+    try:
+        sub, coupon, created = nl.subscribe(data.get('email'), source=g.partner_site[:40])
+    except ValueError as e:
+        return jsonify({'error': str(e)}), 400
+    shop_url = str(data.get('site_url') or '')
+    shop_url = shop_url[:200] if shop_url.startswith('https://') else None
+    nl.send_welcome(sub, coupon, current_app.config['SITE_URL'],
+                    shop_name=str(data.get('site_name') or SITE_LABELS.get(g.partner_site, g.partner_site))[:60],
+                    shop_url=shop_url)
+    return jsonify({'created': created, 'code': coupon.code, 'discount': int(coupon.value),
+                    'min_subtotal': coupon.min_subtotal}), 201 if created else 200
 
 
 @partner_api.route('/stats')

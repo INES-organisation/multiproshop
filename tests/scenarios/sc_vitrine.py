@@ -81,3 +81,67 @@ page = cl.get('/merci?session_id=cs_1').get_data(as_text=True)
 assert 'Merci pour votre commande' in page, page
 assert cl.get('/panier').get_data(as_text=True).count('Votre panier est vide') == 1
 print('commande Sérénis OK')
+
+# Seuil de livraison offerte propre à la vitrine, affiché partout et appliqué par MPS si la marge le permet
+os.environ['FREE_SHIPPING_THRESHOLD_SERENIS'] = '39'
+import vitrine.app as va
+va._shop['data'] = None
+home = cl.get('/').get_data(as_text=True)
+assert 'Livraison offerte dès 39 €' in home, home[:800]
+cl.post('/panier/ajouter', data={'product_id': pid, 'variant_id': vid, 'quantity': 2})
+assert 'La livraison est offerte' in cl.get('/panier').get_data(as_text=True)
+page = cl.get('/commande').get_data(as_text=True)
+assert 'Offerte' in page, page
+print('livraison offerte Sérénis OK')
+
+# Avis : ceux déposés sur nos boutiques seulement, jamais ceux importés de CJ
+from models.product_review import ProductReview
+with mps.app_context():
+    db.session.add_all([ProductReview(product_id=pid, author_name='Julie M.', rating=5, comment='Réveil très doux', verified_purchase=True),
+                        ProductReview(product_id=pid, author_name='CJ buyer', rating=1, comment='bad', cj_review_id='cj1')])
+    db.session.commit()
+page = cl.get(f'/produit/{pid}').get_data(as_text=True)
+assert 'Réveil très doux' in page and 'CJ buyer' not in page and '1 avis vérifié' in page, page
+print('avis Sérénis OK')
+
+# Newsletter : même liste que MPS (source serenis), code -10 % enregistré pour la commande
+r = cl.post('/newsletter', data={'email': 'n@b.fr', 'consent': '1'})
+assert r.status_code == 302
+from models.newsletter import NewsletterSubscriber
+from models.coupon import Coupon
+with mps.app_context():
+    sub = NewsletterSubscriber.query.filter_by(email='n@b.fr').first()
+    assert sub and sub.source == 'serenis', sub
+    code = sub.coupon_code
+page = cl.get('/commande?email=n@b.fr').get_data(as_text=True)
+assert code in page and 'Code ' + code in page, page[-3000:]
+assert cl.post('/newsletter', data={'email': 'x@b.fr'}).status_code == 302  # sans consentement : refusé
+with mps.app_context():
+    assert NewsletterSubscriber.query.filter_by(email='x@b.fr').first() is None
+form.update(email='n@b.fr')
+r = cl.post('/commande', data=form)
+assert r.status_code == 303, r.get_data(as_text=True)[-2000:]
+with mps.app_context():
+    o = Order.query.order_by(Order.id.desc()).first()
+    assert o.coupon_code == code and o.discount_amount > 0 and o.total_price == round(o.subtotal - o.discount_amount + o.shipping_cost, 2), (o.coupon_code, o.discount_amount)
+print('newsletter et code promo Sérénis OK')
+
+# Lots : seulement avec les produits du projet en ligne
+va.RITUALS = [{'name': 'Rituel test', 'text': 'x', 'ids': [pid, other_id]}]
+va._shop['data'] = None
+assert 'Rituel test' not in cl.get('/').get_data(as_text=True)  # un seul produit Sérénis : pas de lot
+with mps.app_context():
+    third = Product(name='Plaid', slug='plaid', sku='S3', price=24.9, cost_price=12.3, stock=9, category_id=Category.query.first().id,
+                    is_active=True, published=True, cj_pid='P3', projects='serenis')
+    db.session.add(third); db.session.commit(); third_id = third.id
+va.RITUALS = [{'name': 'Rituel test', 'text': 'x', 'ids': [pid, third_id]}]
+va._shop['data'] = None
+assert 'Rituel test' in cl.get('/').get_data(as_text=True)
+page = cl.get('/rituel/0').get_data(as_text=True)
+assert 'Plaid' in page and 'Blanc' in page, page
+with cl.session_transaction() as s:
+    s['cart'] = []
+cl.post('/panier/ajouter-rituel', data={'product_id': [pid, third_id], 'variant_id': [vid, '']})
+cart_page = cl.get('/panier').get_data(as_text=True)
+assert 'Plaid' in cart_page and 'Réveil aube' in cart_page
+print('rituels Sérénis OK')
