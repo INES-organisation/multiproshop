@@ -1,6 +1,8 @@
 {% extends 'base.html' %}
 {% block content %}
-<h1>Oups</h1>
-<p>{{ message }}</p>
-<p><a class="btn" href="{{ url_for('index') }}">Retour à la boutique</a></p>
+<div class="wrap" style="max-width:640px;text-align:center;padding:72px 20px">
+  <h1>Oups</h1>
+  <p>{{ message }}</p>
+  <p><a class="btn" href="{{ url_for('index') }}">Retour à la boutique</a></p>
+</div>
 {% endblock %}

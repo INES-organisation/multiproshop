@@ -29,14 +29,17 @@ def _wants_json():
         or request.accept_mimetypes.best == 'application/json'
 
 
-def _with_free_shipping(methods, subtotal, country, items=None, coupon_shipping=False):
+def _with_free_shipping(methods, subtotal, country, items=None, coupon_shipping=False, threshold=None):
     """Livraison offerte en France dès le seuil (ou partout avec un code « livraison offerte »), si la marge
     du panier reste positive une fois le port le moins cher et les frais de carte payés : cette méthode
-    passe alors à 0 €. subtotal = sous-total après remise du code promo."""
+    passe alors à 0 €. subtotal = sous-total après remise du code promo. threshold : seuil propre à une
+    vitrine (FREE_SHIPPING_THRESHOLD_<SITE>), sinon celui de MPS."""
     if not methods or admin_cost_mode():
         return methods
+    if threshold is None:
+        threshold = current_app.config['FREE_SHIPPING_THRESHOLD']
     if not coupon_shipping and (country not in current_app.config['FREE_SHIPPING_COUNTRIES']
-                                or subtotal < current_app.config['FREE_SHIPPING_THRESHOLD']):
+                                or subtotal < threshold):
         return methods
     methods = [dict(m) for m in methods]
     cheapest = min(methods, key=lambda m: m['price'])

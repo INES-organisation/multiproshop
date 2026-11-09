@@ -1,30 +1,70 @@
 {% extends 'base.html' %}
-{% block title %}Commande — {{ site.name }}{% endblock %}
+{% block title %}Commande · {{ site.name }}{% endblock %}
+{% block style %}
+.checkout{display:grid;grid-template-columns:1.5fr 1fr;gap:40px;padding:32px 0;align-items:start}
+@media (max-width:900px){.checkout{grid-template-columns:1fr}.checkout aside{order:-1}}
+.form2{display:grid;grid-template-columns:1fr 1fr;gap:0 16px}@media (max-width:600px){.form2{grid-template-columns:1fr}}
+.method{display:flex;gap:12px;align-items:center;border:1.5px solid var(--line);border-radius:14px;padding:14px 16px;margin:8px 0;background:#fff;cursor:pointer;font-weight:400}
+.method input{width:auto;margin:0}.method:has(input:checked){border-color:var(--night)}
+.method .price{margin-left:auto}
+fieldset{border:0;padding:0;margin:20px 0}legend{font-family:var(--serif);font-size:1.3rem;color:var(--night);margin-bottom:6px}
+.mini{display:flex;gap:12px;align-items:center;padding:8px 0}.mini img{width:52px;height:52px;border-radius:10px;object-fit:cover}
+.mini .q{background:var(--night);color:#fff;border-radius:99px;font-size:.72rem;padding:1px 7px;margin-left:4px}
+.row{display:flex;justify-content:space-between;margin:8px 0}
+.coupon{display:flex;gap:8px;margin-top:12px}.coupon input{text-transform:uppercase}
+.coupon .btn{padding:10px 18px}
+.error{color:#a33d2f;font-size:.88rem}
+{% endblock %}
 {% block content %}
-<h1>Commande</h1>
-<form method="post">
-  <label for="country">Pays de livraison</label>
-  <select id="country" name="country" onchange="this.form.submit()">
-    {% for code, label in countries.items() %}<option value="{{ code }}" {{ 'selected' if form.country == code }}>{{ label }}</option>{% endfor %}
-  </select>
-  <noscript><button class="btn" type="submit" name="step" value="country">Mettre à jour la livraison</button></noscript>
-  <fieldset style="border:0;padding:0;margin:16px 0">
-    <legend><strong>Livraison</strong></legend>
-    {% for m in shipping.methods %}
-    <label><input type="radio" name="shipping_method" value="{{ m.code }}" style="width:auto" {{ 'checked' if form.shipping_method == m.code or (not form.shipping_method and loop.first) }}>
-      {{ m.name }} : {{ 'offerte' if m.price == 0 else ('%.2f'|format(m.price)|replace('.', ',') ~ ' €') }}{% if m.delivery_time %}, {{ m.delivery_time }} jours{% endif %}</label>
-    {% else %}
-    <p class="note">Pas de livraison possible vers ce pays pour ce panier.</p>
-    {% endfor %}
-  </fieldset>
-  <div class="form2">
-    {% for key, label, type, auto in [('first_name','Prénom','text','given-name'),('last_name','Nom','text','family-name'),('email','E-mail','email','email'),('phone','Téléphone','tel','tel'),('address','Adresse','text','street-address'),('city','Ville','text','address-level2'),('postal_code','Code postal','text','postal-code')] %}
-    <div><label for="{{ key }}">{{ label }}</label><input id="{{ key }}" name="{{ key }}" type="{{ type }}" autocomplete="{{ auto }}" value="{{ form[key] }}" required></div>
-    {% endfor %}
+<div class="wrap">
+  <h1 style="margin-top:36px">Finaliser la commande</h1>
+  <div class="checkout">
+    <form method="post" id="checkout">
+      <fieldset>
+        <legend>Livraison</legend>
+        <label for="country">Pays</label>
+        <select id="country" name="country" onchange="this.form.submit()">
+          {% for code, label in countries.items() %}<option value="{{ code }}" {{ 'selected' if form.country == code }}>{{ label }}</option>{% endfor %}
+        </select>
+        <noscript><button class="btn dark" type="submit" name="step" value="country">Mettre à jour la livraison</button></noscript>
+        {% for m in shipping.methods %}
+        <label class="method"><input type="radio" name="shipping_method" value="{{ m.code }}" {{ 'checked' if form.shipping_method == m.code or (not form.shipping_method and loop.first) }}>
+          <span>{{ m.name }}{% if m.delivery_time %}<br><span class="note">{{ m.delivery_time }} jours</span>{% endif %}</span>
+          <span class="price">{{ 'Offerte' if m.price == 0 else m.price|eur }}</span></label>
+        {% else %}
+        <p class="note">Pas de livraison possible vers ce pays pour ce panier.</p>
+        {% endfor %}
+      </fieldset>
+      <fieldset>
+        <legend>Vos coordonnées</legend>
+        <div class="form2">
+          {% for key, label, type, auto in [('first_name','Prénom','text','given-name'),('last_name','Nom','text','family-name'),('email','E-mail','email','email'),('phone','Téléphone','tel','tel'),('address','Adresse','text','street-address'),('city','Ville','text','address-level2'),('postal_code','Code postal','text','postal-code')] %}
+          <div {% if key == 'address' %}style="grid-column:1/-1"{% endif %}><label for="{{ key }}">{{ label }}</label><input id="{{ key }}" name="{{ key }}" type="{{ type }}" autocomplete="{{ auto }}" value="{{ form[key] }}" required></div>
+          {% endfor %}
+        </div>
+        <label for="notes">Remarque (facultatif)</label>
+        <textarea id="notes" name="notes" rows="2">{{ form.notes }}</textarea>
+      </fieldset>
+      <button class="btn block" type="submit" name="step" value="pay" {{ 'disabled' if not shipping.methods }}>Payer en toute sécurité</button>
+      <p class="note" style="text-align:center">Vous êtes redirigé vers la page de paiement sécurisé Stripe. En commandant, vous acceptez les <a href="https://multiproshop.com/terms">conditions générales de vente</a>.</p>
+    </form>
+    <aside class="panel">
+      <h2 style="font-size:1.3rem">Récapitulatif</h2>
+      {% for line in lines %}
+      <div class="mini"><img src="{{ line.image_url }}" alt=""><span style="flex:1">{{ line.name }}<span class="q">{{ line.quantity }}</span>{% if line.options %}<br><span class="note">{{ line.options }}</span>{% endif %}</span><span>{{ line.total|eur }}</span></div>
+      {% endfor %}
+      <div class="row" style="margin-top:14px"><span>Sous-total</span><span>{{ shipping.subtotal|eur }}</span></div>
+      {% if shipping.discount %}<div class="row" style="color:var(--ok)"><span>Code {{ coupon }}</span><span>-{{ shipping.discount|eur }}</span></div>{% endif %}
+      <div class="row note"><span>Livraison</span><span>selon le mode choisi</span></div>
+      <form method="post" class="coupon">
+        {% for k in ('country', 'shipping_method', 'first_name', 'last_name', 'email', 'phone', 'address', 'city', 'postal_code', 'notes') %}<input type="hidden" name="{{ k }}" value="{{ form[k] }}">{% endfor %}
+        <label class="sr-only" for="coupon_code">Code promo</label>
+        <input id="coupon_code" name="coupon_code" placeholder="Code promo" value="{{ coupon }}">
+        <button class="btn dark" type="submit">Appliquer</button>
+      </form>
+      {% if coupon_error %}<p class="error">{{ coupon_error }}</p>{% endif %}
+      {% if delivery %}<p class="note" style="margin-bottom:0">Livraison estimée {{ delivery }}, avec suivi par e-mail.</p>{% endif %}
+    </aside>
   </div>
-  <label for="notes">Remarque (facultatif)</label>
-  <textarea id="notes" name="notes" rows="2">{{ form.notes }}</textarea>
-  <p class="note">Sous-total : {{ '%.2f'|format(shipping.subtotal)|replace('.', ',') }} €. Le montant final, livraison comprise, s'affiche sur la page de paiement sécurisé.</p>
-  <p><button class="btn" type="submit" name="step" value="pay" {{ 'disabled' if not shipping.methods }}>Payer</button></p>
-</form>
+</div>
 {% endblock %}

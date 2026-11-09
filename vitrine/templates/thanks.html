@@ -1,12 +1,15 @@
 {% extends 'base.html' %}
-{% block title %}Merci — {{ site.name }}{% endblock %}
+{% block title %}Merci · {{ site.name }}{% endblock %}
 {% block content %}
+<div class="wrap" style="max-width:720px;text-align:center;padding:72px 20px">
 {% if order and order.payment_status == 'paid' %}
-<h1>Merci pour votre commande</h1>
-<p>Commande <strong>{{ order.order_number }}</strong>, {{ '%.2f'|format(order.total)|replace('.', ',') }} € payés. Vous recevez la confirmation par e-mail, puis le suivi du colis dès son expédition.</p>
+  <p class="eyebrow">Commande confirmée</p>
+  <h1>Merci pour votre commande</h1>
+  <p>Commande <strong>{{ order.order_number }}</strong>, {{ order.total|eur }} payés. Vous recevez la confirmation par e-mail, puis le numéro de suivi dès l'expédition.</p>
 {% else %}
-<h1>Paiement en cours de vérification</h1>
-<p>Si vous avez payé, vous recevrez la confirmation par e-mail dans quelques minutes.</p>
+  <h1>Paiement en cours de vérification</h1>
+  <p>Si vous avez payé, vous recevrez la confirmation par e-mail dans quelques minutes.</p>
 {% endif %}
-<p><a class="btn" href="{{ url_for('index') }}">Retour à la boutique</a></p>
+  <p style="margin-top:28px"><a class="btn" href="{{ url_for('index') }}">Retour à la boutique</a></p>
+</div>
 {% endblock %}

@@ -3,52 +3,160 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>{% block title %}{{ site.name }} — {{ site.tagline }}{% endblock %}</title>
+<title>{% block title %}{{ site.name }} · {{ site.tagline }}{% endblock %}</title>
 <meta name="description" content="{% block description %}{{ site.tagline }}{% endblock %}">
+<meta name="theme-color" content="#16213a">
+<meta property="og:site_name" content="{{ site.name }}">
+<meta property="og:title" content="{{ self.title() }}">
+<meta property="og:description" content="{{ self.description() }}">
+{% block og_image %}{% endblock %}
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='14' fill='%2316213a'/%3E%3Cpath d='M14 42a18 18 0 0 1 36 0z' fill='%23e0975a'/%3E%3Cpath d='M10 46h44' stroke='%23f6f1e9' stroke-width='3' stroke-linecap='round'/%3E%3C/svg%3E">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,500;9..144,600&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
 <style>
-:root{--accent:{{ site.color }};--ink:#2b2f38;--muted:#6b7280;--bg:#faf8f5;--card:#fff;--line:#e8e4de}
-*{box-sizing:border-box}body{margin:0;font-family:Georgia,"Times New Roman",serif;color:var(--ink);background:var(--bg);line-height:1.5}
+:root{
+  --night:#16213a;--night-2:#22325a;--dawn:{{ site.color }};--dawn-soft:#f3d9bf;--sand:#f6f1e9;--sand-2:#efe7da;
+  --ink:#1f2433;--muted:#626a7d;--card:#fff;--line:#e6ddcf;--ok:#3f7d5a;
+  --serif:"Fraunces",Georgia,"Times New Roman",serif;--sans:"Inter",system-ui,-apple-system,"Segoe UI",sans-serif;
+  --radius:18px;--shadow:0 10px 30px -12px rgba(22,33,58,.25)
+}
+*{box-sizing:border-box}
+html{scroll-behavior:smooth}
+body{margin:0;font-family:var(--sans);color:var(--ink);background:var(--sand);line-height:1.6;-webkit-font-smoothing:antialiased}
 a{color:inherit}img{max-width:100%;display:block}
-.wrap{max-width:1100px;margin:0 auto;padding:0 16px}
-header{background:var(--card);border-bottom:1px solid var(--line);position:sticky;top:0;z-index:5}
-header .wrap{display:flex;align-items:center;justify-content:space-between;height:60px}
-.logo{font-size:1.5rem;text-decoration:none;letter-spacing:.04em}
-.cart-link{text-decoration:none;font-family:system-ui,sans-serif}
-.hero{padding:40px 0 24px;text-align:center}.hero p{color:var(--muted);margin:.25rem 0 0}
-.chips{display:flex;gap:8px;flex-wrap:wrap;justify-content:center;margin:16px 0;font-family:system-ui,sans-serif}
-.chip{padding:6px 14px;border:1px solid var(--line);border-radius:99px;text-decoration:none;background:var(--card);font-size:.9rem}
-.chip.on{background:var(--accent);color:#fff;border-color:var(--accent)}
-.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:20px;padding-bottom:40px}
-.card{background:var(--card);border:1px solid var(--line);border-radius:12px;overflow:hidden;text-decoration:none}
-.card img{aspect-ratio:1;object-fit:cover;width:100%}.card div{padding:12px}
-.price{font-family:system-ui,sans-serif;font-weight:600}
-.btn{display:inline-block;background:var(--accent);color:#fff;border:0;border-radius:8px;padding:12px 20px;font-size:1rem;cursor:pointer;text-decoration:none;font-family:system-ui,sans-serif}
-.btn:focus-visible,a:focus-visible,input:focus-visible,select:focus-visible{outline:3px solid var(--accent);outline-offset:2px}
-.product{display:grid;grid-template-columns:1fr 1fr;gap:32px;padding:32px 0}
-@media (max-width:760px){.product{grid-template-columns:1fr}}
-.thumbs{display:flex;gap:8px;overflow-x:auto;margin-top:8px}.thumbs img{width:64px;height:64px;object-fit:cover;border-radius:6px}
-label{display:block;margin:10px 0 4px;font-family:system-ui,sans-serif;font-size:.9rem}
-input,select,textarea{width:100%;padding:10px;border:1px solid var(--line);border-radius:8px;font:inherit;background:#fff}
-table{width:100%;border-collapse:collapse}td,th{padding:10px 6px;border-bottom:1px solid var(--line);text-align:left;vertical-align:middle}
-.flash{background:#eef2f8;border:1px solid var(--line);padding:10px 14px;border-radius:8px;margin:16px 0;font-family:system-ui,sans-serif}
-.note{color:var(--muted);font-size:.9rem;font-family:system-ui,sans-serif}
-.form2{display:grid;grid-template-columns:1fr 1fr;gap:0 16px}@media (max-width:600px){.form2{grid-template-columns:1fr}}
-footer{border-top:1px solid var(--line);padding:24px 0;color:var(--muted);font-size:.85rem;font-family:system-ui,sans-serif}
-footer a{margin-right:12px}
+h1,h2,h3{font-family:var(--serif);font-weight:500;line-height:1.15;letter-spacing:-.01em;margin:0 0 .5em}
+h1{font-size:clamp(2rem,4.5vw,3.3rem)}h2{font-size:clamp(1.6rem,3vw,2.3rem)}h3{font-size:1.25rem}
+.wrap{max-width:1180px;margin:0 auto;padding:0 20px}
+.eyebrow{font-size:.78rem;letter-spacing:.14em;text-transform:uppercase;color:var(--dawn);font-weight:600;margin:0 0 .6rem}
+.muted,.note{color:var(--muted)}.note{font-size:.88rem}
+.sr-only{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
+
+/* Bandeau et en-tête */
+.topbar{background:var(--night);color:var(--sand);font-size:.82rem;text-align:center;padding:8px 12px}
+.topbar strong{color:var(--dawn-soft);font-weight:600}
+header.site{background:rgba(246,241,233,.92);backdrop-filter:saturate(1.4) blur(10px);border-bottom:1px solid var(--line);position:sticky;top:0;z-index:20}
+header.site .wrap{display:flex;align-items:center;justify-content:space-between;height:68px;gap:16px}
+.logo{display:flex;align-items:center;gap:10px;text-decoration:none;color:var(--night)}
+.logo span{font-family:var(--serif);font-size:1.6rem;font-weight:500;letter-spacing:.01em}
+.nav{display:flex;gap:26px;font-size:.95rem}.nav a{text-decoration:none;color:var(--muted)}.nav a:hover{color:var(--night)}
+@media (max-width:760px){.nav{display:none}}
+.cart-link{display:flex;align-items:center;gap:8px;text-decoration:none;font-weight:500;color:var(--night)}
+.cart-count{background:var(--dawn);color:#fff;border-radius:99px;font-size:.75rem;min-width:22px;height:22px;display:inline-grid;place-items:center;padding:0 6px}
+
+/* Boutons */
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;background:var(--dawn);color:#fff;border:0;border-radius:99px;padding:14px 28px;font:600 1rem var(--sans);cursor:pointer;text-decoration:none;transition:transform .15s,box-shadow .15s,background .15s;box-shadow:0 8px 20px -10px rgba(224,151,90,.9)}
+.btn:hover{transform:translateY(-1px);background:#d88845}
+.btn.dark{background:var(--night);box-shadow:none}.btn.dark:hover{background:var(--night-2)}
+.btn.ghost{background:transparent;color:var(--night);border:1.5px solid var(--night);box-shadow:none}
+.btn.light{background:var(--sand);color:var(--night);box-shadow:none}
+.btn.block{width:100%}
+.btn[disabled]{opacity:.5;cursor:not-allowed}
+.btn:focus-visible,a:focus-visible,input:focus-visible,select:focus-visible,button:focus-visible,summary:focus-visible{outline:3px solid var(--dawn);outline-offset:3px}
+.link{color:var(--night);font-weight:500;text-underline-offset:4px}
+
+/* Cartes produit */
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(230px,1fr));gap:22px}
+.card{background:var(--card);border-radius:var(--radius);overflow:hidden;text-decoration:none;display:flex;flex-direction:column;transition:transform .2s,box-shadow .2s;border:1px solid var(--line)}
+.card:hover{transform:translateY(-3px);box-shadow:var(--shadow)}
+.card .img{aspect-ratio:1;background:var(--sand-2);position:relative}
+.card .img img{width:100%;height:100%;object-fit:cover}
+.card .body{padding:14px 16px 18px;display:flex;flex-direction:column;gap:6px;flex:1}
+.card .name{font-size:.97rem;line-height:1.35}
+.price{font-weight:600;color:var(--night)}.was{color:var(--muted);text-decoration:line-through;font-weight:400;margin-left:6px;font-size:.9em}
+.badge{position:absolute;top:12px;left:12px;background:var(--night);color:var(--sand);font-size:.72rem;font-weight:600;letter-spacing:.04em;padding:5px 10px;border-radius:99px}
+.badge.dawn{background:var(--dawn);color:#fff}
+
+/* Formulaires */
+label{display:block;margin:12px 0 6px;font-size:.88rem;font-weight:500}
+input,select,textarea{width:100%;padding:12px 14px;border:1.5px solid var(--line);border-radius:12px;font:inherit;background:#fff;color:var(--ink)}
+input:focus,select:focus,textarea:focus{border-color:var(--night);outline:none}
+.check{display:flex;gap:10px;align-items:flex-start;font-weight:400;font-size:.85rem}.check input{width:auto;margin-top:3px}
+.flash{background:var(--night);color:var(--sand);padding:14px 18px;border-radius:14px;margin:18px 0}
+.panel{background:var(--card);border:1px solid var(--line);border-radius:var(--radius);padding:24px}
+.section{padding:72px 0}.section.tight{padding:48px 0}
+.section-head{display:flex;justify-content:space-between;align-items:end;gap:16px;margin-bottom:28px;flex-wrap:wrap}
+.section-head p{margin:0;max-width:560px}
+
+/* Engagements */
+.promises{display:grid;grid-template-columns:repeat(4,1fr);gap:16px}
+@media (max-width:860px){.promises{grid-template-columns:repeat(2,1fr)}}
+.promise{display:flex;gap:12px;align-items:flex-start;font-size:.9rem}
+.promise svg{flex:none;color:var(--dawn)}
+.promise strong{display:block;color:var(--night);font-weight:600}
+
+/* Accordéons */
+details{border-bottom:1px solid var(--line)}
+summary{cursor:pointer;list-style:none;padding:18px 0;font-weight:600;color:var(--night);display:flex;justify-content:space-between;gap:12px}
+summary::-webkit-details-marker{display:none}
+summary::after{content:"+";font-size:1.3rem;line-height:1;color:var(--dawn)}
+details[open] summary::after{content:"–"}
+details>div{padding:0 0 18px;color:var(--muted)}
+
+/* Newsletter et pied de page */
+.newsletter{background:var(--night);color:var(--sand);border-radius:28px;padding:48px;display:grid;grid-template-columns:1.1fr 1fr;gap:32px;align-items:center;position:relative;overflow:hidden}
+.newsletter::before{content:"";position:absolute;width:420px;height:420px;border-radius:50%;background:radial-gradient(circle,rgba(224,151,90,.45),transparent 65%);right:-120px;bottom:-220px}
+.newsletter h2{color:#fff}.newsletter p{color:#c9cfdd}
+.newsletter form{position:relative;display:grid;gap:10px}
+.newsletter .row{display:flex;gap:8px}.newsletter .btn{white-space:nowrap}.newsletter input[type=email]{border:0}
+.newsletter .check{color:#c9cfdd}
+@media (max-width:760px){.newsletter{grid-template-columns:1fr;padding:32px 22px}.newsletter .row{flex-direction:column}}
+footer.site{background:var(--night);color:#aab2c5;margin-top:80px;padding:56px 0 28px;font-size:.88rem}
+footer.site .cols{display:grid;grid-template-columns:1.4fr 1fr 1fr;gap:32px}
+@media (max-width:760px){footer.site .cols{grid-template-columns:1fr}}
+footer.site h3{color:#fff;font-size:1rem;font-family:var(--sans);font-weight:600}
+footer.site a{display:block;text-decoration:none;margin:6px 0}footer.site a:hover{color:#fff}
+footer.site .legal{border-top:1px solid rgba(255,255,255,.1);margin-top:36px;padding-top:20px;font-size:.8rem}
+table{width:100%;border-collapse:collapse}td,th{padding:14px 8px;border-bottom:1px solid var(--line);text-align:left;vertical-align:middle}
+{% block style %}{% endblock %}
 </style>
 </head>
 <body>
-<header><div class="wrap">
-  <a class="logo" href="{{ url_for('index') }}">{{ site.name }}</a>
-  <a class="cart-link" href="{{ url_for('cart') }}">Panier{% if cart_count %} ({{ cart_count }}){% endif %}</a>
+{% set logo %}<svg width="34" height="34" viewBox="0 0 64 64" aria-hidden="true"><rect width="64" height="64" rx="16" fill="#16213a"/><circle cx="32" cy="42" r="15" fill="{{ site.color }}"/><rect x="0" y="42" width="64" height="22" fill="#16213a"/><path d="M12 44h40" stroke="#f6f1e9" stroke-width="3" stroke-linecap="round"/><path d="M32 18v-6M16.5 24.5l-4-4M47.5 24.5l4-4" stroke="{{ site.color }}" stroke-width="3" stroke-linecap="round"/></svg>{% endset %}
+<div class="topbar">
+  {% if free_shipping %}<strong>Livraison offerte dès {{ free_shipping|eur|replace(',00', '') }}</strong> en France · {% endif %}Paiement sécurisé · 14 jours pour changer d'avis
+</div>
+<header class="site"><div class="wrap">
+  <a class="logo" href="{{ url_for('index') }}" aria-label="{{ site.name }}, accueil">{{ logo }}<span>{{ site.name }}</span></a>
+  <nav class="nav" aria-label="Navigation principale">
+    <a href="{{ url_for('index') }}#rituels">Rituels</a>
+    <a href="{{ url_for('index') }}#boutique">Boutique</a>
+    <a href="{{ url_for('index', prix=30) }}#boutique">Idées cadeaux</a>
+    <a href="{{ url_for('index') }}#questions">Livraison</a>
+  </nav>
+  <a class="cart-link" href="{{ url_for('cart') }}">
+    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 7h12l-1 13H7L6 7z"/><path d="M9 7a3 3 0 0 1 6 0"/></svg>
+    <span>Panier</span>{% if cart_count %}<span class="cart-count">{{ cart_count }}</span>{% endif %}
+  </a>
 </div></header>
-<main class="wrap">
-  {% for message in get_flashed_messages() %}<div class="flash" role="status">{{ message }}</div>{% endfor %}
+<main>
+  {% with messages = get_flashed_messages() %}{% if messages %}<div class="wrap">{% for message in messages %}<div class="flash" role="status">{{ message }}</div>{% endfor %}</div>{% endif %}{% endwith %}
   {% block content %}{% endblock %}
 </main>
-<footer><div class="wrap">
-  <p>{{ site.name }} est une boutique MultiProShop : la vente, le paiement, la livraison et le service client sont assurés par MultiProShop.</p>
-  <p><a href="https://multiproshop.com/terms">Conditions générales de vente</a><a href="https://multiproshop.com/legal">Mentions légales</a><a href="https://multiproshop.com/confidentialite">Confidentialité</a><a href="https://multiproshop.com/contact">Contact</a></p>
+<footer class="site"><div class="wrap">
+  <div class="cols">
+    <div>
+      <a class="logo" href="{{ url_for('index') }}" style="color:#fff">{{ logo }}<span>{{ site.name }}</span></a>
+      <p>{{ site.tagline }}. Des objets choisis pour ralentir le soir, mieux dormir et se réveiller en douceur.</p>
+    </div>
+    <div>
+      <h3>La boutique</h3>
+      <a href="{{ url_for('index') }}#rituels">Les rituels</a>
+      <a href="{{ url_for('index') }}#boutique">Tous les produits</a>
+      <a href="{{ url_for('index', prix=15) }}#boutique">Cadeaux à moins de 15 €</a>
+      <a href="{{ url_for('cart') }}">Mon panier</a>
+    </div>
+    <div>
+      <h3>Aide</h3>
+      <a href="{{ url_for('index') }}#questions">Livraison et retours</a>
+      <a href="https://multiproshop.com/contact">Nous contacter</a>
+      <a href="https://multiproshop.com/terms">Conditions générales de vente</a>
+      <a href="https://multiproshop.com/legal">Mentions légales</a>
+      <a href="https://multiproshop.com/confidentialite">Confidentialité</a>
+    </div>
+  </div>
+  <p class="legal">{{ site.name }} est une boutique MultiProShop : la vente, le paiement, la livraison et le service client sont assurés par MultiProShop.</p>
 </div></footer>
+{% block script %}{% endblock %}
 </body>
 </html>

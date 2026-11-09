@@ -1,0 +1,12 @@
+<a class="card" href="{{ url_for('product', product_id=p.id) }}">
+  <div class="img">
+    <img src="{{ p.image_url }}" alt="{{ p.name }}" loading="lazy">
+    {% if p.compare_price and p.compare_price > p.price %}<span class="badge dawn">-{{ ((1 - p.price / p.compare_price) * 100)|round|int }} %</span>
+    {% elif hero and p.id == hero.id %}<span class="badge">Coup de cœur</span>
+    {% elif p.is_new %}<span class="badge">Nouveau</span>{% endif %}
+  </div>
+  <div class="body">
+    <span class="name">{{ p.name }}</span>
+    <span class="price">{% if p.price_from < p.price %}dès {% endif %}{{ p.price_from|eur }}{% if p.compare_price and p.compare_price > p.price %}<span class="was">{{ p.compare_price|eur }}</span>{% endif %}</span>
+  </div>
+</a>

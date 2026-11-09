@@ -44,6 +44,10 @@ Toutes les routes sont sous `/api/partner`.
   - Réglages dans `deploy/.env` de MPS : `PARTNER_TOKEN_SERENIS` (jeton de la vitrine) et `SERENIS_SECRET_KEY` (sessions).
   - Certificat : `sudo certbot certonly --webroot -w /opt/ines/certbot-webroot -d serenis.multiproshop.com --deploy-hook /opt/ines/scripts/certbot-custom-domain-hook.sh`.
   - Produits : champ « Vitrines (projets) » = `serenis` dans la fiche admin. La vitrine n'affiche que ceux-là, même par lien direct.
+  - Accueil : produit mis en avant `VITRINE_HERO` (id MPS, 20987 par défaut), lots « rituels » `VITRINE_RITUALS` (JSON, sinon les trois lots par défaut de `vitrine/app.py`), délai annoncé `VITRINE_DELIVERY` (12-20). Un lot n'apparaît que si au moins deux de ses produits sont en ligne ; ses produits sont vendus à leur prix normal.
+  - Livraison offerte : `FREE_SHIPPING_THRESHOLD_SERENIS` dans `deploy/.env` de MPS (39 € prévu). MPS ne l'offre que si la marge du panier reste positive.
+  - Newsletter : même liste que MPS (source `serenis`) et même code -10 %, utilisable sur la vitrine. Codes promo acceptés au moment de la commande.
+  - Avis : seulement ceux déposés par nos clients après livraison. Les avis CJ (laissés sur d'autres boutiques) ne sont jamais affichés.
   - Plan : une petite vitrine avant le Black Friday, puis en janvier le catalogue complet, avec ses lots « Rituel du soir ». Le document de départ est `LANCEMENT_MPS_NICHE_DROPSHIPPING.md` (docs INES, Business et croissance).
 - **Une autre niche** : même service, copié avec d'autres `VITRINE_*` (projet, nom, slogan, couleur, adresse) et son propre jeton.
 
