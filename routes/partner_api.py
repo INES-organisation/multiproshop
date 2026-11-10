@@ -459,6 +459,21 @@ def stats():
     by_source = dict(active.with_entities(NewsletterSubscriber.source, db.func.count(NewsletterSubscriber.id))
                      .group_by(NewsletterSubscriber.source).all())
     online = _visible()
+    from services.visits import visits
+    from models.cart_reminder import CartReminder
+    from models.product_review import ProductReview
+    own_orders = {d: own.filter(Order.paid_at >= now - timedelta(days=d)).count() for d in (1, 7, 30)}
+    traffic = {}
+    for label, days in (('today', 1), ('week', 7), ('month', 30)):
+        n = visits((now - timedelta(days=days - 1)).date())
+        traffic[label] = {'visits': n, 'orders': own_orders[days],
+                          'conversion_rate': round(100 * own_orders[days] / n, 2) if n else None}
+    # paniers : e-mail saisi au paiement sans commande payée depuis au moins 1 h (relances : services.cart_reminders)
+    carts = CartReminder.query.filter(CartReminder.created_at >= month)
+    abandoned = carts.filter(CartReminder.completed_at.is_(None), CartReminder.updated_at <= now - timedelta(hours=1))
+    reviews = ProductReview.query.filter(ProductReview.is_approved.is_(True))
+    customers = reviews.filter(ProductReview.cj_review_id.is_(None))  # déposés par nos clients, pas importés de CJ
+    avg = customers.with_entities(db.func.avg(ProductReview.rating)).scalar()
     last_sync = db.session.query(db.func.max(Product.cj_last_sync)).scalar()
     return jsonify({
         'generated_at': now.isoformat() + 'Z',
@@ -480,4 +495,21 @@ def stats():
         'products_online': online.count(),
         'products_out_of_stock': online.filter(db.func.coalesce(Product.stock, 0) <= 0).count(),
         'last_cj_sync': last_sync.isoformat() + 'Z' if last_sync else None,
+        # visites du site MultiProShop (pas des vitrines) et commandes passées dessus
+        'traffic': traffic,
+        'abandoned_carts': {
+            'started_30d': carts.count(),
+            'abandoned_30d': abandoned.count(),
+            'recovered_30d': carts.filter(CartReminder.completed_at.isnot(None), CartReminder.steps_sent > 0).count(),
+            'reminders_sent_30d': int(carts.with_entities(db.func.coalesce(db.func.sum(CartReminder.steps_sent), 0)).scalar()),
+        },
+        'reviews': {
+            'customer_total': customers.count(),
+            'customer_30d': customers.filter(ProductReview.created_at >= month).count(),
+            'customer_average': round(float(avg), 2) if avg is not None else None,
+            'imported_from_cj': reviews.filter(ProductReview.cj_review_id.isnot(None)).count(),
+            'latest': [{'rating': r.rating, 'title': r.title, 'product': r.product.name if r.product else None,
+                        'at': r.created_at.isoformat() + 'Z' if r.created_at else None}
+                       for r in customers.order_by(ProductReview.created_at.desc()).limit(5)],
+        },
     })
