@@ -133,3 +133,33 @@ def test_variant_without_stock_uses_product_stock(client, app):
     assert client.get(f'/api/partner/products/{pid}').get_json()['variants'][0]['stock'] == 50
     r = client.post('/api/partner/shipping', headers=AUTH, json={'items': [{'product_id': pid, 'variant_id': vid}]})
     assert r.status_code == 200 and r.get_json()['subtotal'] == 21.0
+
+
+def test_stats_visits_carts_reviews(client, app, monkeypatch):
+    """INES lit visites (une par visiteur et par jour, sans robots), paniers abandonnés et avis clients."""
+    from datetime import datetime, timedelta
+    from models.cart_reminder import CartReminder
+    from models.product_review import ProductReview
+    from services import visits
+    visits._seen.clear()
+    monkeypatch.setenv('PARTNER_TOKEN_INES', 'i' * 32)
+    browser = {'Accept': 'text/html', 'User-Agent': 'Mozilla/5.0 Firefox/130'}
+    client.get('/', headers=browser)
+    client.get('/', headers=browser)  # même visiteur : une seule visite
+    client.get('/', headers={**browser, 'User-Agent': 'Googlebot/2.1'})
+    client.get('/', headers=browser, environ_base={'REMOTE_ADDR': '10.0.0.2'})
+    with app.app_context():
+        old = datetime.utcnow() - timedelta(hours=3)
+        db.session.add_all([CartReminder(email='a@x.re', updated_at=old),
+                            CartReminder(email='b@x.re', updated_at=old, steps_sent=1, completed_at=datetime.utcnow()),
+                            CartReminder(email='c@x.re')])
+        pid = Product.query.first().id
+        db.session.add_all([ProductReview(product_id=pid, author_name='M.', rating=5, comment='ok'),
+                            ProductReview(product_id=pid, author_name='J.', rating=4, comment='bien'),
+                            ProductReview(product_id=pid, author_name='CJ', rating=1, comment='x', cj_review_id='cj1')])
+        db.session.commit()
+    s = client.get('/api/partner/stats', headers={'Authorization': 'Bearer ' + 'i' * 32}).get_json()
+    assert s['traffic']['today']['visits'] == 2 and s['traffic']['today']['conversion_rate'] == 0
+    assert s['abandoned_carts'] == {'started_30d': 3, 'abandoned_30d': 1, 'recovered_30d': 1, 'reminders_sent_30d': 1}
+    assert s['reviews']['customer_total'] == 2 and s['reviews']['customer_average'] == 4.5
+    assert s['reviews']['imported_from_cj'] == 1

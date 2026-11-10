@@ -105,6 +105,7 @@ def create_app(config_name='development'):
     from models.coupon import Coupon
     from models.admin_notification import AdminNotification
     from models.newsletter import NewsletterSubscriber
+    from models.visit import VisitorDay
     with app.app_context():
         db.create_all()
         _add_missing_columns()
@@ -125,6 +126,11 @@ def create_app(config_name='development'):
         if not current_user.is_admin:
             abort(404)
         return None
+
+    @app.before_request
+    def count_visitor():
+        from services.visits import track
+        track()
 
     @app.context_processor
     def admin_helpers():
