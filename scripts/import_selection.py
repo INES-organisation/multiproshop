@@ -191,13 +191,15 @@ def main():
                 if args.project:
                     # Déjà dans MPS : on ajoute seulement la vitrine, la fiche (titre, texte, prix) reste
                     existing = Product.query.filter_by(cj_pid=item['pid']).first()
-                    if existing:
+                    # Un ancien import jamais mis en ligne (inactif, sans published_at) est réimporté :
+                    # sa fiche et ses prix datent de l'ancien catalogue
+                    if existing and (existing.is_active or existing.published_at is not None):
                         add_project(existing, args.project)
                         db.session.commit()
                         attached.append(existing.id)  # pas dans .publies.json : --unpublish ne doit pas les retirer
                         print(f"  rattaché (déjà dans MPS, id {existing.id}) : {existing.name}")
                         continue
-                if item['pid'] in already:
+                if item['pid'] in already and not args.project:
                     continue
                 response = cj_call(api, 'product/query', {'pid': item['pid']})
                 if not response or response.get('result') is False or not response.get('data'):
