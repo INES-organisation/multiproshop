@@ -1,0 +1,42 @@
+{% extends 'layout.html' %}
+
+{% block title %}La sélection {{ sf.name }} | MultiProShop{% endblock %}
+{% block meta_description %}Le matériel sélectionné par {{ sf.name }}, vendu et expédié par MultiProShop. Paiement sécurisé, livraison suivie, offerte en France dès {{ '%.0f'|format(free_shipping_threshold) }} € selon le panier.{% endblock %}
+{% block content %}
+<div class="container py-5 premium-page">
+    <h1 class="mb-2">La sélection {{ sf.name }}</h1>
+    <p class="text-muted mb-4">
+        {{ sf.tagline or ('Le matériel recommandé par ' ~ sf.name ~ '.') }}
+        Vendu et expédié par MultiProShop.
+        {% if sf.url %}<a href="{{ sf.url }}" rel="noopener">Retour sur {{ sf.url|replace('https://', '')|replace('/boutique', '') }}</a>{% endif %}
+    </p>
+    {% for name, items in groups.items() %}
+    <h2 class="h4 mt-4 mb-3">{{ name }}</h2>
+    <div class="row">
+        {% for product in items %}
+        <div class="col-6 col-md-4 col-lg-3 mb-4">
+            <div class="card h-100 shadow-sm premium-shadow">
+                <a href="{{ url_for('products.product_detail', product_id=product.id) }}">
+                    <img src="{{ product.image_url or url_for('static', filename='images/default-product.jpg') }}" class="card-img-top" alt="{{ product.name }}" loading="lazy" decoding="async" style="aspect-ratio:1/1;object-fit:cover;">
+                </a>
+                <div class="card-body text-center">
+                    <h3 class="card-title h6">{{ product.name }}</h3>
+                    <p class="card-text fw-bold">{{ '%.2f'|format(product.price)|replace('.', ',') }} €</p>
+                    <a href="{{ url_for('products.product_detail', product_id=product.id) }}" class="btn btn-warning premium-btn btn-sm">Voir le produit</a>
+                </div>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+    {% else %}
+    <p class="text-muted">La sélection arrive bientôt. En attendant, <a href="{{ url_for('products.list_products') }}">voir tout le catalogue</a>.</p>
+    {% endfor %}
+
+    <div class="premium-feature-row row mt-5 justify-content-center">
+        <div class="col-md-2 premium-feature"><i class="fas fa-shipping-fast"></i><br>Livraison offerte en France dès {{ "%.0f"|format(free_shipping_threshold) }} € selon le panier</div>
+        <div class="col-md-2 premium-feature"><i class="fas fa-undo"></i><br>Retours {{ return_days }} jours</div>
+        <div class="col-md-2 premium-feature"><i class="fas fa-lock"></i><br>Paiement sécurisé</div>
+        <div class="col-md-2 premium-feature"><i class="fas fa-truck"></i><br>Livraison suivie</div>
+    </div>
+</div>
+{% endblock %}
