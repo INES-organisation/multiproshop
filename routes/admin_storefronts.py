@@ -33,9 +33,9 @@ def _in(slug):
 def _summary(sf):
     from models.order import Order
     from models.product import Product
-    attached = Product.query.filter(_in(sf.slug), Product.is_active.is_(True))
-    online = attached.filter(Product.published.is_(True)).count()
-    drafts = attached.filter(Product.published.isnot(True)).count()
+    attached = Product.query.filter(_in(sf.slug))
+    online = attached.filter(Product.is_active.is_(True), Product.published.is_(True)).count()
+    drafts = attached.count() - online
     month = datetime.utcnow() - timedelta(days=30)
     orders = Order.query.filter(Order.admin_notes == f'Commande passée sur {sf.order_label}',
                                 Order.payment_status == 'paid', Order.paid_at >= month).all()
@@ -191,7 +191,7 @@ def storefront_edit(slug):
     q = (request.args.get('q') or '').strip()[:100]
     found = []
     if q:
-        query = Product.query.filter(Product.is_active.is_(True), ~_in(sf.slug) | Product.projects.is_(None))
+        query = Product.query.filter(~_in(sf.slug) | Product.projects.is_(None))
         query = query.filter(Product.id == int(q)) if q.isdigit() else query.filter(Product.name.ilike(f'%{q}%'))
         found = query.order_by(Product.published.desc(), Product.name).limit(40).all()
     summary = _summary(sf)
@@ -215,29 +215,54 @@ def storefront_products(slug):
     ids |= {int(i) for i in re.findall(r'\d+', request.form.get('id_list', ''))}
     back = redirect(url_for('admin.storefront_edit', slug=slug))
     if action == 'publish' and not ids:
-        targets = Product.query.filter(_in(sf.slug), Product.is_active.is_(True), Product.published.isnot(True)).all()
+        targets = Product.query.filter(_in(sf.slug), db.or_(Product.is_active.isnot(True),
+                                                             Product.published.isnot(True))).all()
     elif ids:
         targets = Product.query.filter(Product.id.in_(ids)).all()
     else:
         flash('Cochez au moins un produit.', 'error')
         return back
-    now = datetime.utcnow()
+    if action not in ('add', 'remove', 'publish', 'unpublish'):
+        flash('Action inconnue.', 'error')
+        return back
+    import time
+    from routes.admin import _publish_problem
+    from services.publication import go_live
+    deadline = time.time() + 40  # chaque produit CJ coûte des appels CJ : rester sous le délai web
+    refused, queued, changed = [], 0, 0
     for p in targets:
         projects = set((p.projects or '').split(',')) - {''}
         if action == 'add':
             p.projects = clean_projects(','.join(projects | {sf.slug})) or None
         elif action == 'remove':
             p.projects = clean_projects(','.join(projects - {sf.slug})) or None
-        elif action == 'publish':
-            p.is_active, p.published = True, True
-            p.published_at = p.published_at or now
         elif action == 'unpublish':
-            p.published = False
+            p.is_active = False
+        elif not (p.is_active and p.published):
+            # Mêmes contrôles que « Activer » dans Produits : stock et port relus chez CJ, marge, fiche en
+            # français rédigée par Claude à la première mise en ligne
+            if time.time() > deadline:
+                refused.append(f'#{p.id} (temps écoulé, relancez)')
+                continue
+            problem = _publish_problem(p, deadline)
+            if problem:
+                refused.append(f'#{p.id} ({problem})')
+                continue
+            p.published = True
+            if go_live(p) == 'queued':
+                queued += 1
+                continue
         else:
-            flash('Action inconnue.', 'error')
-            return back
+            continue
+        changed += 1
     db.session.commit()
+    from extensions import cache
+    cache.delete('menu_category_ids')
+    if refused:
+        flash('Non publiés : ' + ' ; '.join(refused[:10]) + (' …' if len(refused) > 10 else ''), 'error')
+    if queued:
+        flash(f"{queued} produit(s) en cours de rédaction en français par Claude : en ligne d'ici quelques minutes.", 'info')
     done = {'add': 'ajouté(s) à', 'remove': 'retiré(s) de', 'publish': 'publié(s) sur',
             'unpublish': 'dépublié(s) (MPS et toutes les vitrines) :'}[action]
-    flash(f'{len(targets)} produit(s) {done} {sf.name}.', 'success')
+    flash(f'{changed} produit(s) {done} {sf.name}.', 'success')
     return back

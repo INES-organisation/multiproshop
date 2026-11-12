@@ -14,8 +14,7 @@
       "ring light"
      ],
      "must": [
-      "ring",
-      "light"
+      "ring light|fill light"
      ]
     },
     {
@@ -91,39 +90,6 @@
    "name": "Point de vente connecté",
    "queries": [
     {
-     "q": "nfc review card tap",
-     "fr": "Carte NFC « Laissez-nous un avis »",
-     "db": [
-      "nfc"
-     ],
-     "must": [
-      "nfc"
-     ]
-    },
-    {
-     "q": "acrylic qr code stand sign",
-     "fr": "Chevalet acrylique pour QR code",
-     "db": [
-      "chevalet",
-      "qr code"
-     ],
-     "must": [
-      "acrylic|qr",
-      "stand|sign|display|holder"
-     ]
-    },
-    {
-     "q": "led open sign neon",
-     "fr": "Enseigne LED « Open »",
-     "db": [
-      "enseigne",
-      "néon"
-     ],
-     "must": [
-      "open|neon"
-     ]
-    },
-    {
      "q": "tablet stand holder desk adjustable",
      "fr": "Support de tablette réglable pour comptoir",
      "db": [
@@ -147,7 +113,7 @@
       "téléprompteur"
      ],
      "must": [
-      "teleprompter|prompter"
+      "teleprompter"
      ]
     },
     {

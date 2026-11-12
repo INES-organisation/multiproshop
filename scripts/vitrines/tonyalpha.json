@@ -99,7 +99,7 @@
       "scanner"
      ],
      "must": [
-      "barcode|bar code|qr code",
+      "barcode|bar code",
       "scanner|reader"
      ]
     },
@@ -112,7 +112,7 @@
      ],
      "must": [
       "acrylic",
-      "sign|menu|display"
+      "sign holder|menu holder|price|display stand"
      ]
     },
     {
@@ -161,7 +161,7 @@
       "pied à coulisse"
      ],
      "must": [
-      "caliper|vernier"
+      "vernier|digital caliper"
      ]
     },
     {
@@ -181,8 +181,7 @@
       "sac à outils"
      ],
      "must": [
-      "tool",
-      "bag|pouch|organizer"
+      "tool bag|tool organizer|tool pouch"
      ]
     }
    ]
@@ -198,6 +197,7 @@
       "balance numérique"
      ],
      "must": [
+      "postal|shipping|parcel|letter",
       "scale"
      ]
     },
@@ -209,8 +209,7 @@
       "ruban adhésif"
      ],
      "must": [
-      "tape",
-      "dispenser|cutter"
+      "tape dispenser"
      ]
     }
    ]

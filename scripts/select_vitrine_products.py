@@ -82,7 +82,7 @@ def examine(api, p, args):
     if weight > args.max_weight:
         return None, 'poids'
     cost_usd = max([v['price'] for v in d['variants'] if v.get('price')] or [d['price']])
-    if cost_usd <= 0:
+    if cost_usd <= 0 or cost_usd > args.max_cost:  # la liste CJ filtre le prix affiché, pas la variante la plus chère
         return None, 'prix'
     stock = api.get_stock(d['variants'], enough=args.min_stock, max_variants=3)
     if stock is None:

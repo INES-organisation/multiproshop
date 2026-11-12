@@ -92,10 +92,12 @@ def publish(item, details, usd_eur, project=None, draft=False):
     product.product_weight = str(details.get('weight') or '')[:50] or None
     product.material = str(details.get('material') or '')[:255] or None
     product.category_id = category.id
-    product.is_active = True
     if draft:
-        product.published = False
+        # Brouillon comme « Rechercher sur CJ » : inactif, jamais publié. L'activation (admin) fait les
+        # contrôles CJ, la marge et la fiche en français par Claude.
+        product.is_active, product.published, product.published_at = False, True, None
     else:
+        product.is_active = True
         product.published = True
         product.published_at = product.published_at or datetime.utcnow()
     if project:

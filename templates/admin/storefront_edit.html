@@ -87,7 +87,7 @@
                     <button name="action" value="remove" class="admin-btn admin-btn-sm admin-btn-danger">Retirer de la vitrine</button>
                 </div>
             </div>
-            <p style="color:#999;font-size:0.85rem;">Publier met le produit en ligne sur MultiProShop et sur tous les sites où il figure. « Retirer » le sort seulement de {{ sf.name }}.</p>
+            <p style="color:#999;font-size:0.85rem;">Publier fait les mêmes contrôles que « Activer » dans Produits (stock et port relus chez CJ, marge, fiche rédigée en français par Claude) et met le produit en ligne sur MultiProShop et sur tous les sites où il figure. « Retirer » le sort seulement de {{ sf.name }}.</p>
             <table class="admin-table">
                 <thead><tr><th scope="col"></th><th scope="col">Produit</th><th scope="col">Prix</th><th scope="col">État</th><th scope="col">Aussi sur</th></tr></thead>
                 <tbody>
@@ -97,7 +97,7 @@
                     <td>{% if p.image_url %}<img src="{{ p.image_url }}" alt="" width="40" height="40" style="object-fit:cover;border-radius:6px;vertical-align:middle;" loading="lazy">{% endif %}
                         <a href="{{ url_for('admin.edit_product', product_id=p.id) }}">{{ p.name }}</a> <span style="color:#999;font-size:0.8rem;">#{{ p.id }}</span></td>
                     <td>{{ "%.2f"|format(p.price or 0)|replace('.', ',') }} €</td>
-                    <td>{% if p.published and p.is_active %}<span class="admin-badge admin-badge-success">En ligne</span>{% elif not p.is_active %}<span class="admin-badge admin-badge-secondary">Inactif</span>{% else %}<span class="admin-badge admin-badge-warning">Brouillon</span>{% endif %}</td>
+                    <td>{% if p.published and p.is_active %}<span class="admin-badge admin-badge-success">En ligne</span>{% else %}<span class="admin-badge admin-badge-warning">Brouillon</span>{% endif %}</td>
                     <td style="color:#999;font-size:0.85rem;">{{ (p.projects or '').split(',')|reject('equalto', sf.slug)|join(', ') }}</td>
                 </tr>
                 {% else %}
@@ -125,7 +125,7 @@
                     <td><input type="checkbox" name="ids" value="{{ p.id }}" aria-label="Ajouter {{ p.name }}"></td>
                     <td>{% if p.image_url %}<img src="{{ p.image_url }}" alt="" width="40" height="40" style="object-fit:cover;border-radius:6px;vertical-align:middle;" loading="lazy">{% endif %} {{ p.name }} <span style="color:#999;font-size:0.8rem;">#{{ p.id }}</span></td>
                     <td>{{ "%.2f"|format(p.price or 0)|replace('.', ',') }} €</td>
-                    <td>{% if p.published %}<span class="admin-badge admin-badge-success">En ligne</span>{% else %}<span class="admin-badge admin-badge-warning">Brouillon</span>{% endif %}</td>
+                    <td>{% if p.published and p.is_active %}<span class="admin-badge admin-badge-success">En ligne</span>{% else %}<span class="admin-badge admin-badge-warning">Brouillon</span>{% endif %}</td>
                 </tr>
                 {% endfor %}
                 </tbody>

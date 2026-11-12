@@ -21,7 +21,7 @@ with app.app_context():
     assert Storefront.query.filter_by(slug='tonyalpha').first().order_label == 'tonyalpha80.com (ALIAS)'
     c = Category(name='Studio', slug='st', level=1, is_active=True, visible=True); db.session.add(c); db.session.flush()
     ring = Product(name='Anneau lumineux', slug='ring', sku='R1', price=19.9, cost_price=6, stock=50, category_id=c.id,
-                   is_active=True, published=False, cj_pid='R1', projects='digita')
+                   is_active=False, published=True, projects='digita')  # brouillon, hors CJ : pas d'appel CJ
     mic = Product(name='Micro-cravate', slug='mic', sku='M1', price=14.9, cost_price=5, stock=50, category_id=c.id,
                   is_active=True, published=True, cj_pid='M1', projects='serenis')
     lamp = Product(name='Lampe de bureau', slug='lamp', sku='L1', price=24.9, cost_price=9, stock=50, category_id=c.id,
@@ -51,7 +51,8 @@ with app.app_context():
 cl.post('/admin/vitrines/digita/produits', data={'action': 'publish'})  # rien de coché : tous les brouillons
 assert cat() == {mic_id, lamp_id, ring_id}
 with app.app_context():
-    assert db.session.get(Product, ring_id).published_at is not None
+    ring = db.session.get(Product, ring_id)
+    assert ring.is_active and ring.published_at is not None
 cl.post('/admin/vitrines/digita/produits', data={'action': 'remove', 'ids': [str(lamp_id)]})
 assert cat() == {mic_id, ring_id}
 page = cl.get('/admin/vitrines/digita?q=Lampe').get_data(as_text=True)
