@@ -75,7 +75,8 @@ def checklist(sf, summary):
             (None, 'Le site appelle le catalogue de sa vitrine',
              f'Le site lit /api/partner/catalogue?project={sf.slug} (et non tout le catalogue) et envoie le '
              'jeton en « Authorization: Bearer » pour le port et les commandes. Jeton rangé dans INES › '
-             f'/admin/integrations : {prefix}MPS_PARTNER_TOKEN.'),
+             f'/admin/integrations : {prefix}MPS_PARTNER_TOKEN. Site qui n\'affiche pas le catalogue lui-même : '
+             f'un lien vers sa page MPS, https://multiproshop.com/selection/{sf.slug}, suffit.'),
         ]
     steps += [
         (sf.token_configured, 'Chiffres dans INES (/ecommerce › Boutiques connectées)',

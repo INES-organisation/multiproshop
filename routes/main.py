@@ -164,3 +164,23 @@ def retired_page():
 @main.route('/nouveautes')
 def nouveautes():
     return redirect(url_for('products.list_products', sort='newest'), 301)
+
+
+@main.route('/selection/<slug>')
+@cache.cached(timeout=300, unless=personal_page)
+def storefront_selection(slug):
+    """Sélection d'une vitrine sur MPS (ex. /selection/digita) : seulement ses produits en ligne, pour un site
+    qui renvoie vers MPS au lieu d'afficher lui-même le catalogue. Une vitrine en pause n'a plus de page."""
+    from flask import abort
+    from sqlalchemy import literal
+    from models.storefront import Storefront
+    sf = Storefront.query.filter_by(slug=slug).first()
+    if sf is None or sf.status == 'pause':
+        abort(404)
+    items = Product.query.filter(Product.is_active.is_(True), Product.published.is_(True),
+                                 (literal(',') + Product.projects + literal(',')).like(f'%,{slug},%')) \
+        .order_by(Product.category_id, Product.name).all()
+    groups = {}
+    for p in items:
+        groups.setdefault(p.category.name_fr or p.category.name if p.category else 'Autres', []).append(p)
+    return render_template('pages/storefront_selection.html', sf=sf, groups=groups, count=len(items))

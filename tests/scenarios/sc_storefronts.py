@@ -53,6 +53,10 @@ assert cat() == {mic_id, lamp_id, ring_id}
 with app.app_context():
     ring = db.session.get(Product, ring_id)
     assert ring.is_active and ring.published_at is not None
+h = pub.get('/selection/digita').get_data(as_text=True)
+assert 'La sélection DIGITA' in h and 'Anneau lumineux' in h and 'Micro-cravate' in h and 'Lampe de bureau' in h, h[-2000:]
+assert pub.get('/selection/inconnue').status_code == 404
+cache.clear()
 cl.post('/admin/vitrines/digita/produits', data={'action': 'remove', 'ids': [str(lamp_id)]})
 assert cat() == {mic_id, ring_id}
 page = cl.get('/admin/vitrines/digita?q=Lampe').get_data(as_text=True)
@@ -72,6 +76,8 @@ with app.app_context():
     assert Storefront.query.filter_by(slug='digita').first().color == '#7c3aed'  # erreur : rien n'est changé
 cl.post('/admin/vitrines/digita', data={'name': 'DIGITA', 'status': 'pause'})
 assert cat() == set()
+cache.clear()
+assert pub.get('/selection/digita').status_code == 404  # en pause : plus de page
 assert pub.get(f'/api/partner/products/{mic_id}?project=digita').status_code == 404
 assert pub.get(f'/api/partner/products/{mic_id}?project=serenis').status_code == 200  # les autres sites continuent
 print('réglages et pause OK')

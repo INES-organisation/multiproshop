@@ -9,7 +9,7 @@
         <span style="display:inline-block;width:16px;height:16px;border-radius:50%;background:{{ sf.color or '#999' }};"></span>
         {{ sf.name }} <span style="font-size:1rem;color:#999;font-weight:600;">{{ sf.kind_label }} · code {{ sf.slug }}</span>
     </h1>
-    <p style="color:#999;margin:0;">{{ s.online }} produit(s) en ligne, {{ s.drafts }} en brouillon · {{ s.orders_30d }} commande(s) payée(s) sur 30 jours ({{ "%.2f"|format(s.revenue_30d)|replace('.', ',') }} €){% if sf.url %} · <a href="{{ sf.url }}" target="_blank" rel="noopener">voir le site</a>{% endif %}</p>
+    <p style="color:#999;margin:0;">{{ s.online }} produit(s) en ligne, {{ s.drafts }} en brouillon · {{ s.orders_30d }} commande(s) payée(s) sur 30 jours ({{ "%.2f"|format(s.revenue_30d)|replace('.', ',') }} €){% if sf.url %} · <a href="{{ sf.url }}" target="_blank" rel="noopener">voir le site</a>{% endif %}{% if sf.kind == 'vitrine' %} · <a href="{{ url_for('main.storefront_selection', slug=sf.slug) }}" target="_blank" rel="noopener">sa page sur MPS</a> (pour un site qui renvoie vers MPS){% endif %}</p>
 </div>
 
 <div class="row g-4">
