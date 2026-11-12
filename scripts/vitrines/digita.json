@@ -1,0 +1,26 @@
+{
+ "project": "digita",
+ "nom": "DIGITA (digita.buzz)",
+ "angle": "Le matériel recommandé par l'agence : produire son contenu soi-même et rendre son point de vente visible en ligne (avis, QR codes, réseaux).",
+ "groups": [
+  {"name": "Studio contenu", "queries": [
+   {"q": "ring light tripod phone holder", "fr": "Anneau lumineux LED avec trépied et support de téléphone", "db": ["anneau lumineux", "ring light"]},
+   {"q": "wireless lavalier microphone phone", "fr": "Micro-cravate sans fil pour smartphone", "db": ["micro%cravate", "lavalier"]},
+   {"q": "phone tripod bluetooth remote extendable", "fr": "Trépied téléphone extensible avec télécommande", "db": ["trépied"]},
+   {"q": "smartphone gimbal stabilizer", "fr": "Stabilisateur pour smartphone", "db": ["stabilisateur"]},
+   {"q": "led video light panel rgb", "fr": "Panneau LED vidéo RGB", "db": ["panneau led", "lumière vidéo"]},
+   {"q": "photo light box studio product", "fr": "Boîte à lumière pour photos produit", "db": ["boîte%lumière", "studio photo"]},
+   {"q": "usb microphone podcast", "fr": "Micro USB pour podcast et visio", "db": ["microphone usb", "micro usb"]}
+  ]},
+  {"name": "Point de vente connecté", "queries": [
+   {"q": "nfc review card tap", "fr": "Carte NFC « Laissez-nous un avis »", "db": ["nfc"]},
+   {"q": "acrylic qr code stand sign", "fr": "Chevalet acrylique pour QR code", "db": ["chevalet", "qr code"]},
+   {"q": "led open sign neon", "fr": "Enseigne LED « Open »", "db": ["enseigne", "néon"]},
+   {"q": "tablet stand holder desk adjustable", "fr": "Support de tablette réglable pour comptoir", "db": ["support%tablette"]}
+  ]},
+  {"name": "Présenter et former", "queries": [
+   {"q": "phone teleprompter", "fr": "Prompteur pour smartphone", "db": ["prompteur", "téléprompteur"]},
+   {"q": "wireless presenter remote laser pointer", "fr": "Télécommande de présentation avec pointeur", "db": ["présentation%télécommande", "pointeur"]}
+  ]}
+ ]
+}

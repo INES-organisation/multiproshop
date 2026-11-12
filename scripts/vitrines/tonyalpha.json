@@ -1,0 +1,36 @@
+{
+ "project": "tonyalpha",
+ "nom": "ALIAS (tonyalpha80.com)",
+ "angle": "Le Magasin « Avec quoi ? » d'ALIAS : s'équiper pour lancer et faire tourner son activité (bureau nomade, vente, terrain, expédition).",
+ "groups": [
+  {"name": "Bureau nomade", "queries": [
+   {"q": "laptop stand adjustable aluminum", "fr": "Support d'ordinateur portable réglable en aluminium", "db": ["support%ordinateur", "laptop stand"]},
+   {"q": "usb c hub multiport adapter", "fr": "Hub USB-C multiport", "db": ["hub usb", "adaptateur usb-c"]},
+   {"q": "webcam 1080p microphone", "fr": "Webcam Full HD avec micro", "db": ["webcam"]},
+   {"q": "bluetooth headset microphone noise cancelling office", "fr": "Casque Bluetooth avec micro antibruit", "db": ["casque%micro", "oreillette"]},
+   {"q": "wireless ergonomic vertical mouse", "fr": "Souris verticale ergonomique sans fil", "db": ["souris%ergonomique", "souris verticale"]},
+   {"q": "laptop backpack business usb", "fr": "Sac à dos ordinateur avec port USB", "db": ["sac à dos%ordinateur"]}
+  ]},
+  {"name": "Vendre et encaisser", "queries": [
+   {"q": "thermal label printer bluetooth", "fr": "Imprimante d'étiquettes thermique Bluetooth", "db": ["imprimante%étiquette"]},
+   {"q": "barcode scanner wireless", "fr": "Lecteur de codes-barres sans fil", "db": ["code%barre", "scanner"]},
+   {"q": "acrylic sign holder stand", "fr": "Présentoir acrylique pour affiche et prix", "db": ["présentoir", "porte-affiche"]},
+   {"q": "price tag label gun", "fr": "Étiqueteuse à prix", "db": ["étiqueteuse"]}
+  ]},
+  {"name": "Terrain et chantier", "queries": [
+   {"q": "laser distance meter", "fr": "Télémètre laser", "db": ["télémètre", "mètre laser"]},
+   {"q": "laser level self leveling green", "fr": "Niveau laser autonivelant", "db": ["niveau laser"]},
+   {"q": "digital caliper", "fr": "Pied à coulisse numérique", "db": ["pied à coulisse"]},
+   {"q": "rechargeable headlamp led", "fr": "Lampe frontale LED rechargeable", "db": ["lampe frontale"]},
+   {"q": "tool bag organizer", "fr": "Sac à outils organisé", "db": ["sac à outils"]}
+  ]},
+  {"name": "Expédier", "queries": [
+   {"q": "digital shipping postal scale", "fr": "Balance postale numérique", "db": ["balance%postale", "balance numérique"]},
+   {"q": "packing tape dispenser", "fr": "Dévidoir de ruban adhésif", "db": ["dévidoir", "ruban adhésif"]}
+  ]},
+  {"name": "Présenter et vendre en salon", "queries": [
+   {"q": "wireless presenter remote laser pointer", "fr": "Télécommande de présentation avec pointeur", "db": ["présentation%télécommande", "pointeur"]},
+   {"q": "portable bluetooth speaker microphone", "fr": "Enceinte Bluetooth portable avec micro", "db": ["enceinte%micro"]}
+  ]}
+ ]
+}
