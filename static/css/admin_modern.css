@@ -457,6 +457,7 @@
     .admin-sidebar,
     .admin-sidebar.collapsed {
         width: 260px;
+        height: 100dvh; /* hauteur visible : la barre d'adresse ne cache plus le bas du menu */
         transform: translateX(-100%);
     }
 
