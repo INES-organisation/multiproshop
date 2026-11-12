@@ -11,8 +11,8 @@ user_bp = Blueprint('user', __name__, url_prefix='/user')
 @user_bp.route('/profile')
 @login_required
 def profile():
-    """Page profil utilisateur"""
-    return render_template('user/profile.html', user=current_user)
+    """Le profil est sur /auth/profil (l'ancien modèle user/profile.html n'existe plus)"""
+    return redirect(url_for('auth.profile'))
 
 @user_bp.route('/orders')
 @login_required
