@@ -7,6 +7,7 @@ Lecture seule : rien n'est importé ni publié. Pour chaque recherche de la fich
      rattacher à la vitrine sans rien réimporter ;
   2. sur CJ, les produits les plus listés par les boutiques CJ pour ces mots (product/listV2,
      keyWord, tri listedNum), dans la fourchette de prix d'achat ;
+     Seuls comptent les produits dont le nom contient les mots obligatoires (« must ») de la recherche.
   3. le détail des premiers (photos, poids, stock) avec les mêmes filtres et le même prix de
      vente que select_cj_products.py (coefficient selon le coût, arrondi à x,90 €).
 
@@ -46,8 +47,16 @@ def existing_products(patterns, limit=5):
              'vitrines': p.projects or ''} for p in query.order_by(Product.published.desc(), Product.id).limit(limit)]
 
 
-def search_cj(api, keyword, args):
-    params = {'page': 1, 'size': args.candidates, 'keyWord': keyword, 'orderBy': 1, 'sort': 'desc',
+def relevant(name, must):
+    """Le nom CJ contient chaque groupe de mots obligatoires (« a|b » : l'un ou l'autre).
+    Sans ce filtre, CJ renvoie ses meilleures ventes, même sans rapport avec la recherche."""
+    name = name.lower()
+    return all(any(w in name for w in group.lower().split('|')) for group in must)
+
+
+def search_cj(api, keyword, args, must=()):
+    # Tri par pertinence chez CJ, puis par nombre de boutiques ici, après le filtre des mots obligatoires
+    params = {'page': 1, 'size': args.candidates, 'keyWord': keyword,
               'startSellPrice': args.min_cost, 'endSellPrice': args.max_cost}
     response = cj_call(api, 'product/listV2', params)
     if not response or response.get('result') is False:
@@ -55,7 +64,7 @@ def search_cj(api, keyword, args):
     found = []
     for item in (response.get('data') or {}).get('content', []):
         for p in item.get('productList', []):
-            if not EXCLUDED.search(p.get('nameEn', '')):
+            if not EXCLUDED.search(p.get('nameEn', '')) and relevant(p.get('nameEn', ''), must):
                 found.append({'pid': p.get('id'), 'name_en': p.get('nameEn', ''), 'image': p.get('bigImage', ''),
                               'listed': int(p.get('listedNum') or 0)})
     return sorted(found, key=lambda p: p['listed'], reverse=True)
@@ -90,7 +99,7 @@ def main():
     parser.add_argument('brief', help='fiche de la vitrine (scripts/vitrines/<projet>.json)')
     parser.add_argument('--out', help='préfixe des fichiers produits (défaut : instance/vitrine_<projet>)')
     parser.add_argument('--per-query', type=int, default=2, help='produits CJ retenus par recherche')
-    parser.add_argument('--candidates', type=int, default=20, help='produits CJ lus par recherche')
+    parser.add_argument('--candidates', type=int, default=50, help='produits CJ lus par recherche')
     parser.add_argument('--max-examined', type=int, default=6, help='fiches CJ détaillées au plus par recherche')
     parser.add_argument('--min-cost', type=float, default=1.5, help="prix d'achat CJ minimum (USD)")
     parser.add_argument('--max-cost', type=float, default=45.0, help="prix d'achat CJ maximum (USD)")
@@ -126,7 +135,7 @@ def main():
                     if api is None:
                         continue
                     rejected = {}
-                    for p in search_cj(api, query['q'], args)[:args.max_examined]:
+                    for p in search_cj(api, query['q'], args, query.get('must') or query['q'].split()[:2])[:args.max_examined]:
                         if len(line['cj']) >= args.per_query:
                             break
                         if any(s['pid'] == p['pid'] for s in selected):
