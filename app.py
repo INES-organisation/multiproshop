@@ -106,9 +106,16 @@ def create_app(config_name='development'):
     from models.admin_notification import AdminNotification
     from models.newsletter import NewsletterSubscriber
     from models.visit import VisitorDay
+    from models.storefront import Storefront, ensure_defaults
+    from models.product_research import ResearchResult, ResearchWatch
     with app.app_context():
         db.create_all()
         _add_missing_columns()
+        try:
+            ensure_defaults()  # Sérénis, ALIAS et DIGITA, créées une fois
+        except Exception as e:  # deux workers au même moment : l'autre les a créées
+            db.session.rollback()
+            print(f"[schema] boutiques et vitrines non créées : {e}")
         # gunicorn --preload : ne pas partager les connexions du processus maître avec les workers
         db.engine.dispose()
     

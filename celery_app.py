@@ -34,6 +34,7 @@ def make_celery(app_name=__name__):
             'tasks.shipping_rate_tasks',
             'tasks.notification_tasks',
             'tasks.publication_tasks',
+            'tasks.research_tasks',
         ]
     )
     
@@ -91,6 +92,12 @@ def make_celery(app_name=__name__):
                 'task': 'tasks.shipping_rate_tasks.refresh_shipping_rates',
                 'schedule': crontab(hour=1, minute=0, day_of_week='mon'),  # lundi 01h00 UTC (02h00 Paris, 05h00 Réunion)
                 'options': {'expires': 6 * 3600},
+            },
+
+            'product-research-weekly': {
+                'task': 'tasks.research_tasks.run_active_watches',
+                'schedule': crontab(hour=5, minute=0, day_of_week='mon'),  # lundi 05h00 UTC, avant la journée
+                'options': {'expires': 12 * 3600},
             },
 
             'sync-cj-stock-hourly': {

@@ -52,6 +52,10 @@
                     <i class="fas fa-bell admin-nav-icon"></i>
                     <span class="admin-nav-text">Notifications</span>
                 </a>
+                <a href="{{ url_for('admin.storefronts') }}" class="admin-nav-item {% if request.endpoint and request.endpoint.startswith('admin.storefront') %}active{% endif %}">
+                    <i class="fas fa-store admin-nav-icon"></i>
+                    <span class="admin-nav-text">Boutiques et vitrines</span>
+                </a>
                 <a href="{{ url_for('admin.coupons') }}" class="admin-nav-item {% if 'coupon' in request.endpoint %}active{% endif %}">
                     <i class="fas fa-tags admin-nav-icon"></i>
                     <span class="admin-nav-text">Codes promo</span>
@@ -86,6 +90,10 @@
                 <a href="{{ url_for('admin.cj_search') }}" class="admin-nav-item {% if request.endpoint and request.endpoint.startswith('admin.cj_search') %}active{% endif %}">
                     <i class="fas fa-search admin-nav-icon"></i>
                     <span class="admin-nav-text">Rechercher sur CJ</span>
+                </a>
+                <a href="{{ url_for('admin.research') }}" class="admin-nav-item {% if request.endpoint and request.endpoint.startswith('admin.research') %}active{% endif %}">
+                    <i class="fas fa-chart-bar admin-nav-icon"></i>
+                    <span class="admin-nav-text">Recherche de produits</span>
                 </a>
                 <a href="{{ url_for('admin.cj_sourcing') }}" class="admin-nav-item {% if request.endpoint and request.endpoint.startswith('admin.cj_sourcing') %}active{% endif %}">
                     <i class="fas fa-binoculars admin-nav-icon"></i>

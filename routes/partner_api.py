@@ -12,6 +12,10 @@ qui encaisse (Stripe d'INES), passe la commande CJ (hub CJ d'INES) et envoie les
 - POST /api/partner/orders/confirm validation au retour du paiement (jeton)
 - GET  /api/partner/orders         commandes d'un client du partenaire (jeton)
 - POST /api/partner/newsletter     inscription à la newsletter, code de bienvenue par e-mail (jeton)
+- GET  /api/partner/storefront/<code> réglages publics d'une boutique ou vitrine (public)
+
+Les boutiques et vitrines se gèrent dans l'admin MPS › Boutiques et vitrines (models/storefront.py) :
+type, état (une vitrine « en pause » ne reçoit plus aucun produit), seuil de livraison offerte, produits.
 
 Seuil de livraison offerte propre à un site : FREE_SHIPPING_THRESHOLD_<SITE> (sinon celui de MPS).
 Le port n'est offert que si la marge du panier reste positive (routes.cart._with_free_shipping).
@@ -42,6 +46,21 @@ MAX_PER_PAGE = 60
 MAX_ITEMS = 30
 CUSTOMER_FIELDS = ('first_name', 'last_name', 'email', 'phone', 'address', 'city', 'postal_code')
 SITE_LABELS = {'tonyalpha': 'tonyalpha80.com (ALIAS)', 'serenis': 'serenis.multiproshop.com'}
+
+
+def _storefront(site):
+    from models.storefront import get
+    try:
+        return get(site)
+    except Exception:  # table pas encore créée : on garde les réglages d'avant
+        db.session.rollback()
+        return None
+
+
+def site_label(site):
+    """Mention « Commande passée sur … » d'un site : celle de sa fiche Boutiques et vitrines"""
+    sf = _storefront(site)
+    return sf.order_label if sf else SITE_LABELS.get(site, site)
 
 
 def _partners():
@@ -98,6 +117,9 @@ def _product_json(p, full=False):
 
 
 def _free_shipping_threshold(site):
+    sf = _storefront(site)
+    if sf and sf.free_shipping_threshold is not None:
+        return sf.free_shipping_threshold
     raw = os.environ.get(f'FREE_SHIPPING_THRESHOLD_{(site or "").upper()}') if site else None
     try:
         return float(raw) if raw else current_app.config['FREE_SHIPPING_THRESHOLD']
@@ -127,6 +149,9 @@ def _in_project(query):
         return query
     if not _PROJECT.match(project):
         return None
+    sf = _storefront(project)
+    if sf and sf.status == 'pause':  # vitrine mise en pause dans l'admin : plus aucun produit
+        return query.filter(literal(False))
     return query.filter((literal(',') + Product.projects + literal(',')).like(f'%,{project},%'))
 
 
@@ -163,6 +188,19 @@ def catalogue():
                     'categories': sorted(categories, key=lambda c: c['name'])})
     resp.headers['Cache-Control'] = 'public, max-age=300'
     resp.headers['Access-Control-Allow-Origin'] = '*'  # données publiques, lisibles depuis le navigateur des vitrines
+    return resp
+
+
+@partner_api.route('/storefront/<slug>')
+def storefront(slug):
+    """Réglages publics d'une boutique ou d'une vitrine (admin MPS › Boutiques et vitrines) : nom,
+    slogan, couleur, produit mis en avant, lots, délai, seuil de livraison offerte"""
+    sf = _storefront(slug.lower()) if _PROJECT.match(slug.lower()) else None
+    if not sf:
+        return jsonify({'error': 'Boutique inconnue'}), 404
+    resp = jsonify({**sf.public_json(), 'free_shipping_threshold': _free_shipping_threshold(sf.slug)})
+    resp.headers['Cache-Control'] = 'public, max-age=300'
+    resp.headers['Access-Control-Allow-Origin'] = '*'
     return resp
 
 
@@ -299,7 +337,7 @@ def create_order():
             shipping_address=customer['address'], shipping_city=customer['city'],
             shipping_postal_code=customer['postal_code'], shipping_country=country,
             shipping_method=method.get('code'), customer_notes=(data.get('notes') or '')[:2000] or None,
-            admin_notes=f"Commande passée sur {SITE_LABELS.get(site, site)}",
+            admin_notes=f"Commande passée sur {site_label(site)}",
         )
         db.session.add(order)
         db.session.flush()
@@ -334,7 +372,7 @@ def _order_json(order):
 
 
 def _partner_order(site, **filters):
-    label = f"Commande passée sur {SITE_LABELS.get(site, site)}"
+    label = f"Commande passée sur {site_label(site)}"
     return Order.query.filter_by(admin_notes=label, **filters)
 
 
@@ -384,7 +422,7 @@ def newsletter():
     shop_url = str(data.get('site_url') or '')
     shop_url = shop_url[:200] if shop_url.startswith('https://') else None
     nl.send_welcome(sub, coupon, current_app.config['SITE_URL'],
-                    shop_name=str(data.get('site_name') or SITE_LABELS.get(g.partner_site, g.partner_site))[:60],
+                    shop_name=str(data.get('site_name') or site_label(g.partner_site))[:60],
                     shop_url=shop_url)
     return jsonify({'created': created, 'code': coupon.code, 'discount': int(coupon.value),
                     'min_subtotal': coupon.min_subtotal}), 201 if created else 200

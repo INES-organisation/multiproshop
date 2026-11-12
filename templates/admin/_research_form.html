@@ -1,0 +1,36 @@
+{# Formulaire d'une veille : w = la veille (ou None), c = ses critères, lines = ses recherches #}
+<div class="row g-3">
+    <div class="col-md-6"><label class="form-label" for="name">Nom de la veille</label>
+        <input class="admin-form-control" id="name" name="name" maxlength="80" required value="{{ w.name if w else '' }}" placeholder="ALIAS : bureau et chantier"></div>
+    <div class="col-md-6"><label class="form-label" for="storefront">Site où importer</label>
+        <select class="admin-form-control" id="storefront" name="storefront">
+            <option value="">Catalogue MPS seul</option>
+            {% for sf in storefronts %}<option value="{{ sf.slug }}" {% if w and w.storefront == sf.slug %}selected{% endif %}>{{ sf.name }} ({{ sf.kind_label|lower }})</option>{% endfor %}
+        </select></div>
+    <div class="col-md-12"><label class="form-label" for="lines">Recherches, une par ligne</label>
+        <textarea class="admin-form-control" id="lines" name="lines" rows="8" style="font-family:monospace;font-size:0.85rem;" placeholder="Micro-cravate sans fil | micro cravate sans fil | wireless lavalier microphone | lavalier|lapel, mic">{{ lines or '' }}</textarea>
+        <div style="color:#999;font-size:0.8rem;margin-top:4px;">
+            <code>Titre en français | mots tapés sur Amazon ou Google | recherche CJ en anglais | mots que le nom CJ doit contenir</code>
+            (séparés par une virgule ; « a|b » = l'un ou l'autre). Seul le titre est obligatoire : sans recherche CJ, seul le web est comparé.
+            Sans mots obligatoires, CJ renvoie ses meilleures ventes même sans rapport.
+        </div>
+        <label style="margin-top:6px;"><input type="checkbox" name="claude" value="1"> Faire compléter par Claude les lignes qui n'ont que le titre</label></div>
+</div>
+<h3 style="font-size:1rem;font-weight:700;margin-top:1.2rem;">Critères CJ</h3>
+<div class="row g-3">
+    <div class="col-6 col-md-3"><label class="form-label" for="min_cost">Achat mini ($)</label><input class="admin-form-control" id="min_cost" name="min_cost" value="{{ c.min_cost }}"></div>
+    <div class="col-6 col-md-3"><label class="form-label" for="max_cost">Achat maxi ($)</label><input class="admin-form-control" id="max_cost" name="max_cost" value="{{ c.max_cost }}"></div>
+    <div class="col-6 col-md-3"><label class="form-label" for="min_images">Photos mini</label><input class="admin-form-control" id="min_images" name="min_images" value="{{ c.min_images }}"></div>
+    <div class="col-6 col-md-3"><label class="form-label" for="max_weight">Poids maxi (g)</label><input class="admin-form-control" id="max_weight" name="max_weight" value="{{ c.max_weight|int }}"></div>
+    <div class="col-6 col-md-3"><label class="form-label" for="min_stock">Stock mini</label><input class="admin-form-control" id="min_stock" name="min_stock" value="{{ c.min_stock }}"></div>
+    <div class="col-6 col-md-3"><label class="form-label" for="per_query">Retenus par recherche</label><input class="admin-form-control" id="per_query" name="per_query" value="{{ c.per_query }}"></div>
+    <div class="col-6 col-md-3"><label class="form-label" for="max_examined">Fiches lues par recherche</label><input class="admin-form-control" id="max_examined" name="max_examined" value="{{ c.max_examined }}"></div>
+    <div class="col-6 col-md-3"><label class="form-label" for="candidates">Produits CJ lus</label><input class="admin-form-control" id="candidates" name="candidates" value="{{ c.candidates }}"></div>
+</div>
+<div style="margin-top:0.8rem;line-height:1.9;">
+    <label><input type="checkbox" name="france_only" value="1" {% if c.france_only %}checked{% endif %}> Seulement les produits en stock en France (livraison plus rapide)</label><br>
+    <label><input type="checkbox" name="web" value="1" {% if not w or w.web %}checked{% endif %}> Comparer au web : Amazon.fr, Google Shopping, Google Trends
+        {% if not web_ready %}<span style="color:#b7791f;">(DataForSEO pas encore branché : CJ seul en attendant)</span>{% endif %}</label><br>
+    <label><input type="checkbox" name="active" value="1" {% if not w or w.active %}checked{% endif %}> Relancer chaque lundi</label>
+</div>
+<div style="color:#999;font-size:0.8rem;margin-top:6px;">Tri : les produits CJ les plus vendus par les boutiques CJ (nombre de boutiques qui les listent), puis les critères. Prix de vente : la grille habituelle (× 2,5 / × 2 / × 1,6, arrondi à x,90 €).</div>

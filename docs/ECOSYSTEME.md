@@ -23,12 +23,15 @@ Les trois tournent sur le même VPS (`ssh ines-vps`).
 
 ## Vitrines : l'API partenaires de MPS
 
+Créer, régler et publier une boutique ou une vitrine : admin MPS › **Boutiques et vitrines** (`/admin/vitrines`), procédure complète dans [BOUTIQUES_ET_VITRINES.md](BOUTIQUES_ET_VITRINES.md). Trouver leurs produits (CJ par critères, comparé au web) : admin MPS › **Recherche de produits**, voir [RECHERCHE_PRODUITS.md](RECHERCHE_PRODUITS.md).
+
 Toutes les routes sont sous `/api/partner`.
 
 | Route | Accès | Usage |
 |---|---|---|
 | `GET /catalogue` | public, CORS ouvert | Produits publiés. `?project=<vitrine>` limite aux produits marqués pour cette vitrine. Autres paramètres : `q`, `category`, `sort`, `page`, `per_page` |
 | `GET /products/<id>` | public | Fiche avec ses variantes |
+| `GET /storefront/<code>` | public | Réglages d'une boutique ou vitrine saisis dans l'admin (nom, slogan, couleur, lots, délai, seuil de port offert) |
 | `POST /shipping`, `POST /orders`, `POST /orders/confirm`, `GET /orders` | jeton de la vitrine | Livraison, commande et paiement, suivi client |
 | `GET /stats` | jeton `PARTNER_TOKEN_INES` | Chiffres pour les moniteurs d'INES |
 | `POST /payment-events` | jeton `PARTNER_TOKEN_INES` | Remboursement ou contestation Stripe transmis par le webhook Stripe d'INES : commande marquée remboursée, alerte (une contestation alerte aussi par e-mail) |

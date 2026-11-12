@@ -1,0 +1,54 @@
+{% extends 'admin/layout_admin_modern.html' %}
+
+{% block title %}Recherche de produits{% endblock %}
+
+{% block content %}
+<div class="mb-4">
+    <h1 style="font-weight: 800; margin-bottom: 0.5rem;"><i class="fas fa-chart-bar"></i> Recherche de produits</h1>
+    <p style="color: #999; margin: 0;">Trouver les meilleurs produits pour un site : les plus vendus chez CJ selon vos critères, comparés à ce qui se vend sur le web. Chaque produit ressort <strong>dispo chez CJ</strong> (à importer en brouillon), <strong>à sourcer</strong> (demandé sur le web, absent chez CJ) ou repère du marché. Rien n'est importé sans votre clic.</p>
+</div>
+
+<div class="admin-card">
+    <div class="admin-card-body" style="overflow-x: auto;">
+        <h2 style="font-size:1.1rem;font-weight:700;">Veilles</h2>
+        {% if watches %}
+        <table class="admin-table">
+            <thead><tr><th scope="col">Veille</th><th scope="col">Site</th><th scope="col">Recherches</th><th scope="col">À traiter</th><th scope="col">Dernier passage</th></tr></thead>
+            <tbody>
+            {% for w in watches %}
+                <tr>
+                    <td><a href="{{ url_for('admin.research_watch', watch_id=w.id) }}" style="font-weight:700;">{{ w.name }}</a>
+                        <div style="color:#999;font-size:0.8rem;">{% if w.web %}CJ + web{% else %}CJ seul{% endif %}{% if w.active %} · chaque lundi{% endif %}</div></td>
+                    <td>{{ w.storefront or 'MPS' }}</td>
+                    <td>{{ w.get_queries()|length }}</td>
+                    <td>{{ counts.get(w.id, 0) }}</td>
+                    <td>{% if w.last_run_at %}{{ w.last_run_at.strftime('%d/%m/%Y %H:%M') }} UTC<div style="color:#999;font-size:0.8rem;">{{ w.last_run_note or '' }}</div>{% else %}<span style="color:#999;">jamais lancée</span>{% endif %}</td>
+                </tr>
+            {% endfor %}
+            </tbody>
+        </table>
+        {% else %}<p style="color:#999;margin:0;">Aucune veille pour l'instant.</p>{% endif %}
+    </div>
+</div>
+
+<div class="admin-card mt-4">
+    <div class="admin-card-body">
+        <h2 style="font-size:1.1rem;font-weight:700;">Nouvelle veille</h2>
+        <form method="POST">
+            {% set w = None %}{% set c = criteria %}{% set lines = '' %}
+            {% include 'admin/_research_form.html' %}
+            <div style="margin-top:0.8rem;"><label><input type="checkbox" name="from_brief" value="1"> Reprendre les recherches de la fiche du site (ALIAS, DIGITA) au lieu des lignes ci-dessus</label></div>
+            <button class="admin-btn admin-btn-primary mt-3" type="submit"><i class="fas fa-plus"></i> Créer la veille</button>
+        </form>
+    </div>
+</div>
+
+<div class="admin-card mt-4">
+    <div class="admin-card-body" style="line-height:1.7;">
+        <h2 style="font-size:1.1rem;font-weight:700;">Coût</h2>
+        CJ : gratuit (environ 10 requêtes par recherche sur les 50 000 points du jour).
+        Web, avec DataForSEO : environ 0,7 centime par recherche (Amazon.fr 0,3 c, Google Shopping 0,2 c, Trends 1,1 c pour 5 recherches), soit moins de 1 € par mois pour 3 veilles de 15 recherches relancées chaque lundi.
+        Identifiants DataForSEO à ranger dans INES › /admin/integrations : <code>MULTIPROSHOP_DATAFORSEO_LOGIN</code> et <code>MULTIPROSHOP_DATAFORSEO_PASSWORD</code>.
+    </div>
+</div>
+{% endblock %}

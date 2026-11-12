@@ -188,3 +188,20 @@ st = mps.test_client().get('/api/partner/stats', headers=ines).get_json()
 assert st['alerts']['disputes_30d'] == 2 and st['alerts']['latest'][0]['title'].startswith('Contestation bancaire'), st['alerts']
 assert mps.test_client().post('/api/partner/payment-events', json={}, headers={'Authorization': 'Bearer ' + 's' * 32}).status_code in (401, 403)
 print('e-mails et chiffres Sérénis OK')
+
+# Réglages saisis dans l'admin (Boutiques et vitrines) : la boutique les relit, l'environnement reste le secours
+import vitrine.app as va
+from models.storefront import Storefront
+with mps.app_context():
+    db.session.add(Storefront(slug='serenis', name='Sérénis', kind='boutique', order_label='serenis.multiproshop.com',
+                              tagline='Dormir mieux, tout simplement', delivery_days='10-15',
+                              lots='[{"name": "Lot test", "text": "t", "ids": [%d, %d]}]' % (pid, other_id)))
+    db.session.commit()
+va._settings['at'] = 0
+home = cl.get('/').get_data(as_text=True)
+assert 'Dormir mieux, tout simplement' in home and va.SITE['delivery'] == '10-15', va.SITE
+assert va.RITUALS[0]['name'] == 'Lot test'
+with mps.app_context():
+    o = Order.query.get(oid)
+    assert o.admin_notes == 'Commande passée sur serenis.multiproshop.com'  # même mention qu'avant la fiche
+print('réglages de la boutique depuis l admin OK')

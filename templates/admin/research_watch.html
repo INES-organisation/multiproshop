@@ -1,0 +1,81 @@
+{% extends 'admin/layout_admin_modern.html' %}
+
+{% block title %}{{ watch.name }} · Recherche de produits{% endblock %}
+
+{% block content %}
+<div class="mb-4">
+    <a href="{{ url_for('admin.research') }}" style="color:#999;">← Recherche de produits</a>
+    <div class="d-flex justify-content-between align-items-center flex-wrap gap-2">
+        <h1 style="font-weight: 800; margin: 0.5rem 0;">{{ watch.name }} <span style="font-size:1rem;color:#999;font-weight:600;">{{ watch.storefront or 'catalogue MPS' }}</span></h1>
+        <form method="POST" action="{{ url_for('admin.research_run', watch_id=watch.id) }}">
+            <button class="admin-btn admin-btn-primary" type="submit"><i class="fas fa-play"></i> Lancer maintenant</button>
+        </form>
+    </div>
+    <p style="color:#999;margin:0;">{% if watch.last_run_at %}Dernier passage le {{ watch.last_run_at.strftime('%d/%m/%Y à %H:%M') }} UTC : {{ watch.last_run_note or '' }}{% else %}Pas encore lancée.{% endif %}</p>
+</div>
+
+<div class="d-flex flex-wrap gap-2 mb-3">
+    {% for k, label, n in tabs %}
+        <a href="{{ url_for('admin.research_watch', watch_id=watch.id, voir=k) }}" class="admin-btn {% if show == k %}admin-btn-primary{% endif %} admin-btn-sm" style="{% if show != k %}background:#eee;color:#333;{% endif %}">{{ label }} ({{ n }})</a>
+    {% endfor %}
+</div>
+
+{% for query, rows in groups.items() %}
+<div class="admin-card mb-3">
+    <div class="admin-card-body" style="overflow-x:auto;">
+        <h2 style="font-size:1rem;font-weight:700;margin-bottom:0.3rem;">{{ query }}</h2>
+        {% set first = rows[0] %}
+        <p style="color:#999;font-size:0.85rem;margin-bottom:0.6rem;">
+            {% if first.market_price %}Prix médian du web : {{ '%.2f'|format(first.market_price)|replace('.', ',') }} €{% else %}Prix du web inconnu{% endif %}
+            {% if first.trend is not none %} · Google Trends {{ first.trend }}/100 sur 12 mois{% endif %}
+        </p>
+        <table class="admin-table">
+            <thead><tr><th scope="col"></th><th scope="col">Produit</th><th scope="col">Source</th><th scope="col">Prix</th><th scope="col">Demande</th><th scope="col">Verdict</th><th scope="col"></th></tr></thead>
+            <tbody>
+            {% for r in rows %}
+            <tr>
+                <td style="width:64px;">{% if r.image %}<img src="{{ r.image }}" alt="" loading="lazy" style="width:56px;height:56px;object-fit:cover;border-radius:6px;">{% endif %}</td>
+                <td style="max-width:360px;">{% if r.url %}<a href="{{ r.url }}" target="_blank" rel="noopener">{{ r.title }}</a>{% else %}{{ r.title }}{% endif %}
+                    {% if r.note %}<div style="color:#999;font-size:0.8rem;">{{ r.note }}</div>{% endif %}
+                    {% if r.product_id %}<div style="font-size:0.8rem;"><a href="{{ url_for('admin.edit_product', product_id=r.product_id) }}">Produit MPS #{{ r.product_id }}</a></div>{% endif %}</td>
+                <td>{{ {'cj': 'CJ', 'amazon': 'Amazon.fr', 'shopping': 'Google Shopping'}[r.kind] }}</td>
+                <td style="white-space:nowrap;">{% if r.price_eur %}{{ '%.2f'|format(r.price_eur)|replace('.', ',') }} €{% endif %}
+                    {% if r.cost_eur %}<div style="color:#999;font-size:0.8rem;">achat {{ '%.2f'|format(r.cost_eur)|replace('.', ',') }} €</div>{% endif %}</td>
+                <td style="font-size:0.85rem;">
+                    {% if r.listed %}{{ r.listed }} boutiques CJ{% endif %}
+                    {% if r.bought_month %}{{ r.bought_month }}+ achetés le mois dernier<br>{% endif %}
+                    {% if r.rating %}{{ '%.1f'|format(r.rating) }}★{% if r.votes %} ({{ r.votes }} avis){% endif %}{% endif %}</td>
+                <td><span class="admin-badge {% if r.verdict == 'dispo' %}admin-badge-success{% elif r.verdict == 'a_sourcer' %}admin-badge-warning{% elif r.verdict == 'ecarte' %}admin-badge-danger{% else %}admin-badge-info{% endif %}" style="white-space:nowrap;">{{ r.verdict_label }}</span></td>
+                <td style="white-space:nowrap;">
+                    <form method="POST" action="{{ url_for('admin.research_result', result_id=r.id) }}" style="display:inline;">
+                        <input type="hidden" name="voir" value="{{ show }}">
+                        {% if r.kind == 'cj' and r.verdict in ('dispo', 'info') %}<button class="admin-btn admin-btn-sm admin-btn-primary" name="action" value="import">Importer en brouillon</button>{% endif %}
+                        {% if r.kind != 'cj' and r.verdict in ('a_sourcer', 'info') %}<button class="admin-btn admin-btn-sm" name="action" value="sourcing" style="background:#eee;color:#333;">Sourcing CJ</button>{% endif %}
+                        {% if r.verdict == 'ecarte' %}<button class="admin-btn admin-btn-sm" name="action" value="restore" style="background:#eee;color:#333;">Reprendre</button>
+                        {% elif r.verdict not in ('importe', 'sourcing') %}<button class="admin-btn admin-btn-sm" name="action" value="ecarter" style="background:#eee;color:#333;">Écarter</button>{% endif %}
+                    </form>
+                </td>
+            </tr>
+            {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% else %}
+<div class="admin-card mb-3"><div class="admin-card-body" style="color:#999;">Rien dans cette liste.{% if not watch.last_run_at %} Lancez la veille pour la remplir.{% endif %}</div></div>
+{% endfor %}
+
+<div class="admin-card mt-4">
+    <div class="admin-card-body">
+        <h2 style="font-size:1.1rem;font-weight:700;">Réglages de la veille</h2>
+        <form method="POST">
+            {% set w = watch %}{% set c = criteria %}
+            {% include 'admin/_research_form.html' %}
+            <div class="d-flex gap-2 mt-3">
+                <button class="admin-btn admin-btn-primary" type="submit">Enregistrer</button>
+                <button class="admin-btn admin-btn-danger" type="submit" name="action" value="delete" formnovalidate onclick="return confirm('Supprimer la veille et ses résultats ? Les produits importés restent dans MPS.')">Supprimer la veille</button>
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %}

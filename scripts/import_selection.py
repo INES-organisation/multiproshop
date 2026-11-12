@@ -15,6 +15,12 @@ Usage (dans le conteneur web) :
   python scripts/import_selection.py instance/selection_cj_1.json --dry-run
   python scripts/import_selection.py instance/selection_cj_1.json
   python scripts/import_selection.py instance/selection_cj_1.json --unpublish
+
+Pour une vitrine ou une boutique (liste de select_vitrine_products.py) :
+  python scripts/import_selection.py instance/vitrine_digita.json --project digita --draft
+  --project ajoute la vitrine au champ « Vitrines » de chaque produit ; --draft crée les fiches sans les
+  publier (admin MPS › Boutiques et vitrines › « Publier les brouillons » les met en ligne). Un produit
+  déjà présent dans MPS (même cj_pid) reçoit seulement la vitrine : sa fiche n'est pas réécrite.
 """
 import argparse
 import glob
@@ -60,7 +66,12 @@ def category_for(item, details):
     return Category.query.filter_by(level=1).first()
 
 
-def publish(item, details, usd_eur):
+def add_project(product, project):
+    from routes.api_products import clean_projects
+    product.projects = clean_projects(f"{product.projects or ''},{project}") or None
+
+
+def publish(item, details, usd_eur, project=None, draft=False):
     product = Product.query.filter_by(cj_pid=item['pid']).first()
     name = item.get('nom_fr') or details.get('name_en') or item['nom_en']
     images = details.get('images') or []
@@ -81,9 +92,16 @@ def publish(item, details, usd_eur):
     product.product_weight = str(details.get('weight') or '')[:50] or None
     product.material = str(details.get('material') or '')[:255] or None
     product.category_id = category.id
-    product.is_active = True
-    product.published = True
-    product.published_at = product.published_at or datetime.utcnow()
+    if draft:
+        # Brouillon comme « Rechercher sur CJ » : inactif, jamais publié. L'activation (admin) fait les
+        # contrôles CJ, la marge et la fiche en français par Claude.
+        product.is_active, product.published, product.published_at = False, True, None
+    else:
+        product.is_active = True
+        product.published = True
+        product.published_at = product.published_at or datetime.utcnow()
+    if project:
+        add_project(product, project)
     product.synced_at = product.cj_last_sync = datetime.utcnow()
     product.cj_raw_data = json.dumps(details.get('raw_data') or {}, ensure_ascii=False)
     db.session.flush()
@@ -120,7 +138,13 @@ def main():
     parser.add_argument('--limit', type=int, help='nombre maximum de produits à publier')
     parser.add_argument('--usd-eur', type=float, default=0.92)
     parser.add_argument('--unpublish', action='store_true', help='dépublie les produits publiés depuis ce fichier')
+    parser.add_argument('--project', help='vitrine à ajouter au champ « Vitrines » des produits, ex. digita')
+    parser.add_argument('--draft', action='store_true', help='crée les fiches sans les publier')
     args = parser.parse_args()
+    if args.project:
+        from routes.api_products import _PROJECT
+        if not _PROJECT.match(args.project):
+            sys.exit('--project : minuscules, chiffres et tirets seulement')
 
     log_path = os.path.splitext(args.file)[0] + '.publies.json'
     with open(args.file, encoding='utf-8') as f:
@@ -161,17 +185,29 @@ def main():
         # fichiers .publies.json ont disparu avec le conteneur
         already = {pid for (pid,) in db.session.query(Product.cj_pid).filter(
             db.or_(Product.id.in_(batch_ids), Product.published_at.isnot(None)))}
-        done = 0
+        done, attached = 0, []
         try:
             for item in items:
-                if item['pid'] in already:
+                if args.project:
+                    # Déjà dans MPS : on ajoute seulement la vitrine, la fiche (titre, texte, prix) reste
+                    existing = Product.query.filter_by(cj_pid=item['pid']).first()
+                    # Un ancien import jamais mis en ligne (inactif, sans published_at) est réimporté :
+                    # sa fiche et ses prix datent de l'ancien catalogue
+                    if existing and (existing.is_active or existing.published_at is not None):
+                        add_project(existing, args.project)
+                        db.session.commit()
+                        attached.append(existing.id)  # pas dans .publies.json : --unpublish ne doit pas les retirer
+                        print(f"  rattaché (déjà dans MPS, id {existing.id}) : {existing.name}")
+                        continue
+                if item['pid'] in already and not args.project:
                     continue
                 response = cj_call(api, 'product/query', {'pid': item['pid']})
                 if not response or response.get('result') is False or not response.get('data'):
                     print(f"  ignoré (fiche CJ indisponible) : {item['nom_en']}")
                     continue
                 try:
-                    product = publish(item, api._format_product(response['data']), args.usd_eur)
+                    product = publish(item, api._format_product(response['data']), args.usd_eur,
+                                      project=args.project, draft=args.draft)
                     db.session.commit()
                 except Exception as e:  # noqa: BLE001 — un produit en échec ne bloque pas le lot
                     db.session.rollback()
@@ -187,7 +223,10 @@ def main():
         finally:
             with open(log_path, 'w', encoding='utf-8') as f:
                 json.dump(published, f)
-        print(f'\n{done} produits publiés → identifiants dans {log_path}')
+        if attached:
+            print(f"{len(attached)} produits déjà dans MPS rattachés à « {args.project} » : {attached}")
+        state = 'créés en brouillon' if args.draft else 'publiés'
+        print(f'\n{done} produits {state} → identifiants dans {log_path}')
 
 
 if __name__ == '__main__':

@@ -1,0 +1,140 @@
+{% extends 'admin/layout_admin_modern.html' %}
+
+{% block title %}{{ sf.name }} · Boutiques et vitrines{% endblock %}
+
+{% block content %}
+<div class="mb-4">
+    <a href="{{ url_for('admin.storefronts') }}" style="color:#999;">← Boutiques et vitrines</a>
+    <h1 style="font-weight: 800; margin: 0.5rem 0;">
+        <span style="display:inline-block;width:16px;height:16px;border-radius:50%;background:{{ sf.color or '#999' }};"></span>
+        {{ sf.name }} <span style="font-size:1rem;color:#999;font-weight:600;">{{ sf.kind_label }} · code {{ sf.slug }}</span>
+    </h1>
+    <p style="color:#999;margin:0;">{{ s.online }} produit(s) en ligne, {{ s.drafts }} en brouillon · {{ s.orders_30d }} commande(s) payée(s) sur 30 jours ({{ "%.2f"|format(s.revenue_30d)|replace('.', ',') }} €){% if sf.url %} · <a href="{{ sf.url }}" target="_blank" rel="noopener">voir le site</a>{% endif %}</p>
+</div>
+
+<div class="row g-4">
+<div class="col-lg-7">
+<div class="admin-card">
+    <div class="admin-card-body">
+        <h2 style="font-size:1.1rem;font-weight:700;">Réglages</h2>
+        <form method="POST">
+            <div class="row g-3">
+                <div class="col-md-6"><label class="form-label" for="name">Nom</label>
+                    <input class="admin-form-control" id="name" name="name" maxlength="80" value="{{ sf.name }}"></div>
+                <div class="col-md-6"><label class="form-label" for="status">État</label>
+                    <select class="admin-form-control" id="status" name="status">
+                        {% for k, label in statuses.items() %}<option value="{{ k }}" {% if sf.status == k %}selected{% endif %}>{{ label }}</option>{% endfor %}
+                    </select>
+                    <div style="color:#999;font-size:0.8rem;margin-top:4px;">« En pause » : le site ne reçoit plus aucun produit (rien n'est effacé).</div></div>
+                <div class="col-md-12"><label class="form-label" for="url">Adresse</label>
+                    <input type="url" class="admin-form-control" id="url" name="url" maxlength="200" value="{{ sf.url or '' }}"></div>
+                <div class="col-md-12"><label class="form-label" for="tagline">Slogan</label>
+                    <input class="admin-form-control" id="tagline" name="tagline" maxlength="200" value="{{ sf.tagline or '' }}"></div>
+                <div class="col-md-3"><label class="form-label" for="color">Couleur</label>
+                    <input class="admin-form-control" id="color" name="color" maxlength="7" value="{{ sf.color or '' }}" placeholder="#e0975a"></div>
+                <div class="col-md-3"><label class="form-label" for="hero_product_id">Produit mis en avant (id)</label>
+                    <input type="number" class="admin-form-control" id="hero_product_id" name="hero_product_id" value="{{ sf.hero_product_id or '' }}"></div>
+                <div class="col-md-3"><label class="form-label" for="delivery_days">Délai annoncé (jours)</label>
+                    <input class="admin-form-control" id="delivery_days" name="delivery_days" maxlength="10" value="{{ sf.delivery_days or '' }}" placeholder="12-20"></div>
+                <div class="col-md-3"><label class="form-label" for="free_shipping_threshold">Livraison offerte dès (€)</label>
+                    <input class="admin-form-control" id="free_shipping_threshold" name="free_shipping_threshold" value="{{ '%.2f'|format(sf.free_shipping_threshold) if sf.free_shipping_threshold is not none else '' }}" placeholder="{{ '%.0f'|format(threshold) }}">
+                    <div style="color:#999;font-size:0.8rem;margin-top:4px;">Vide : {{ '%.0f'|format(threshold) }} € (réglage du serveur). Offerte seulement si la marge reste positive.</div></div>
+                {% if sf.kind == 'boutique' %}
+                <div class="col-md-12"><label class="form-label" for="lots">Lots de l'accueil (JSON)</label>
+                    <textarea class="admin-form-control" id="lots" name="lots" rows="6" style="font-family:monospace;font-size:0.85rem;" placeholder='[{"name": "Rituel du soir", "text": "…", "ids": [20987, 20986]}]'>{{ lots }}</textarea>
+                    <div style="color:#999;font-size:0.8rem;margin-top:4px;">Un lot n'apparaît que si au moins deux de ses produits sont en ligne. Vide : les lots par défaut de la boutique.</div></div>
+                {% endif %}
+                <div class="col-md-6"><label class="form-label" for="ines_prefix">Préfixe dans INES</label>
+                    <input class="admin-form-control" id="ines_prefix" name="ines_prefix" maxlength="30" value="{{ sf.ines_prefix or '' }}"></div>
+                <div class="col-md-6"><label class="form-label">Mention des commandes</label>
+                    <input class="admin-form-control" value="Commande passée sur {{ sf.order_label }}" disabled></div>
+                <div class="col-md-12"><label class="form-label" for="notes">Notes internes</label>
+                    <textarea class="admin-form-control" id="notes" name="notes" rows="2">{{ sf.notes or '' }}</textarea></div>
+            </div>
+            <button type="submit" class="admin-btn admin-btn-primary mt-3">Enregistrer</button>
+        </form>
+    </div>
+</div>
+</div>
+
+<div class="col-lg-5">
+<div class="admin-card">
+    <div class="admin-card-body">
+        <h2 style="font-size:1.1rem;font-weight:700;">Mise en ligne et connexion INES</h2>
+        <ul style="list-style:none;padding:0;margin:0;">
+            {% for done, title, how in steps %}
+            <li style="padding:0.6rem 0;border-bottom:1px solid rgba(127,127,127,0.2);">
+                {% if done %}<i class="fas fa-check-circle" style="color:#38a169;"></i>{% elif done is none %}<i class="fas fa-hand-point-right" style="color:#999;"></i>{% else %}<i class="fas fa-times-circle" style="color:#e53e3e;"></i>{% endif %}
+                <strong>{{ title }}</strong>
+                <div style="color:#999;font-size:0.85rem;margin-top:2px;">{{ how }}</div>
+            </li>
+            {% endfor %}
+        </ul>
+        <p style="color:#999;font-size:0.8rem;margin:0.6rem 0 0;"><i class="fas fa-check-circle" style="color:#38a169;"></i> vérifié par MPS · <i class="fas fa-times-circle" style="color:#e53e3e;"></i> à faire · <i class="fas fa-hand-point-right"></i> à vérifier à la main</p>
+    </div>
+</div>
+</div>
+</div>
+
+<div class="admin-card mt-4">
+    <div class="admin-card-body" style="overflow-x:auto;">
+        <form method="POST" action="{{ url_for('admin.storefront_products', slug=sf.slug) }}">
+            <div class="d-flex justify-content-between align-items-center flex-wrap gap-2 mb-3">
+                <h2 style="font-size:1.1rem;font-weight:700;margin:0;">Produits de {{ sf.name }} ({{ products|length }})</h2>
+                <div class="d-flex flex-wrap gap-2">
+                    <button name="action" value="publish" class="admin-btn admin-btn-sm admin-btn-primary" title="Sans case cochée : tous les brouillons">Publier {% if s.drafts %}les {{ s.drafts }} brouillons ou {% endif %}la sélection</button>
+                    <button name="action" value="unpublish" class="admin-btn admin-btn-sm admin-btn-warning">Dépublier la sélection</button>
+                    <button name="action" value="remove" class="admin-btn admin-btn-sm admin-btn-danger">Retirer de la vitrine</button>
+                </div>
+            </div>
+            <p style="color:#999;font-size:0.85rem;">Publier fait les mêmes contrôles que « Activer » dans Produits (stock et port relus chez CJ, marge, fiche rédigée en français par Claude) et met le produit en ligne sur MultiProShop et sur tous les sites où il figure. « Retirer » le sort seulement de {{ sf.name }}.</p>
+            <table class="admin-table">
+                <thead><tr><th scope="col"></th><th scope="col">Produit</th><th scope="col">Prix</th><th scope="col">État</th><th scope="col">Aussi sur</th></tr></thead>
+                <tbody>
+                {% for p in products %}
+                <tr>
+                    <td><input type="checkbox" name="ids" value="{{ p.id }}" aria-label="Choisir {{ p.name }}"></td>
+                    <td>{% if p.image_url %}<img src="{{ p.image_url }}" alt="" width="40" height="40" style="object-fit:cover;border-radius:6px;vertical-align:middle;" loading="lazy">{% endif %}
+                        <a href="{{ url_for('admin.edit_product', product_id=p.id) }}">{{ p.name }}</a> <span style="color:#999;font-size:0.8rem;">#{{ p.id }}</span></td>
+                    <td>{{ "%.2f"|format(p.price or 0)|replace('.', ',') }} €</td>
+                    <td>{% if p.published and p.is_active %}<span class="admin-badge admin-badge-success">En ligne</span>{% else %}<span class="admin-badge admin-badge-warning">Brouillon</span>{% endif %}</td>
+                    <td style="color:#999;font-size:0.85rem;">{{ (p.projects or '').split(',')|reject('equalto', sf.slug)|join(', ') }}</td>
+                </tr>
+                {% else %}
+                <tr><td colspan="5" style="color:#999;">Aucun produit pour l'instant : ajoutez-en ci-dessous.</td></tr>
+                {% endfor %}
+                </tbody>
+            </table>
+        </form>
+    </div>
+</div>
+
+<div class="admin-card mt-4">
+    <div class="admin-card-body" style="overflow-x:auto;">
+        <h2 style="font-size:1.1rem;font-weight:700;">Ajouter des produits du catalogue MPS</h2>
+        <form method="GET" class="d-flex gap-2 mb-3">
+            <input class="admin-form-control" name="q" value="{{ q }}" placeholder="Nom ou numéro du produit" aria-label="Rechercher un produit">
+            <button class="admin-btn admin-btn-primary">Rechercher</button>
+        </form>
+        <form method="POST" action="{{ url_for('admin.storefront_products', slug=sf.slug) }}">
+            {% if found %}
+            <table class="admin-table mb-3">
+                <tbody>
+                {% for p in found %}
+                <tr>
+                    <td><input type="checkbox" name="ids" value="{{ p.id }}" aria-label="Ajouter {{ p.name }}"></td>
+                    <td>{% if p.image_url %}<img src="{{ p.image_url }}" alt="" width="40" height="40" style="object-fit:cover;border-radius:6px;vertical-align:middle;" loading="lazy">{% endif %} {{ p.name }} <span style="color:#999;font-size:0.8rem;">#{{ p.id }}</span></td>
+                    <td>{{ "%.2f"|format(p.price or 0)|replace('.', ',') }} €</td>
+                    <td>{% if p.published and p.is_active %}<span class="admin-badge admin-badge-success">En ligne</span>{% else %}<span class="admin-badge admin-badge-warning">Brouillon</span>{% endif %}</td>
+                </tr>
+                {% endfor %}
+                </tbody>
+            </table>
+            {% elif q %}<p style="color:#999;">Aucun produit trouvé (ou déjà dans {{ sf.name }}).</p>{% endif %}
+            <label class="form-label" for="id_list">Ou des numéros de produits, séparés par des virgules</label>
+            <input class="admin-form-control mb-3" id="id_list" name="id_list" placeholder="20987, 21093">
+            <button name="action" value="add" class="admin-btn admin-btn-primary">Ajouter à {{ sf.name }}</button>
+        </form>
+    </div>
+</div>
+{% endblock %}
