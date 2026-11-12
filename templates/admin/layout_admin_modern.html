@@ -134,6 +134,10 @@
                 </div>
                 
                 <div class="admin-topbar-right">
+                    <a class="admin-site-link" href="{{ url_for('main.index') }}" title="Voir le site" aria-label="Voir le site">
+                        <i class="fas fa-store"></i>
+                        <span class="d-none d-md-inline">Voir le site</span>
+                    </a>
                     {% set unread = admin_unread_notifications() %}
                     <a class="admin-notification" href="{{ url_for('admin.notifications') }}" title="Notifications" aria-label="Notifications ({{ unread }} non lues)">
                         <i class="fas fa-bell" style="font-size: 1.2rem; color: #666;"></i>
