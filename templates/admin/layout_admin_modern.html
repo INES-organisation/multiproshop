@@ -103,6 +103,10 @@
                     <i class="fas fa-percent admin-nav-icon"></i>
                     <span class="admin-nav-text">CJ Pricing</span>
                 </a>
+                <a href="{{ url_for('admin_celery.dashboard') }}" class="admin-nav-item {% if request.endpoint and request.endpoint.startswith('admin_celery.') %}active{% endif %}">
+                    <i class="fas fa-cogs admin-nav-icon"></i>
+                    <span class="admin-nav-text">Tâches de fond</span>
+                </a>
                 
                 <div style="border-top: 1px solid rgba(255,255,255,0.1); margin: 1rem 0;"></div>
                 
