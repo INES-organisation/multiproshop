@@ -145,6 +145,27 @@
     color: #999;
 }
 
+.admin-site-link {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+    min-width: 44px;
+    min-height: 44px;
+    color: #666;
+    font-size: 1.1rem;
+    text-decoration: none;
+}
+
+.admin-site-link:hover {
+    color: var(--admin-primary-dark);
+}
+
+.admin-site-link span {
+    font-size: 0.95rem;
+    font-weight: 600;
+}
+
 .admin-notification {
     position: relative;
     cursor: pointer;

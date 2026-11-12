@@ -39,6 +39,13 @@
 
         <!-- Actions utilisateur -->
         <div class="header-right">
+            {% if current_user.is_authenticated and current_user.role and current_user.role.name == 'admin' %}
+            <!-- Raccourci admin, visible aussi sur mobile (le menu Compte le propose aussi) -->
+            <a href="{{ url_for('admin.dashboard') }}" class="header-action" title="Administration" aria-label="Administration">
+                <div class="action-icon"><i class="fas fa-tools"></i></div>
+                <span class="action-label">Admin</span>
+            </a>
+            {% endif %}
             <!-- Panier -->
             <a href="{{ url_for('cart.view_cart') }}" class="header-action" title="Panier">
                 <div class="action-icon">
