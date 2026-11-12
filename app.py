@@ -107,6 +107,7 @@ def create_app(config_name='development'):
     from models.newsletter import NewsletterSubscriber
     from models.visit import VisitorDay
     from models.storefront import Storefront, ensure_defaults
+    from models.product_research import ResearchResult, ResearchWatch
     with app.app_context():
         db.create_all()
         _add_missing_columns()

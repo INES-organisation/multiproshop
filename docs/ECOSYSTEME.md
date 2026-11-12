@@ -23,7 +23,7 @@ Les trois tournent sur le même VPS (`ssh ines-vps`).
 
 ## Vitrines : l'API partenaires de MPS
 
-Créer, régler et publier une boutique ou une vitrine : admin MPS › **Boutiques et vitrines** (`/admin/vitrines`), procédure complète dans [BOUTIQUES_ET_VITRINES.md](BOUTIQUES_ET_VITRINES.md).
+Créer, régler et publier une boutique ou une vitrine : admin MPS › **Boutiques et vitrines** (`/admin/vitrines`), procédure complète dans [BOUTIQUES_ET_VITRINES.md](BOUTIQUES_ET_VITRINES.md). Trouver leurs produits (CJ par critères, comparé au web) : admin MPS › **Recherche de produits**, voir [RECHERCHE_PRODUITS.md](RECHERCHE_PRODUITS.md).
 
 Toutes les routes sont sous `/api/partner`.
 

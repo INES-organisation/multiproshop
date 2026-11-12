@@ -91,6 +91,10 @@
                     <i class="fas fa-search admin-nav-icon"></i>
                     <span class="admin-nav-text">Rechercher sur CJ</span>
                 </a>
+                <a href="{{ url_for('admin.research') }}" class="admin-nav-item {% if request.endpoint and request.endpoint.startswith('admin.research') %}active{% endif %}">
+                    <i class="fas fa-chart-bar admin-nav-icon"></i>
+                    <span class="admin-nav-text">Recherche de produits</span>
+                </a>
                 <a href="{{ url_for('admin.cj_sourcing') }}" class="admin-nav-item {% if request.endpoint and request.endpoint.startswith('admin.cj_sourcing') %}active{% endif %}">
                     <i class="fas fa-binoculars admin-nav-icon"></i>
                     <span class="admin-nav-text">Sourcing CJ</span>

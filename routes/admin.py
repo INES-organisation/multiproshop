@@ -1426,3 +1426,5 @@ def disputes():
 
 # Boutiques et vitrines (/admin/vitrines) : routes rattachées à admin_bp
 from routes import admin_storefronts  # noqa: E402,F401
+# Recherche de produits (/admin/recherche-produits)
+from routes import admin_research  # noqa: E402,F401
