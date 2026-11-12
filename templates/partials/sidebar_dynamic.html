@@ -9,11 +9,26 @@
     <nav class="sidebar-nav">
         {# Raccourcis de l'en-tête, masqués de l'en-tête sur mobile #}
         <div class="sidebar-shortcuts">
+            <a href="{{ url_for('main.index') }}"><i class="fas fa-home"></i> Accueil</a>
             <a href="{{ url_for('products.list_products') }}"><i class="fas fa-th"></i> Tous les produits</a>
             <a href="{{ url_for('products.list_products', sort='newest') }}"><i class="fas fa-star"></i> Nouveautés</a>
             <a href="{{ url_for('products.list_products', sort='bestsellers') }}"><i class="fas fa-fire"></i> Meilleures ventes</a>
             <a href="{{ url_for('main.order_tracking') }}"><i class="fas fa-truck-fast"></i> Suivi de commande</a>
             <a href="{{ url_for('faq.index') }}"><i class="fas fa-circle-question"></i> Aide</a>
+        </div>
+        {# Compte : mêmes liens que le menu du compte de l'en-tête #}
+        <div class="sidebar-shortcuts sidebar-account">
+            {% if current_user.is_authenticated %}
+            <a href="{{ url_for('auth.profile') }}"><i class="fas fa-user"></i> Mon profil</a>
+            <a href="{{ url_for('user.orders') }}"><i class="fas fa-box"></i> Mes commandes</a>
+            {% if current_user.role and current_user.role.name == 'admin' %}
+            <a href="{{ url_for('admin.dashboard') }}" class="sidebar-admin"><i class="fas fa-tools"></i> Administration</a>
+            {% endif %}
+            <a href="{{ url_for('auth.logout') }}"><i class="fas fa-sign-out-alt"></i> Déconnexion</a>
+            {% else %}
+            <a href="{{ url_for('auth.login') }}"><i class="fas fa-sign-in-alt"></i> Connexion</a>
+            <a href="{{ url_for('auth.register') }}"><i class="fas fa-user-plus"></i> Inscription</a>
+            {% endif %}
         </div>
         {% if main_categories %}
             {% for category in main_categories %}
@@ -101,6 +116,7 @@
 .sidebar-shortcuts { display: none; padding: .5rem 0; border-bottom: 1px solid #eee; }
 .sidebar-shortcuts a { display: flex; gap: .75rem; align-items: center; padding: .6rem 1.5rem; color: #1f2937; text-decoration: none; font-weight: 600; }
 @media (max-width: 768px) { .sidebar-shortcuts { display: block; } }
+.sidebar-account a.sidebar-admin { color: #b45309; }
 /* Sidebar rétractable en overlay */
 .sidebar-modern {
     position: fixed;
@@ -108,6 +124,7 @@
     top: 0;
     width: 300px;
     height: 100vh;
+    height: 100dvh;
     background: white;
     box-shadow: 2px 0 10px rgba(0,0,0,0.1);
     overflow-y: auto;
