@@ -1422,3 +1422,7 @@ def disputes():
     order_id = (request.args.get('order') or '').strip() or None
     data = cj_disputes.fetch(_cj_api(), page=page, size=20, order_id=order_id)
     return render_template('admin/disputes.html', data=data, page=page, order_id=order_id)
+
+
+# Boutiques et vitrines (/admin/vitrines) : routes rattachées à admin_bp
+from routes import admin_storefronts  # noqa: E402,F401

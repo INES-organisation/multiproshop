@@ -11,6 +11,8 @@ que le panier en session. Une autre niche = le même code avec d'autres variable
   VITRINE_RITUALS  lots présentés à l'accueil, en JSON : [{"name", "text", "ids": [id, …]}, …]
   VITRINE_DELIVERY délai de livraison annoncé, en jours, ex. 12-20
   MPS_API          http://multiproshop-web:8000/api/partner sur le réseau Docker
+Les réglages saisis dans l'admin MPS › Boutiques et vitrines (/api/partner/storefront/<projet>) passent
+avant les VITRINE_* ci-dessus, qui restent la valeur de secours.
   SECRET_KEY       clé de session
 Lancement : gunicorn vitrine.app:app (voir deploy/docker-compose.yml).
 """
@@ -82,6 +84,29 @@ def shop():
         _shop['data'] = api('GET', '/catalogue', params={'project': PROJECT, 'per_page': 60})
         _shop['at'] = time.time()
     return _shop['data']
+
+
+_settings = {'at': 0}
+
+
+@app.before_request
+def load_settings():
+    """Réglages saisis dans l'admin MPS › Boutiques et vitrines (nom, slogan, couleur, produit mis en
+    avant, lots, délai), relus toutes les 5 minutes. Les VITRINE_* servent si MPS ne répond pas."""
+    global RITUALS
+    if time.time() - _settings['at'] < 300:
+        return
+    _settings['at'] = time.time()
+    try:
+        data = api('GET', f'/storefront/{PROJECT}')
+    except ApiError:
+        return
+    for key, field in (('name', 'name'), ('tagline', 'tagline'), ('color', 'color'), ('url', 'url'),
+                       ('hero', 'hero_product_id'), ('delivery', 'delivery_days')):
+        if data.get(field):
+            SITE[key] = str(data[field]).rstrip('/') if key == 'url' else str(data[field])
+    if data.get('lots'):
+        RITUALS = data['lots']
 
 
 def free_shipping():

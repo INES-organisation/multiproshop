@@ -1,0 +1,56 @@
+{% extends 'admin/layout_admin_modern.html' %}
+
+{% block title %}Boutiques et vitrines{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center flex-wrap gap-2 mb-4">
+    <div>
+        <h1 style="font-weight: 800; margin-bottom: 0.5rem;"><i class="fas fa-store"></i> Boutiques et vitrines</h1>
+        <p style="color: #999; margin: 0;">Les sites qui vendent le catalogue MultiProShop. Une <strong>boutique</strong> est un site de vente à sa marque, servi par MPS (Sérénis). Une <strong>vitrine</strong> est la rubrique produits d'un site dont ce n'est pas le métier (ALIAS, DIGITA). MPS reste le vendeur : prix, paiement, commande CJ et e-mails.</p>
+    </div>
+    <a href="{{ url_for('admin.storefront_new') }}" class="admin-btn admin-btn-primary"><i class="fas fa-plus"></i> Nouvelle boutique ou vitrine</a>
+</div>
+
+<div class="admin-card">
+    <div class="admin-card-body" style="overflow-x: auto;">
+        <table class="admin-table">
+            <thead>
+                <tr><th scope="col">Site</th><th scope="col">Type</th><th scope="col">État</th><th scope="col">Produits</th><th scope="col">30 derniers jours</th><th scope="col">Livraison offerte</th><th scope="col">Branchement</th></tr>
+            </thead>
+            <tbody>
+                {% for r in rows %}{% set sf = r.sf %}
+                <tr>
+                    <td>
+                        <span style="display:inline-block;width:12px;height:12px;border-radius:50%;background:{{ sf.color or '#999' }};vertical-align:middle;"></span>
+                        <a href="{{ url_for('admin.storefront_edit', slug=sf.slug) }}" style="font-weight:700;">{{ sf.name }}</a>
+                        <div style="color:#999;font-size:0.8rem;">code {{ sf.slug }}{% if sf.url %} · <a href="{{ sf.url }}" target="_blank" rel="noopener">{{ sf.url|replace('https://', '') }}</a>{% endif %}</div>
+                    </td>
+                    <td>{{ sf.kind_label }}</td>
+                    <td>
+                        {% if sf.status == 'en_ligne' %}<span class="admin-badge admin-badge-success">En ligne</span>
+                        {% elif sf.status == 'pause' %}<span class="admin-badge admin-badge-danger">En pause</span>
+                        {% else %}<span class="admin-badge admin-badge-warning">En préparation</span>{% endif %}
+                    </td>
+                    <td>{{ r.s.online }} en ligne{% if r.s.drafts %}<div style="color:#b7791f;font-size:0.85rem;">{{ r.s.drafts }} en brouillon</div>{% endif %}</td>
+                    <td>{{ r.s.orders_30d }} commande(s)<div style="color:#999;font-size:0.85rem;">{{ "%.2f"|format(r.s.revenue_30d)|replace('.', ',') }} €</div></td>
+                    <td>dès {{ "%.0f"|format(r.threshold) }} €</td>
+                    <td>{% if r.todo %}<span class="admin-badge admin-badge-warning">{{ r.todo }} étape(s) à faire</span>{% else %}<span class="admin-badge admin-badge-success">Branché</span>{% endif %}</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<div class="admin-card mt-4">
+    <div class="admin-card-body">
+        <h2 style="font-size:1.1rem;font-weight:700;">Comment ça marche</h2>
+        <ol style="margin:0;padding-left:1.2rem;line-height:1.7;">
+            <li><strong>Créer</strong> la boutique ou la vitrine ici : elle démarre « en préparation ».</li>
+            <li><strong>Choisir ses produits</strong> dans sa fiche (recherche dans le catalogue MPS), ou importer une sélection CJ en brouillon : <code>scripts/select_vitrine_products.py</code> puis <code>scripts/import_selection.py … --project &lt;code&gt; --draft</code>.</li>
+            <li><strong>Brancher</strong> le site : sa fiche liste les étapes (jeton, service, adresse) et coche ce qui est fait.</li>
+            <li><strong>Publier</strong> : « Publier les brouillons » met les produits en ligne, puis l'état passe à « En ligne ». « En pause » retire tous ses produits du site sans rien effacer.</li>
+        </ol>
+    </div>
+</div>
+{% endblock %}
