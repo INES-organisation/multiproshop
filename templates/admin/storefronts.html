@@ -27,14 +27,14 @@
                     </td>
                     <td>{{ sf.kind_label }}</td>
                     <td>
-                        {% if sf.status == 'en_ligne' %}<span class="admin-badge admin-badge-success">En ligne</span>
-                        {% elif sf.status == 'pause' %}<span class="admin-badge admin-badge-danger">En pause</span>
-                        {% else %}<span class="admin-badge admin-badge-warning">En préparation</span>{% endif %}
+                        {% if sf.status == 'en_ligne' %}<span class="admin-badge admin-badge-success" style="white-space:nowrap;">En ligne</span>
+                        {% elif sf.status == 'pause' %}<span class="admin-badge admin-badge-danger" style="white-space:nowrap;">En pause</span>
+                        {% else %}<span class="admin-badge admin-badge-warning" style="white-space:nowrap;">En préparation</span>{% endif %}
                     </td>
                     <td>{{ r.s.online }} en ligne{% if r.s.drafts %}<div style="color:#b7791f;font-size:0.85rem;">{{ r.s.drafts }} en brouillon</div>{% endif %}</td>
                     <td>{{ r.s.orders_30d }} commande(s)<div style="color:#999;font-size:0.85rem;">{{ "%.2f"|format(r.s.revenue_30d)|replace('.', ',') }} €</div></td>
                     <td>dès {{ "%.0f"|format(r.threshold) }} €</td>
-                    <td>{% if r.todo %}<span class="admin-badge admin-badge-warning">{{ r.todo }} étape(s) à faire</span>{% else %}<span class="admin-badge admin-badge-success">Branché</span>{% endif %}</td>
+                    <td>{% if r.todo %}<span class="admin-badge admin-badge-warning" style="white-space:nowrap;">{{ r.todo }} étape(s) à faire</span>{% else %}<span class="admin-badge admin-badge-success" style="white-space:nowrap;">Branché</span>{% endif %}</td>
                 </tr>
                 {% endfor %}
             </tbody>
