@@ -13,7 +13,7 @@
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
     
     <!-- Admin CSS -->
-    <link rel="stylesheet" href="{{ url_for('static', filename='css/admin_modern.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/admin_modern.css') }}?v=2">
     
     {% block extra_css %}{% endblock %}
 </head>
@@ -26,7 +26,7 @@
                     <i class="fas fa-store"></i>
                     <span id="logoText">MultiProShop</span>
                 </div>
-                <button class="admin-toggle" onclick="toggleSidebar()">
+                <button class="admin-toggle" onclick="toggleSidebar()" aria-label="Réduire ou fermer le menu">
                     <i class="fas fa-bars"></i>
                 </button>
             </div>
@@ -117,12 +117,14 @@
             </nav>
         </aside>
         
+        <div class="admin-backdrop" id="adminBackdrop"></div>
+
         <!-- Main Content -->
         <main class="admin-main">
             <!-- Topbar -->
             <div class="admin-topbar">
                 <div class="admin-topbar-left">
-                    <button class="admin-toggle d-md-none" onclick="toggleSidebar()">
+                    <button class="admin-toggle d-md-none" onclick="toggleSidebar()" aria-label="Menu" aria-controls="adminSidebar">
                         <i class="fas fa-bars"></i>
                     </button>
                     <form class="admin-search" method="GET" action="{{ url_for('admin.products') }}">
@@ -176,21 +178,28 @@
     
     <!-- Admin JS -->
     <script>
+    const MOBILE = window.matchMedia('(max-width: 768px)');
     function toggleSidebar() {
         const sidebar = document.getElementById('adminSidebar');
+        if (MOBILE.matches) {  // tiroir sur mobile
+            const open = sidebar.classList.toggle('show');
+            document.getElementById('adminBackdrop').classList.toggle('show', open);
+            return;
+        }
         sidebar.classList.toggle('collapsed');
-        
-        // Hide/show text in collapsed mode
-        const texts = document.querySelectorAll('.admin-nav-text, #logoText');
-        texts.forEach(text => {
+        document.querySelectorAll('.admin-nav-text, #logoText').forEach(text => {
             text.style.display = sidebar.classList.contains('collapsed') ? 'none' : 'inline';
         });
     }
-    
-    // Mobile sidebar toggle
-    if (window.innerWidth < 768) {
-        document.getElementById('adminSidebar').classList.add('collapsed');
-    }
+    document.getElementById('adminBackdrop').addEventListener('click', toggleSidebar);
+    // Tableaux : enveloppés pour défiler dans leur cadre plutôt que d'élargir la page
+    document.querySelectorAll('.admin-content table').forEach(table => {
+        if (table.closest('.table-responsive')) return;
+        const wrap = document.createElement('div');
+        wrap.className = 'table-responsive';
+        table.parentNode.insertBefore(wrap, table);
+        wrap.appendChild(table);
+    });
     </script>
     
     {% block extra_js %}{% endblock %}

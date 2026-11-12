@@ -86,6 +86,7 @@
 
 .admin-main {
     flex: 1;
+    min-width: 0; /* sinon un tableau large élargit toute la page */
     margin-left: 260px;
     transition: all 0.3s ease;
 }
@@ -431,23 +432,111 @@
    RESPONSIVE
    =================================== */
 @media (max-width: 768px) {
-    .admin-sidebar {
+    /* Menu : tiroir ouvert par le bouton ☰ de la barre du haut, fermé par le fond ou un lien */
+    .admin-sidebar,
+    .admin-sidebar.collapsed {
+        width: 260px;
         transform: translateX(-100%);
     }
-    
+
     .admin-sidebar.show {
         transform: translateX(0);
+        box-shadow: 0 0 24px rgba(0,0,0,0.3);
     }
-    
-    .admin-main {
+
+    .admin-backdrop.show {
+        display: block;
+    }
+
+    .admin-main,
+    .admin-sidebar.collapsed + .admin-main {
         margin-left: 0;
     }
-    
-    .admin-search input {
-        width: 200px;
+
+    .admin-topbar {
+        padding: 0.6rem 0.75rem;
+        gap: 0.75rem;
     }
-    
+
+    .admin-topbar-left {
+        flex: 1;
+        min-width: 0;
+        gap: 0.5rem;
+    }
+
+    .admin-topbar-right {
+        gap: 0.75rem;
+    }
+
+    .admin-topbar .admin-toggle {
+        color: #333;
+        font-size: 1.4rem;
+        min-width: 44px;
+        min-height: 44px;
+    }
+
+    .admin-search {
+        flex: 1;
+        min-width: 0;
+    }
+
+    .admin-search input,
     .admin-search input:focus {
-        width: 250px;
+        width: 100%;
     }
+
+    .admin-avatar {
+        display: none;
+    }
+
+    .admin-content {
+        padding: 1rem 0.75rem;
+    }
+
+    /* En-têtes « titre + boutons » : les boutons passent à la ligne */
+    .admin-content .d-flex {
+        flex-wrap: wrap;
+        gap: 0.5rem;
+    }
+
+    .admin-content h1 {
+        font-size: 1.5rem;
+    }
+
+    .admin-content .card-body,
+    .admin-content .admin-card-body {
+        padding: 1rem;
+    }
+
+    /* Tableaux : défilement horizontal dans leur cadre, jamais toute la page */
+    .admin-content .table-responsive {
+        -webkit-overflow-scrolling: touch;
+    }
+
+    .admin-content .btn-group {
+        flex-wrap: wrap;
+    }
+
+    /* Colonnes des tableaux : assez larges pour se lire, le tableau défile dans son cadre */
+    .admin-content .table-responsive > table {
+        min-width: 640px;
+    }
+
+    /* Cartes de chiffres : deux par ligne au lieu d'une (pas les colonnes de formulaire) */
+    .admin-content .row > :is(.col-md-2, .col-md-3, .col-lg-3, .col-xl-3):has(> :is(.card, .admin-card, [class*="stat"])):not(:has(input, select, textarea, table)) {
+        flex: 0 0 50%;
+        max-width: 50%;
+    }
+
+    .admin-content .stats-grid {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+}
+
+.admin-backdrop {
+    display: none;
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,0.4);
+    z-index: 999;
 }
