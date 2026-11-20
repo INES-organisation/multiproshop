@@ -228,3 +228,25 @@
     0% { transform: translate(-50%, -50%) rotate(0deg); }
     100% { transform: translate(-50%, -50%) rotate(360deg); }
 }
+
+/* Sélecteur de variantes : liste déroulante au-delà de 8 choix, vignettes de couleur, prix par choix */
+.variant-select {
+    width: 100%;
+    max-width: 100%;
+    padding: 12px 14px;
+    border: 2px solid #dee2e6;
+    border-radius: 6px;
+    font-size: 15px;
+    background-color: white;
+}
+.variant-select:focus { border-color: #007bff; box-shadow: 0 0 0 3px rgba(0, 123, 255, 0.15); }
+.variant-count, .variant-chosen { font-weight: 400; text-transform: none; letter-spacing: 0; color: #6c757d; }
+.color-option.with-swatch { display: inline-flex; align-items: center; gap: 8px; padding: 6px 12px 6px 6px; }
+.color-option.with-swatch img { width: 36px; height: 36px; object-fit: cover; border-radius: 4px; }
+.color-option .option-price { display: block; font-size: 12px; font-weight: 400; opacity: 0.8; }
+.color-option.with-swatch .option-price { display: inline; margin-left: 4px; }
+.color-option.disabled { text-decoration: line-through; }
+.color-option.disabled:hover { transform: none; box-shadow: none; border-color: #dee2e6; background: #e9ecef; }
+@media (max-width: 576px) {
+    .color-option { padding: 8px 12px; font-size: 13px; }
+}
