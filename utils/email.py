@@ -68,11 +68,11 @@ def layout(title, content_html, preheader='', brand=None):
                   'style="display:block;border:0;width:150px;height:auto;"></a>')
         origin = 'multiproshop.com'
     return f"""<!DOCTYPE html>
-<html lang="fr"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<html lang="fr"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="color-scheme" content="light only"><meta name="supported-color-schemes" content="light only">
 <title>{escape(title)}</title></head>
-<body style="margin:0;padding:0;background:{BG};font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Arial,sans-serif;">
+<body bgcolor="#ffffff" style="margin:0;padding:0;background:#ffffff;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Arial,sans-serif;">
 <div style="display:none;max-height:0;overflow:hidden;">{escape(preheader)}</div>
-<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background:{BG};padding:32px 16px;"><tr><td align="center">
+<table role="presentation" width="100%" cellpadding="0" cellspacing="0" bgcolor="#ffffff" style="background:#ffffff;padding:32px 16px;"><tr><td align="center">
 <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="max-width:600px;background:#ffffff;border-radius:14px;overflow:hidden;border:1px solid {LINE};">
 <tr><td align="center" style="padding:24px 32px 18px;border-bottom:4px solid {accent};">
 {header}
@@ -81,7 +81,7 @@ def layout(title, content_html, preheader='', brand=None):
 <h1 style="margin:0 0 18px;font-size:22px;line-height:1.35;font-weight:700;color:{INK};">{escape(title)}</h1>
 {content_html}
 </td></tr>
-<tr><td style="padding:20px 32px;background:{BG};border-top:1px solid {LINE};font-size:12px;line-height:1.7;color:{MUTED};">
+<tr><td style="padding:20px 32px;background:#ffffff;border-top:1px solid {LINE};font-size:12px;line-height:1.7;color:{MUTED};">
 <strong style="color:{INK};">{escape(seller['trade_name'])}</strong> · {escape(seller['company'])} · {escape(seller['legal_form'])} · SIREN {escape(seller['siren'])}<br>
 {escape(seller['address'])}, {escape(seller['postal_code'])} {escape(seller['city'])} · {escape(seller['phone'])} ·
 <a href="mailto:{escape(seller['email'])}" style="color:{MUTED};">{escape(seller['email'])}</a><br>
