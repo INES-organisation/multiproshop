@@ -90,8 +90,10 @@ def product_detail(product_id):
     
     # Utiliser le template CJ si le produit vient de CJ
     if product.cj_pid:
+        from utils.variant_ui import build
         return render_template('pages/product_detail_cj.html',
                              product=product,
+                             variant_ui=build(product),
                              related_products=related_products,
                              estimate_countries=ESTIMATE_COUNTRIES)
     

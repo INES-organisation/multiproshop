@@ -427,66 +427,35 @@
                 {% endif %}
                 
                 <!-- Variantes -->
-                {% set active_variants = product.variants.filter_by(active=True).all() if product.variants else [] %}
-                {% if active_variants %}
-                <div class="variant-selector mb-4">
-                    {% set colors = [] %}
-                    {% set sizes = [] %}
-                    {% set other_variants = [] %}
-                    {% for variant in active_variants %}
-                        {% set effective_stock = variant.stock if variant.stock > 0 else product.stock %}
-                        {% if variant.color and variant.color not in colors %}
-                            {% set _ = colors.append(variant.color) %}
+                {% if variant_ui %}
+                <div class="variant-selector mb-4" id="variantSelector">
+                    {% for dim in variant_ui.dims %}
+                    <div class="variant-option mb-3" data-dim="{{ dim.key }}">
+                        {% if dim.mode == 'single' %}
+                        <span class="variant-label">{{ dim.label }}<span class="variant-chosen"> : {{ dim['values'][0].label }}</span></span>
+                        {% elif dim.mode == 'select' %}
+                        <label class="variant-label" for="variant-{{ dim.key }}">{{ dim.label }} <span class="variant-count">({{ dim['values']|length }} choix)</span></label>
+                        <select class="form-select variant-select" id="variant-{{ dim.key }}" data-dim="{{ dim.key }}">
+                            <option value="">{{ dim.placeholder }}</option>
+                            {% for v in dim['values'] %}
+                            <option value="{{ v.value }}" {% if not v.available %}disabled{% endif %}>{{ v.label }}{% if v.price %} · {{ v.price }}{% endif %}{% if not v.available %} · épuisé{% endif %}</option>
+                            {% endfor %}
+                        </select>
+                        {% else %}
+                        <span class="variant-label">{{ dim.label }}<span class="variant-chosen" data-chosen="{{ dim.key }}"></span></span>
+                        <div class="color-options" role="radiogroup" aria-label="{{ dim.label }}">
+                            {% for v in dim['values'] %}
+                            <button type="button" class="color-option {% if dim.swatches %}with-swatch{% endif %} {% if not v.available %}disabled{% endif %}"
+                                    data-dim="{{ dim.key }}" data-value="{{ v.value }}" data-label="{{ v.label }}"
+                                    role="radio" aria-checked="false" {% if not v.available %}aria-disabled="true"{% endif %}>
+                                {% if dim.swatches %}<img src="{{ v.image }}" alt="" loading="lazy" decoding="async">{% endif %}
+                                <span class="color-name">{{ v.label }}</span>{% if v.price %}<span class="option-price">{{ v.price }}</span>{% endif %}
+                            </button>
+                            {% endfor %}
+                        </div>
                         {% endif %}
-                        {% if variant.size and variant.size not in sizes %}
-                            {% set _ = sizes.append(variant.size) %}
-                        {% endif %}
+                    </div>
                     {% endfor %}
-
-                    {% if colors|length > 0 %}
-                    <div class="variant-option mb-3">
-                        <span class="variant-label">Couleur</span>
-                        <div class="color-options">
-                            {% for color in colors %}
-                            <button type="button" class="color-option" data-color="{{ color }}" onclick="selectColor(this)">
-                                <span class="color-name">{{ color|fr_color }}</span>
-                            </button>
-                            {% endfor %}
-                        </div>
-                    </div>
-                    {% endif %}
-
-                    {% if sizes|length > 0 %}
-                    <div class="variant-option mb-3">
-                        <span class="variant-label">Taille</span>
-                        <div class="size-options">
-                            {% for size in sizes %}
-                            <button type="button" class="size-option" data-size="{{ size }}" onclick="selectSize(this)">
-                                {{ size|fr_color }}
-                            </button>
-                            {% endfor %}
-                        </div>
-                    </div>
-                    {% endif %}
-
-                    {% if colors|length == 0 and sizes|length == 0 %}
-                    <div class="variant-option mb-3">
-                        <span class="variant-label">Options</span>
-                        <div class="color-options">
-                            {% for variant in active_variants %}
-                            {% set effective_stock = variant.stock if variant.stock > 0 else product.stock %}
-                            <button type="button" class="color-option {% if not effective_stock %}disabled{% endif %}"
-                                    data-variant-id="{{ variant.id }}"
-                                    data-variant-price="{{ variant.price or product.price }}"
-                                    data-variant-stock="{{ effective_stock }}"
-                                    data-variant-image="{{ variant.image_url if variant.image_url else product.image_url }}"
-                                    onclick="selectDirectVariant(this)">
-                                <span class="color-name">{{ variant.display_name or variant.variant_key }}</span>
-                            </button>
-                            {% endfor %}
-                        </div>
-                    </div>
-                    {% endif %}
 
                     <div id="variant-stock-info" class="variant-stock-info" style="display:none;">
                         <i class="fas fa-check-circle text-success"></i>
@@ -496,79 +465,93 @@
                     <input type="hidden" id="selected-variant-id" name="variant_id" value="">
 
                     <script>
-                    var productVariants = [
-                        {% for variant in active_variants %}
-                        {
-                            id: {{ variant.id }},
-                            color: "{{ variant.color or '' }}",
-                            size: "{{ variant.size or '' }}",
-                            price: {{ variant.price or product.price }},
-                            stock: {{ variant.stock if variant.stock > 0 else product.stock }},
-                            image: "{{ variant.image_url or product.image_url or '' }}",
-                            name: "{{ variant.display_name or variant.variant_key or '' }}"
-                        }{% if not loop.last %},{% endif %}
-                        {% endfor %}
-                    ];
-                    var selectedColor = null;
-                    var selectedSize = null;
+                    (function () {
+                        var variants = {{ variant_ui.variants|tojson }};
+                        var dims = {{ variant_ui.dims|map(attribute='key')|list|tojson }};
+                        var chosen = {};
+                        var root = document.getElementById('variantSelector');
 
-                    function selectColor(el) {
-                        document.querySelectorAll('.color-option').forEach(b => b.classList.remove('selected'));
-                        el.classList.add('selected');
-                        selectedColor = el.dataset.color;
-                        resolveVariant();
-                    }
-                    function selectSize(el) {
-                        document.querySelectorAll('.size-option').forEach(b => b.classList.remove('selected'));
-                        el.classList.add('selected');
-                        selectedSize = el.dataset.size;
-                        resolveVariant();
-                    }
-                    function selectDirectVariant(el) {
-                        if (el.classList.contains('disabled')) return;
-                        document.querySelectorAll('.color-option').forEach(b => b.classList.remove('selected'));
-                        el.classList.add('selected');
-                        var vid = el.dataset.variantId;
-                        var v = productVariants.find(x => x.id == vid);
-                        if (v) applyVariant(v);
-                    }
-                    function resolveVariant() {
-                        var match = productVariants.find(function(v) {
-                            var colorOk = !selectedColor || v.color === selectedColor;
-                            var sizeOk = !selectedSize || v.size === selectedSize;
-                            return colorOk && sizeOk;
-                        });
-                        if (match) applyVariant(match);
-                    }
-                    function applyVariant(v) {
-                        document.getElementById('selected-variant-id').value = v.id;
-                        var priceEl = document.getElementById('product-price');
-                        if (priceEl) priceEl.textContent = v.price.toFixed(2) + '€';
-                        var fromEl = document.getElementById('price-from');
-                        if (fromEl) fromEl.remove();  // une variante choisie : son prix exact
-                        if (v.image) {
-                            var img = document.getElementById('mainImage');
-                            if (img) img.src = v.image;
+                        function fits(v, except) {
+                            return dims.every(function (d) { return d === except || !chosen[d] || v[d] === chosen[d]; });
                         }
-                        var stockInfo = document.getElementById('variant-stock-info');
-                        var stockText = document.getElementById('variant-stock-text');
-                        if (stockInfo && stockText) {
-                            stockInfo.style.display = 'block';
+                        function refresh() {
+                            // Un choix qui n'existe pas avec ce qui est déjà choisi (ou épuisé) est grisé
+                            dims.forEach(function (d) {
+                                var ok = {};
+                                variants.forEach(function (v) { if (v.stock > 0 && fits(v, d)) ok[v[d]] = true; });
+                                root.querySelectorAll('[data-dim="' + d + '"] .color-option').forEach(function (b) {
+                                    var off = !ok[b.dataset.value];
+                                    b.classList.toggle('disabled', off);
+                                    b.setAttribute('aria-disabled', off ? 'true' : 'false');
+                                    var on = chosen[d] === b.dataset.value;
+                                    b.classList.toggle('selected', on);
+                                    b.setAttribute('aria-checked', on ? 'true' : 'false');
+                                });
+                                var sel = root.querySelector('select[data-dim="' + d + '"]');
+                                if (sel) {
+                                    Array.prototype.forEach.call(sel.options, function (o) { if (o.value) o.disabled = !ok[o.value]; });
+                                    sel.value = chosen[d] || '';
+                                }
+                                var label = root.querySelector('[data-chosen="' + d + '"]');
+                                if (label) {
+                                    var b = root.querySelector('[data-dim="' + d + '"] .color-option.selected');
+                                    label.textContent = b ? ' : ' + b.dataset.label : '';
+                                }
+                            });
+                            var match = dims.every(function (d) { return chosen[d]; }) ?
+                                variants.find(function (v) { return fits(v); }) : null;
+                            if (match) apply(match); else document.getElementById('selected-variant-id').value = '';
+                        }
+                        function choose(d, value) {
+                            chosen[d] = value || undefined;
+                            // Le nouveau choix ne va pas avec un choix déjà fait : on retire l'autre
+                            dims.forEach(function (o) {
+                                if (o !== d && chosen[o] && !variants.some(function (v) { return v.stock > 0 && fits(v); })) chosen[o] = undefined;
+                            });
+                            refresh();
+                        }
+                        function apply(v) {
+                            document.getElementById('selected-variant-id').value = v.id;
+                            var priceEl = document.getElementById('product-price');
+                            if (priceEl) priceEl.textContent = v.price.toFixed(2) + '€';
+                            var fromEl = document.getElementById('price-from');
+                            if (fromEl) fromEl.remove();  // une variante choisie : son prix exact
+                            var img = document.getElementById('mainImage');
+                            if (v.image && img) img.src = v.image;
+                            var info = document.getElementById('variant-stock-info');
+                            var text = document.getElementById('variant-stock-text');
+                            info.style.display = 'block';
                             if (v.stock > 0) {
-                                stockInfo.className = 'variant-stock-info';
-                                stockInfo.querySelector('i').className = 'fas fa-check-circle text-success';
-                                stockText.textContent = v.stock + ' disponible(s)';
+                                info.className = 'variant-stock-info';
+                                info.querySelector('i').className = 'fas fa-check-circle text-success';
+                                text.textContent = 'En stock';
                             } else {
-                                stockInfo.className = 'variant-stock-info out-of-stock';
-                                stockInfo.querySelector('i').className = 'fas fa-times-circle text-danger';
-                                stockText.textContent = 'Rupture de stock';
+                                info.className = 'variant-stock-info out-of-stock';
+                                info.querySelector('i').className = 'fas fa-times-circle text-danger';
+                                text.textContent = 'Rupture de stock';
                             }
                         }
-                    }
+                        root.addEventListener('click', function (e) {
+                            var b = e.target.closest('.color-option');
+                            if (!b || b.classList.contains('disabled')) return;
+                            choose(b.dataset.dim, chosen[b.dataset.dim] === b.dataset.value ? '' : b.dataset.value);
+                        });
+                        root.addEventListener('change', function (e) {
+                            if (e.target.matches('select[data-dim]')) choose(e.target.dataset.dim, e.target.value);
+                        });
+                        // Un seul choix possible dans une dimension : déjà sélectionné
+                        dims.forEach(function (d) {
+                            var values = {};
+                            variants.forEach(function (v) { if (v.stock > 0) values[v[d]] = true; });
+                            var keys = Object.keys(values);
+                            if (keys.length === 1) chosen[d] = keys[0];
+                        });
+                        refresh();
+                    })();
                     </script>
                 </div>
                 {% endif %}
-                
+
                 <!-- Price Section -->
                 <div class="price-section">
                     <div class="product-price-modern mb-3">
