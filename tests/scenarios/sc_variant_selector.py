@@ -42,4 +42,8 @@ assert 'Noir' in h and 'Blanc' in h
 assert '· ' not in re.search(r'id="variantSelector".*?<script>', h, re.S).group(0), 'prix identique : pas de prix par choix'
 h = c.get(f'/products/{ids[2]}').get_data(as_text=True)
 assert 'Chaud' in h or 'Warm' in h
+assert 'class="color-option' not in h, 'une seule valeur : simple mention, pas de bouton'
+h = c.get(f'/products/{ids[0]}').get_data(as_text=True)
+order = re.findall(r'Lot (\d+) ', h)
+assert order[:4] == ['0', '1', '2', '3'] and order.index('10') > order.index('9'), order
 print('sélecteur de variantes OK')

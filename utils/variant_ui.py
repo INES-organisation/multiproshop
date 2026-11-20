@@ -6,6 +6,8 @@ photo. Au-delà : une liste déroulante, plus lisible qu'un mur de boutons, avec
 choix à l'autre et « épuisé » pour ce qui n'est plus en stock. Un seul choix possible : il est déjà
 sélectionné. Les combinaisons couleur + taille qui n'existent pas sont grisées côté navigateur.
 """
+import re
+
 from utils.options_fr import translate_option
 
 MAX_BUTTONS = 8
@@ -16,7 +18,14 @@ def _eur(value):
     return ('%.2f' % value).replace('.', ',') + ' €'
 
 
+def _natural(text):
+    """« Lot 2 » avant « Lot 10 »"""
+    return [int(t) if t.isdigit() else t.lower() for t in re.split(r'(\d+)', text or '')]
+
+
 def _mode(values):
+    if len(values) == 1:
+        return 'single'  # une seule valeur (« USB ») : simple mention, déjà choisie
     if len(values) > MAX_BUTTONS or sum(len(v['label']) for v in values) > MAX_BUTTON_CHARS:
         return 'select'
     return 'buttons'
@@ -60,7 +69,7 @@ def build(product):
             entry['prices'].add(i['price'])
             entry['stock'] += i['stock']
             entry['image'] = entry['image'] or i['image']
-        values = list(seen.values())
+        values = sorted(seen.values(), key=lambda v: _natural(v['label']))
         all_prices = {p for v in values for p in v['prices']}
         for v in values:
             v['available'] = v['stock'] > 0

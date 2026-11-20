@@ -431,7 +431,9 @@
                 <div class="variant-selector mb-4" id="variantSelector">
                     {% for dim in variant_ui.dims %}
                     <div class="variant-option mb-3" data-dim="{{ dim.key }}">
-                        {% if dim.mode == 'select' %}
+                        {% if dim.mode == 'single' %}
+                        <span class="variant-label">{{ dim.label }}<span class="variant-chosen"> : {{ dim['values'][0].label }}</span></span>
+                        {% elif dim.mode == 'select' %}
                         <label class="variant-label" for="variant-{{ dim.key }}">{{ dim.label }} <span class="variant-count">({{ dim['values']|length }} choix)</span></label>
                         <select class="form-select variant-select" id="variant-{{ dim.key }}" data-dim="{{ dim.key }}">
                             <option value="">{{ dim.placeholder }}</option>
