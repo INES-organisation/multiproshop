@@ -1,17 +1,24 @@
 {% extends 'base.html' %}
 {% block og_image %}{% if hero %}<meta property="og:image" content="{{ hero.image_url }}">{% endif %}{% endblock %}
 {% block style %}
-.hero{background:linear-gradient(180deg,#121b31 0%,#1c2a4c 45%,#3d3f63 72%,#b9775a 100%);color:var(--sand);position:relative;overflow:hidden}
-.hero::after{content:"";position:absolute;left:50%;bottom:-340px;width:900px;height:520px;transform:translateX(-50%);background:radial-gradient(ellipse at center,rgba(243,190,135,.55),transparent 62%);pointer-events:none}
+.hero{background:var(--hero-bg);color:var(--sand);position:relative;overflow:hidden}
+.hero::after{content:"";position:absolute;left:50%;bottom:-340px;width:900px;height:520px;transform:translateX(-50%);background:radial-gradient(ellipse at center,var(--hero-glow),transparent 62%);pointer-events:none}
 .hero .stars{position:absolute;inset:0;background-image:radial-gradient(1.2px 1.2px at 12% 18%,#fff8,transparent),radial-gradient(1px 1px at 28% 8%,#fff6,transparent),radial-gradient(1.4px 1.4px at 46% 22%,#fff7,transparent),radial-gradient(1px 1px at 63% 12%,#fff5,transparent),radial-gradient(1.3px 1.3px at 82% 26%,#fff8,transparent),radial-gradient(1px 1px at 92% 9%,#fff6,transparent),radial-gradient(1px 1px at 6% 40%,#fff4,transparent),radial-gradient(1.2px 1.2px at 74% 40%,#fff5,transparent);pointer-events:none}
 .hero .wrap{display:grid;grid-template-columns:1.05fr 1fr;gap:48px;align-items:center;padding-top:72px;padding-bottom:88px;position:relative;z-index:1}
-.hero h1{color:#fff}.hero p.lead{font-size:1.12rem;color:#d5d9e6;max-width:520px}
+.hero h1{color:#fff}.hero p.lead{font-size:1.12rem;color:var(--on-dark);max-width:520px}
 .hero .actions{display:flex;gap:14px;flex-wrap:wrap;margin-top:28px;align-items:center}
-.hero .from{color:#d5d9e6;font-size:.95rem}
+.hero .from{color:var(--on-dark);font-size:.95rem}
 .hero-visual{position:relative}
-.hero-visual img{border-radius:28px;aspect-ratio:1;object-fit:cover;width:100%;box-shadow:0 40px 80px -30px rgba(0,0,0,.6)}
+.hero-visual img{border-radius:calc(var(--radius) * 1.55);aspect-ratio:1;object-fit:cover;width:100%;box-shadow:0 40px 80px -30px rgba(0,0,0,.6)}
 .hero-visual .tag{position:absolute;left:-18px;bottom:28px;background:var(--sand);color:var(--night);border-radius:16px;padding:12px 16px;box-shadow:var(--shadow);font-size:.88rem;max-width:230px}
 .hero-visual .tag strong{display:block;font-family:var(--serif);font-size:1.05rem;font-weight:500}
+/* hero clair : fond clair, photo à gauche */
+.hero.light{background:var(--sand-2);color:var(--ink)}.hero.light::after{background:radial-gradient(ellipse at center,var(--glow-soft),transparent 62%);opacity:.5}
+.hero.light h1{color:var(--night)}.hero.light p.lead,.hero.light .from{color:var(--muted)}
+.hero.light .wrap{grid-template-columns:1fr 1.05fr}.hero.light .hero-visual{order:-1}
+.hero.light .btn.light{background:transparent;color:var(--night);border:1.5px solid var(--night)}
+.hero.light .eyebrow{color:var(--dawn-hover)}
+@media (max-width:860px){.hero.light .wrap{grid-template-columns:1fr}.hero.light .hero-visual{order:0}}
 @media (max-width:860px){.hero .wrap{grid-template-columns:1fr;padding-top:44px;padding-bottom:56px;gap:32px}.hero-visual .tag{position:static;display:block;max-width:none;margin-top:14px}}
 .promises-band{background:var(--card);border-bottom:1px solid var(--line)}.promises-band .wrap{padding-top:26px;padding-bottom:26px}
 .moments{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:20px}
@@ -20,9 +27,9 @@
 .moment img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;transition:transform .5s}
 .moment:hover img{transform:scale(1.04)}
 .moment div.txt{padding:16px 20px 18px}
-.moment h3{color:#fff;margin:0}.moment span{font-size:.88rem;color:#dfe3ee}
+.moment h3{color:#fff;margin:0}.moment span{font-size:.88rem;color:var(--on-dark-3)}
 .rituals{display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:22px}
-.ritual{background:var(--card);border:1px solid var(--line);border-radius:24px;padding:18px;display:flex;flex-direction:column;gap:14px;text-decoration:none;transition:box-shadow .2s,transform .2s}
+.ritual{background:var(--card);border:1px solid var(--line);border-radius:calc(var(--radius) * 1.33);padding:18px;display:flex;flex-direction:column;gap:14px;text-decoration:none;transition:box-shadow .2s,transform .2s}
 .ritual:hover{box-shadow:var(--shadow);transform:translateY(-3px)}
 .ritual .collage{display:grid;grid-template-columns:2fr 1fr;grid-template-rows:repeat(2,minmax(0,1fr));gap:8px;aspect-ratio:3/2;overflow:hidden}
 .ritual .collage img{min-width:0;min-height:0;width:100%;height:100%;object-fit:cover;border-radius:14px;background:var(--sand-2)}
@@ -45,16 +52,16 @@
 {% endblock %}
 {% block content %}
 {% if not filtered %}
-<section class="hero">
-  <div class="stars" aria-hidden="true"></div>
+<section class="hero {{ theme.hero_style }}">
+  {% if theme.stars %}<div class="stars" aria-hidden="true"></div>{% endif %}
   <div class="wrap">
     <div>
-      <p class="eyebrow">Se réveiller en douceur</p>
-      <h1>Des soirs plus calmes, des matins plus doux.</h1>
-      <p class="lead">Une lumière qui monte comme un lever de soleil, un ciel étoilé au plafond, un plaid qui sent le dimanche. {{ site.name }} réunit les objets qui aident à ralentir.</p>
+      <p class="eyebrow">{{ theme.hero_eyebrow|fill }}</p>
+      <h1>{{ theme.hero_title|fill }}</h1>
+      <p class="lead">{{ theme.hero_lead|fill }}</p>
       <div class="actions">
-        {% if hero %}<a class="btn" href="{{ url_for('product', product_id=hero.id) }}">Découvrir le réveil lumière</a>{% endif %}
-        <a class="btn light" href="#rituels">Voir les rituels</a>
+        {% if hero %}<a class="btn" href="{{ url_for('product', product_id=hero.id) }}">{{ theme.hero_cta }}</a>{% endif %}
+        {% if rituals %}<a class="btn light" href="#{{ theme.lots_anchor }}">Voir les {{ theme.nav_lots|lower }}</a>{% else %}<a class="btn light" href="#boutique">Voir la boutique</a>{% endif %}
       </div>
     </div>
     {% if hero %}
@@ -70,7 +77,7 @@
 
 {% if categories|length > 1 %}
 <section class="section"><div class="wrap">
-  <div class="section-head"><div><p class="eyebrow">Par où commencer</p><h2>Trouvez votre façon de ralentir</h2></div></div>
+  <div class="section-head"><div><p class="eyebrow">Par où commencer</p><h2>{{ theme.moments_title }}</h2></div></div>
   <div class="moments">
     {% for c in categories %}
     <a class="moment" href="{{ url_for('index', category=c.id) }}#boutique">
@@ -83,10 +90,10 @@
 {% endif %}
 
 {% if rituals %}
-<section class="section" id="rituels" style="background:var(--sand-2)"><div class="wrap">
+<section class="section" id="{{ theme.lots_anchor }}" style="background:var(--sand-2)"><div class="wrap">
   <div class="section-head">
-    <div><p class="eyebrow">Les rituels</p><h2>Tout ce qu'il faut, réuni pour vous</h2></div>
-    <p class="muted">Des ensembles pensés pour aller bien ensemble. Vous choisissez les modèles, on ajoute tout au panier en une fois.</p>
+    <div><p class="eyebrow">{{ theme.lots_eyebrow }}</p><h2>{{ theme.lots_title }}</h2></div>
+    <p class="muted">{{ theme.lots_text }}</p>
   </div>
   <div class="rituals">
     {% for r in rituals %}
@@ -104,7 +111,7 @@
 
 <section class="section" id="boutique"><div class="wrap">
   <div class="section-head">
-    <div><p class="eyebrow">La boutique</p><h2>{% if args.get('prix') %}Idées cadeaux à moins de {{ args.get('prix') }} €{% else %}Tous nos produits{% endif %}</h2></div>
+    <div><p class="eyebrow">La boutique</p><h2>{% if args.get('q') %}Résultats pour « {{ args.get('q') }} »{% elif args.get('prix') %}Idées cadeaux à moins de {{ args.get('prix') }} €{% else %}Tous nos produits{% endif %}</h2></div>
   </div>
   <div class="toolbar">
     <nav class="chips" aria-label="Collections">
@@ -136,18 +143,19 @@
 </div></section>
 
 {% if not filtered %}
+{% if theme.story %}
 <section class="section" style="background:var(--card);border-top:1px solid var(--line);border-bottom:1px solid var(--line)"><div class="wrap story">
   <div>
-    <p class="eyebrow">Un soir {{ site.name }}</p>
-    <h2>Trois gestes pour retrouver le calme</h2>
-    <p class="muted">Pas besoin de tout changer. Quelques habitudes simples suffisent souvent à rendre le coucher plus doux et le réveil moins brutal.</p>
+    <p class="eyebrow">{{ theme.story.eyebrow|fill }}</p>
+    <h2>{{ theme.story.title|fill }}</h2>
+    <p class="muted">{{ theme.story.text|fill }}</p>
   </div>
   <div class="steps">
-    <div class="step"><div><strong>Baisser la lumière</strong>Une heure avant de dormir, remplacez le plafonnier par une lueur chaude : lampe de sel, veilleuse ou projecteur.</div></div>
-    <div class="step"><div><strong>Créer une ambiance</strong>Une brume légère, un ciel étoilé, un plaid : le corps comprend que la journée est finie.</div></div>
-    <div class="step"><div><strong>Se réveiller avec la lumière</strong>Le réveil lumière éclaire peu à peu la chambre avant l'heure, comme un lever de soleil, même en plein hiver.</div></div>
+    {% for title, text in theme.story.steps %}<div class="step"><div><strong>{{ title }}</strong>{{ text|fill }}</div></div>
+    {% endfor %}
   </div>
 </div></section>
+{% endif %}
 
 <section class="section" id="questions"><div class="wrap faq">
   <p class="eyebrow">Questions fréquentes</p>
@@ -155,6 +163,30 @@
   {% include '_faq.html' %}
 </div></section>
 {% endif %}
+
+<section class="section tight" id="vus" hidden><div class="wrap">
+  <div class="section-head"><div><p class="eyebrow">Vus récemment</p><h2>Vous les avez regardés</h2></div></div>
+  <div class="grid" id="vus-grid"></div>
+</div></section>
+<script>
+(function () {
+  var seen = [];
+  try { seen = JSON.parse(localStorage.getItem('vus-{{ site.name|lower }}') || '[]'); } catch (e) { return; }
+  if (!Array.isArray(seen) || seen.length < 2) return;
+  var grid = document.getElementById('vus-grid');
+  seen.slice(0, 4).forEach(function (p) {
+    if (!p || !/^\/[a-z]/.test(p.url || '')) return;
+    var a = document.createElement('a'); a.className = 'card'; a.href = p.url;
+    var box = document.createElement('div'); box.className = 'img';
+    var img = document.createElement('img'); img.src = p.img; img.alt = p.name; img.loading = 'lazy'; box.appendChild(img);
+    var body = document.createElement('div'); body.className = 'body';
+    var n = document.createElement('span'); n.className = 'name'; n.textContent = p.name;
+    var pr = document.createElement('span'); pr.className = 'price'; pr.textContent = p.price;
+    body.appendChild(n); body.appendChild(pr); a.appendChild(box); a.appendChild(body); grid.appendChild(a);
+  });
+  if (grid.children.length) document.getElementById('vus').hidden = false;
+})();
+</script>
 
 <section class="wrap" id="newsletter">{% include '_newsletter.html' %}</section>
 {% endblock %}

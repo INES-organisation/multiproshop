@@ -1,0 +1,89 @@
+{
+ "project": "horane",
+ "nom": "Horane (horane.multiproshop.com)",
+ "angle": "La belle montre au prix honnête : minimaliste, quartz, bracelets interchangeables, prête à offrir. Pas de smartwatch, pas de design copié d'une grande marque.",
+ "groups": [
+  {
+   "name": "Montres",
+   "queries": [
+    {
+     "q": "minimalist quartz watch men mesh strap",
+     "fr": "Montre minimaliste homme, bracelet milanais",
+     "db": ["montre minimaliste", "montre%milanais"],
+     "must": ["watch", "minimalist|simple|ultra thin|slim", "mesh|milanese|steel|leather"]
+    },
+    {
+     "q": "minimalist quartz watch women leather strap",
+     "fr": "Montre minimaliste femme, bracelet cuir",
+     "db": ["montre%femme"],
+     "must": ["watch", "women|ladies|female", "leather|mesh|milanese"]
+    },
+    {
+     "q": "skeleton mechanical watch men automatic",
+     "fr": "Montre squelette automatique homme",
+     "db": ["montre squelette", "montre automatique"],
+     "must": ["watch", "skeleton|hollow|mechanical|automatic"]
+    },
+    {
+     "q": "vintage tonneau watch roman numerals",
+     "fr": "Montre vintage tonneau, chiffres romains",
+     "db": ["montre vintage", "montre%romain"],
+     "must": ["watch", "vintage|retro|tonneau|roman|square"]
+    },
+    {
+     "q": "couple watch set gift box",
+     "fr": "Duo de montres pour couple, en coffret",
+     "db": ["montre%couple"],
+     "must": ["watch", "couple|lovers|pair"]
+    },
+    {
+     "q": "watch gift set interchangeable strap box",
+     "fr": "Coffret montre avec bracelet interchangeable",
+     "db": ["coffret montre"],
+     "must": ["watch", "gift|box|set", "strap|band"]
+    }
+   ]
+  },
+  {
+   "name": "Bracelets et accessoires",
+   "queries": [
+    {
+     "q": "quick release leather watch strap 20mm 22mm",
+     "fr": "Bracelet de montre en cuir à attache rapide",
+     "db": ["bracelet%montre%cuir"],
+     "must": ["strap|band", "leather", "quick release|20mm|22mm|18mm"]
+    },
+    {
+     "q": "milanese mesh watch band quick release",
+     "fr": "Bracelet milanais à attache rapide",
+     "db": ["bracelet milanais"],
+     "must": ["strap|band", "mesh|milanese"]
+    },
+    {
+     "q": "nylon nato watch strap",
+     "fr": "Bracelet de montre NATO en nylon",
+     "db": ["bracelet nato", "bracelet%nylon"],
+     "must": ["strap|band", "nato|nylon"]
+    },
+    {
+     "q": "watch box organizer 6 slots",
+     "fr": "Coffret de rangement pour 6 montres",
+     "db": ["boîte%montre", "coffret%montre"],
+     "must": ["watch", "box|case|organizer", "slot|grid|display"]
+    },
+    {
+     "q": "watch travel case roll",
+     "fr": "Étui de voyage pour montres",
+     "db": ["étui%montre"],
+     "must": ["watch", "travel|roll|pouch|case"]
+    },
+    {
+     "q": "watch strap change tool kit spring bar",
+     "fr": "Kit pour changer un bracelet de montre",
+     "db": ["outil%montre", "kit%montre"],
+     "must": ["watch", "tool|kit|spring bar|remover"]
+    }
+   ]
+  }
+ ]
+}

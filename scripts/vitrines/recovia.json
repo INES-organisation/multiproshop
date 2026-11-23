@@ -1,0 +1,183 @@
+{
+ "project": "recovia",
+ "nom": "Recovia (recovia.multiproshop.com)",
+ "angle": "Ton corps te dit merci : récupération, posture et mobilité à la maison et au bureau. Pas d'équipement lourd, pas d'objet connecté ; vocabulaire bien-être, jamais médical.",
+ "autorises": [
+  "massage gun",
+  "fascia gun"
+ ],
+ "groups": [
+  {
+   "name": "Récupération",
+   "queries": [
+    {
+     "q": "mini massage gun portable",
+     "fr": "Pistolet de massage compact",
+     "db": [
+      "pistolet de massage",
+      "massage gun"
+     ],
+     "must": [
+      "massage",
+      "gun|percussion"
+     ]
+    },
+    {
+     "q": "vibrating foam roller",
+     "fr": "Rouleau de massage vibrant",
+     "db": [
+      "rouleau%vibrant"
+     ],
+     "must": [
+      "roller",
+      "vibrat|electric"
+     ]
+    },
+    {
+     "q": "textured foam roller muscle",
+     "fr": "Rouleau de massage texturé",
+     "db": [
+      "rouleau de massage",
+      "foam roller"
+     ],
+     "must": [
+      "foam roller|massage roller"
+     ]
+    },
+    {
+     "q": "massage ball peanut lacrosse",
+     "fr": "Balles de massage (simple et double)",
+     "db": [
+      "balle de massage"
+     ],
+     "must": [
+      "massage",
+      "ball"
+     ]
+    },
+    {
+     "q": "acupressure mat pillow set",
+     "fr": "Tapis d'acupression avec coussin",
+     "db": [
+      "tapis d'acupression",
+      "acupression"
+     ],
+     "must": [
+      "acupressure|spike",
+      "mat"
+     ]
+    }
+   ]
+  },
+  {
+   "name": "Posture et bureau",
+   "queries": [
+    {
+     "q": "posture corrector back brace adjustable",
+     "fr": "Correcteur de posture réglable",
+     "db": [
+      "correcteur de posture"
+     ],
+     "must": [
+      "posture",
+      "corrector|brace|support"
+     ]
+    },
+    {
+     "q": "lumbar support pillow office chair memory foam",
+     "fr": "Coussin lombaire ergonomique",
+     "db": [
+      "coussin lombaire"
+     ],
+     "must": [
+      "lumbar|back",
+      "pillow|cushion|support"
+     ]
+    },
+    {
+     "q": "seat cushion memory foam coccyx office",
+     "fr": "Coussin d'assise ergonomique",
+     "db": [
+      "coussin d'assise",
+      "coussin%coccyx"
+     ],
+     "must": [
+      "seat|coccyx",
+      "cushion|pad"
+     ]
+    },
+    {
+     "q": "laptop stand adjustable aluminum",
+     "fr": "Support d'ordinateur portable réglable",
+     "db": [
+      "support%ordinateur"
+     ],
+     "must": [
+      "laptop|notebook",
+      "stand|holder"
+     ]
+    },
+    {
+     "q": "resistance bands set 5 levels",
+     "fr": "Set de 5 bandes de résistance",
+     "db": [
+      "bandes de résistance",
+      "élastique%musculation"
+     ],
+     "must": [
+      "resistance|elastic",
+      "band"
+     ]
+    }
+   ]
+  },
+  {
+   "name": "Mobilité et entraînement léger",
+   "queries": [
+    {
+     "q": "weighted jump rope",
+     "fr": "Corde à sauter lestée",
+     "db": [
+      "corde à sauter"
+     ],
+     "must": [
+      "jump rope|skipping rope"
+     ]
+    },
+    {
+     "q": "suspension trainer straps home",
+     "fr": "Sangles de suspension pour s'entraîner chez soi",
+     "db": [
+      "sangles de suspension"
+     ],
+     "must": [
+      "suspension|trx",
+      "strap|trainer"
+     ]
+    },
+    {
+     "q": "ab roller wheel knee pad",
+     "fr": "Roue abdominale avec tapis genoux",
+     "db": [
+      "roue abdominale"
+     ],
+     "must": [
+      "ab|abdominal",
+      "wheel|roller"
+     ]
+    },
+    {
+     "q": "yoga mat non slip thick",
+     "fr": "Tapis de yoga antidérapant",
+     "db": [
+      "tapis de yoga"
+     ],
+     "must": [
+      "yoga",
+      "mat"
+     ]
+    }
+   ]
+  }
+ ]
+}

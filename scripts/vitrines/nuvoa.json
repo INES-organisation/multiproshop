@@ -1,0 +1,159 @@
+{
+ "project": "nuvoa",
+ "nom": "Nuvoa (nuvoa.multiproshop.com)",
+ "angle": "Le confort, en grand : oversize et loungewear aux couleurs neutres. Que des coupes amples (une taille habille du S au L) pour limiter les retours ; aucun vêtement ajusté.",
+ "groups": [
+  {
+   "name": "Essentiels oversize",
+   "queries": [
+    {
+     "q": "oversized heavyweight hoodie unisex plain",
+     "fr": "Sweat à capuche oversize épais",
+     "db": [
+      "sweat%capuche%oversize",
+      "hoodie oversize"
+     ],
+     "must": [
+      "hoodie|hooded",
+      "oversize|loose|heavy|boxy"
+     ]
+    },
+    {
+     "q": "oversized heavyweight t-shirt 240gsm cotton",
+     "fr": "Tee-shirt oversize épais",
+     "db": [
+      "t-shirt oversize",
+      "tee-shirt oversize"
+     ],
+     "must": [
+      "t-shirt|tshirt|tee",
+      "oversize|loose|heavy|boxy|drop shoulder"
+     ]
+    },
+    {
+     "q": "oversized jogger sweatpants unisex",
+     "fr": "Jogging oversize",
+     "db": [
+      "jogging%oversize",
+      "pantalon de jogging"
+     ],
+     "must": [
+      "jogger|sweatpants|track pants",
+      "loose|oversize|wide"
+     ]
+    },
+    {
+     "q": "oversized crewneck sweatshirt boxy",
+     "fr": "Sweat col rond oversize",
+     "db": [
+      "sweat%col rond"
+     ],
+     "must": [
+      "sweatshirt|crewneck|pullover",
+      "oversize|loose|boxy|drop shoulder"
+     ]
+    }
+   ]
+  },
+  {
+   "name": "Ensembles et lounge",
+   "queries": [
+    {
+     "q": "loungewear set two piece women loose",
+     "fr": "Ensemble lounge deux pièces",
+     "db": [
+      "ensemble%lounge",
+      "ensemble%détente"
+     ],
+     "must": [
+      "set|two piece|2 piece",
+      "lounge|loose|casual|home"
+     ]
+    },
+    {
+     "q": "linen set oversized shirt pants",
+     "fr": "Ensemble lin oversize",
+     "db": [
+      "ensemble%lin"
+     ],
+     "must": [
+      "linen|cotton linen",
+      "set|suit|two piece"
+     ]
+    },
+    {
+     "q": "oversized knit cardigan",
+     "fr": "Cardigan oversize",
+     "db": [
+      "cardigan"
+     ],
+     "must": [
+      "cardigan",
+      "oversize|loose|chunky"
+     ]
+    },
+    {
+     "q": "pajama set women loose cotton",
+     "fr": "Ensemble de nuit ample",
+     "db": [
+      "pyjama",
+      "ensemble de nuit"
+     ],
+     "must": [
+      "pajama|pyjama|sleepwear|nightwear",
+      "set"
+     ]
+    }
+   ]
+  },
+  {
+   "name": "Cocon et accessoires",
+   "queries": [
+    {
+     "q": "wearable blanket hoodie oversized sherpa",
+     "fr": "Plaid à capuche taille unique",
+     "db": [
+      "plaid%capuche",
+      "couverture%capuche"
+     ],
+     "must": [
+      "blanket|sherpa",
+      "hoodie|wearable"
+     ]
+    },
+    {
+     "q": "fuzzy socks winter cozy",
+     "fr": "Chaussettes douillettes",
+     "db": [
+      "chaussettes"
+     ],
+     "must": [
+      "socks"
+     ]
+    },
+    {
+     "q": "knit beanie unisex",
+     "fr": "Bonnet en maille",
+     "db": [
+      "bonnet"
+     ],
+     "must": [
+      "beanie|knit hat"
+     ]
+    },
+    {
+     "q": "oversized canvas tote bag",
+     "fr": "Grand tote bag en toile",
+     "db": [
+      "tote bag",
+      "sac cabas"
+     ],
+     "must": [
+      "tote",
+      "bag"
+     ]
+    }
+   ]
+  }
+ ]
+}

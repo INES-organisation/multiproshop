@@ -1,0 +1,186 @@
+{
+ "project": "odysa",
+ "nom": "Odysa (odysa.multiproshop.com)",
+ "angle": "Voyager en cabine, malin : packer plus, payer zéro frais de bagage. Léger, plat, sans batterie ; le cube seul n'est jamais la vedette, toujours dans un kit.",
+ "groups": [
+  {
+   "name": "Organisation cabine",
+   "queries": [
+    {
+     "q": "packing cubes set 6 travel",
+     "fr": "Set de 6 cubes de rangement",
+     "db": [
+      "cube%rangement",
+      "packing cube"
+     ],
+     "must": [
+      "packing|travel",
+      "cube|organizer"
+     ]
+    },
+    {
+     "q": "compression packing cubes zipper",
+     "fr": "Cubes de compression",
+     "db": [
+      "compression"
+     ],
+     "must": [
+      "compression",
+      "cube|bag|packing"
+     ]
+    },
+    {
+     "q": "hanging toiletry bag travel",
+     "fr": "Trousse de toilette suspendue",
+     "db": [
+      "trousse de toilette"
+     ],
+     "must": [
+      "toiletry|cosmetic|wash",
+      "bag",
+      "hang|hook|travel"
+     ]
+    },
+    {
+     "q": "cable organizer bag travel electronics",
+     "fr": "Pochette de rangement pour câbles",
+     "db": [
+      "pochette%câble",
+      "organisateur%câble"
+     ],
+     "must": [
+      "cable|electronic|electronics",
+      "organizer|bag|pouch|case"
+     ]
+    },
+    {
+     "q": "waterproof phone pouch document",
+     "fr": "Pochette étanche",
+     "db": [
+      "pochette étanche"
+     ],
+     "must": [
+      "waterproof",
+      "pouch|bag|case"
+     ]
+    },
+    {
+     "q": "foldable travel duffel bag lightweight",
+     "fr": "Sac pliable d'appoint",
+     "db": [
+      "sac pliable",
+      "sac de voyage pliable"
+     ],
+     "must": [
+      "foldable|folding|packable",
+      "bag|duffel"
+     ]
+    }
+   ]
+  },
+  {
+   "name": "Confort en vol",
+   "queries": [
+    {
+     "q": "memory foam neck pillow travel",
+     "fr": "Oreiller de voyage à mémoire de forme",
+     "db": [
+      "oreiller de voyage",
+      "coussin de voyage",
+      "coussin cervical"
+     ],
+     "must": [
+      "neck|travel",
+      "pillow"
+     ]
+    },
+    {
+     "q": "sleep mask contoured travel",
+     "fr": "Masque de sommeil 3D",
+     "db": [
+      "masque de sommeil"
+     ],
+     "must": [
+      "sleep|eye",
+      "mask"
+     ]
+    },
+    {
+     "q": "compression socks travel flight",
+     "fr": "Chaussettes de contention pour le vol",
+     "db": [
+      "chaussettes de contention",
+      "chaussettes de compression"
+     ],
+     "must": [
+      "compression",
+      "socks"
+     ]
+    },
+    {
+     "q": "compact travel blanket bag",
+     "fr": "Plaid de voyage compact",
+     "db": [
+      "plaid de voyage",
+      "couverture de voyage"
+     ],
+     "must": [
+      "travel|portable",
+      "blanket"
+     ]
+    }
+   ]
+  },
+  {
+   "name": "Sécurité",
+   "queries": [
+    {
+     "q": "rfid passport holder wallet",
+     "fr": "Porte-passeport anti-RFID",
+     "db": [
+      "porte-passeport",
+      "passeport"
+     ],
+     "must": [
+      "passport",
+      "holder|wallet|cover|case"
+     ]
+    },
+    {
+     "q": "money belt hidden travel",
+     "fr": "Ceinture cache-billets",
+     "db": [
+      "ceinture%billets",
+      "ceinture%voyage"
+     ],
+     "must": [
+      "money|hidden|travel",
+      "belt|waist"
+     ]
+    },
+    {
+     "q": "tsa luggage lock combination",
+     "fr": "Cadenas TSA à code",
+     "db": [
+      "cadenas"
+     ],
+     "must": [
+      "lock|padlock",
+      "tsa|luggage|combination"
+     ]
+    },
+    {
+     "q": "luggage tag leather",
+     "fr": "Étiquettes à bagage",
+     "db": [
+      "étiquette%bagage"
+     ],
+     "must": [
+      "luggage|baggage|suitcase",
+      "tag"
+     ]
+    }
+   ]
+  }
+ ]
+}

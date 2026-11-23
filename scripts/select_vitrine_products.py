@@ -8,6 +8,7 @@ Lecture seule : rien n'est importé ni publié. Pour chaque recherche de la fich
   2. sur CJ, les produits les plus listés par les boutiques CJ pour ces mots (product/listV2,
      keyWord, tri listedNum), dans la fourchette de prix d'achat ;
      Seuls comptent les produits dont le nom contient les mots obligatoires (« must ») de la recherche.
+     Les expressions de « autorises » (ex. « massage gun ») échappent à la liste d'exclusion de MPS.
   3. le détail des premiers (photos, poids, stock) avec les mêmes filtres et le même prix de
      vente que select_cj_products.py (coefficient selon le coût, arrondi à x,90 €).
 
@@ -54,7 +55,16 @@ def relevant(name, must):
     return all(any(w in name for w in group.lower().split('|')) for group in must)
 
 
-def search_cj(api, keyword, args, must=()):
+def excluded(name, allowed=()):
+    """Nom refusé par la liste d'exclusion de MPS, sauf pour les expressions que la fiche autorise
+    (« massage gun » n'est pas une arme, « cat food bowl » n'est pas de la nourriture)"""
+    name = name.lower()
+    for phrase in allowed:
+        name = name.replace(phrase.lower(), ' ')
+    return bool(EXCLUDED.search(name))
+
+
+def search_cj(api, keyword, args, must=(), allowed=()):
     # Tri par pertinence chez CJ, puis par nombre de boutiques ici, après le filtre des mots obligatoires
     params = {'page': 1, 'size': args.candidates, 'keyWord': keyword,
               'startSellPrice': args.min_cost, 'endSellPrice': args.max_cost}
@@ -64,7 +74,7 @@ def search_cj(api, keyword, args, must=()):
     found = []
     for item in (response.get('data') or {}).get('content', []):
         for p in item.get('productList', []):
-            if not EXCLUDED.search(p.get('nameEn', '')) and relevant(p.get('nameEn', ''), must):
+            if not excluded(p.get('nameEn', ''), allowed) and relevant(p.get('nameEn', ''), must):
                 found.append({'pid': p.get('id'), 'name_en': p.get('nameEn', ''), 'image': p.get('bigImage', ''),
                               'listed': int(p.get('listedNum') or 0)})
     return sorted(found, key=lambda p: p['listed'], reverse=True)
@@ -135,7 +145,8 @@ def main():
                     if api is None:
                         continue
                     rejected = {}
-                    for p in search_cj(api, query['q'], args, query.get('must') or query['q'].split()[:2])[:args.max_examined]:
+                    for p in search_cj(api, query['q'], args, query.get('must') or query['q'].split()[:2],
+                                       brief.get('autorises', []))[:args.max_examined]:
                         if len(line['cj']) >= args.per_query:
                             break
                         if any(s['pid'] == p['pid'] for s in selected):

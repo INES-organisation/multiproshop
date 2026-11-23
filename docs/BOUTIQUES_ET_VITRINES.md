@@ -1,6 +1,6 @@
 # Boutiques et vitrines MPS
 
-*Mis à jour le 12/11/2026.* Comment créer, gérer et publier les sites qui vendent le catalogue MultiProShop. Le schéma d'ensemble (INES, CJ, Stripe) est dans [ECOSYSTEME.md](ECOSYSTEME.md).
+*Mis à jour le 23/11/2026.* Comment créer, gérer et publier les sites qui vendent le catalogue MultiProShop. Le schéma d'ensemble (INES, CJ, Stripe) est dans [ECOSYSTEME.md](ECOSYSTEME.md).
 
 ## Deux formes, un seul vendeur
 
@@ -8,11 +8,39 @@
 |---|---|---|
 | C'est | un site de vente à sa marque, dont c'est le métier | la rubrique produits d'un site dont ce n'est pas le métier |
 | Exemples | Sérénis (serenis.multiproshop.com) | ALIAS, le Magasin de tonyalpha80.com ; DIGITA, le matériel recommandé de digita.buzz |
-| Code | `vitrine/app.py`, servi par MPS (conteneur `<code>-web`) | le site lui-même (son dépôt), qui lit l'API partenaire |
+| Code | `vitrine/app.py` et son thème dans `vitrine/themes.py`, servi par MPS (conteneur `<code>-web`) | le site lui-même (son dépôt), qui lit l'API partenaire |
 | Produits | ceux marqués de son code | ceux marqués de son code |
 | Panier et paiement | sur la boutique, via l'API partenaire | sur le site (TA80) ou par un lien vers la fiche MPS (DIGITA, au départ) |
 
 Dans les deux cas, MPS reste le vendeur : il recalcule les prix et le port, encaisse avec le Stripe d'INES, passe la commande chez CJ par le hub d'INES et envoie les e-mails. Les CGV et mentions légales sont celles de MPS.
+
+## Thèmes des boutiques
+
+Toutes les boutiques partagent le même code (`vitrine/app.py`, `vitrine/templates/`). Ce qui les distingue est dans **`vitrine/themes.py`**, une entrée par code de boutique :
+
+- **identité** : palette (fond, couleur sombre, accent, dégradé de l'accueil), polices Google, arrondis des cartes et des boutons, logo et favicon en SVG, proportions des photos (carré, ou 4/5 pour la mode) ;
+- **mise en page** : accueil sombre (texte puis photo) ou clair (photo puis texte) ;
+- **textes** : accroche, bouton principal, nom des lots (rituels, coffrets, kits, ensembles) et leur adresse (`/coffret/1`…), section « Pourquoi nous » en trois étapes, newsletter, pied de page, questions fréquentes en plus, rubriques en plus sur chaque fiche (guide des tailles, entretien, précautions), message du bandeau du haut.
+
+Le thème est choisi par `VITRINE_PROJECT` (ou forcé par `VITRINE_THEME`). Les réglages de l'admin (nom, slogan, couleur d'accent, produit vedette, lots, délai) passent toujours avant. Un code sans thème prend `BASE`, une version neutre de Sérénis. Les textes acceptent `{name}`, remplacé par le nom de la boutique.
+
+Ce que chaque boutique a, quel que soit son thème : recherche dans l'en-tête, menu mobile, bandeau de réassurance, collections en vignettes, lots ajoutés au panier en une fois, date de livraison estimée sur la fiche, barre d'achat fixe sur mobile, jauge de livraison offerte dans le panier, « Vus récemment » (gardé dans le navigateur du client), avis vérifiés uniquement, données produit structurées pour Google.
+
+`tests/test_vitrine_themes.py` rend les pages de chaque thème et vérifie qu'aucun texte d'une autre boutique n'y apparaît.
+
+## Boutiques en préparation (docs INES › FACTION › MPS)
+
+| Code | Niche | Lancement prévu par les docs | Thème | Fiche de recherche CJ |
+|---|---|---|---|---|
+| `horane` | montres minimalistes, bracelets interchangeables | mi-janvier 2027 (Saint-Valentin) | noir, or, crème ; coffrets | `scripts/vitrines/horane.json` |
+| `recovia` | récupération, posture, mobilité | 2-5 janvier 2027 (résolutions) | ardoise, menthe ; kits | `scripts/vitrines/recovia.json` |
+| `nuvoa` | oversize et loungewear | février-mars 2027 | crème, olive, sable ; ensembles ; photos 4/5 | `scripts/vitrines/nuvoa.json` |
+| `patto` | accessoires chat | avril-mai 2027 | crème, terracotta, sauge ; kits | `scripts/vitrines/patto.json` |
+| `odysa` | voyage en cabine | mai 2027 | bleu nuit, sable, terracotta ; kits | `scripts/vitrines/odysa.json` |
+
+Les noms sont provisoires (vérification INPI/EUIPO à faire) : changer de nom avant la création de la boutique dans l'admin, car le code est définitif.
+
+Les fiches de recherche peuvent lever une exclusion de la liste de MPS avec `"autorises"` (ex. « massage gun » pour Recovia, « food bowl » pour Patto).
 
 ## Où tout se gère
 

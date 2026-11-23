@@ -1,12 +1,14 @@
-"""Vitrine d'une niche (Sérénis…) : petite boutique qui affiche les produits MPS d'un projet.
+"""Boutique d'une niche (Sérénis, Horane…) : petite boutique qui affiche les produits MPS d'un projet.
 
 Tout passe par l'API partenaire de MPS (/api/partner) : catalogue du projet, port, commande et
 paiement. MPS reste le vendeur (prix, encaissement, commande CJ, e-mails), la vitrine ne garde
-que le panier en session. Une autre niche = le même code avec d'autres variables :
+que le panier en session. Une autre niche = le même code, son thème dans vitrine/themes.py
+(couleurs, logo, textes) et d'autres variables :
 
-  VITRINE_PROJECT  projet MPS (champ « Vitrines » des fiches), ex. serenis
+  VITRINE_PROJECT  projet MPS (champ « Vitrines » des fiches), ex. serenis ; choisit aussi le thème
+  VITRINE_THEME    thème à utiliser si ce n'est pas celui du projet (facultatif)
   VITRINE_TOKEN    jeton PARTNER_TOKEN_<PROJET> de MPS
-  VITRINE_NAME, VITRINE_TAGLINE, VITRINE_URL (https://serenis.multiproshop.com), VITRINE_COLOR
+  VITRINE_NAME, VITRINE_TAGLINE, VITRINE_URL (https://<projet>.multiproshop.com), VITRINE_COLOR
   VITRINE_HERO     id MPS du produit mis en avant en haut de l'accueil (le premier produit sinon)
   VITRINE_RITUALS  lots présentés à l'accueil, en JSON : [{"name", "text", "ids": [id, …]}, …]
   VITRINE_DELIVERY délai de livraison annoncé, en jours, ex. 12-20
@@ -24,6 +26,8 @@ from datetime import date, timedelta
 import requests
 from flask import Flask, abort, flash, redirect, render_template, request, session, url_for
 
+from vitrine.themes import theme_for
+
 app = Flask(__name__)
 app.secret_key = os.environ.get('SECRET_KEY') or (os.urandom(32) if os.environ.get('VITRINE_TESTING') else None)
 if not app.secret_key:
@@ -32,23 +36,17 @@ app.config.update(SESSION_COOKIE_SECURE=not app.debug and not os.environ.get('VI
                   SESSION_COOKIE_SAMESITE='Lax')
 API = os.environ.get('MPS_API', 'http://multiproshop-web:8000/api/partner').rstrip('/')
 PROJECT = os.environ.get('VITRINE_PROJECT', 'serenis')
+THEME = theme_for(os.environ.get('VITRINE_THEME') or PROJECT)
 SITE = {
-    'name': os.environ.get('VITRINE_NAME', 'Sérénis'),
-    'tagline': os.environ.get('VITRINE_TAGLINE', 'Le rituel du soir : sommeil, détente et cocooning'),
-    'url': os.environ.get('VITRINE_URL', 'https://serenis.multiproshop.com').rstrip('/'),
-    'color': os.environ.get('VITRINE_COLOR', '#e0975a'),
-    'hero': os.environ.get('VITRINE_HERO', '20987'),
-    'delivery': os.environ.get('VITRINE_DELIVERY', '12-20'),
+    'name': os.environ.get('VITRINE_NAME', THEME['name']),
+    'tagline': os.environ.get('VITRINE_TAGLINE', THEME['tagline']),
+    'url': os.environ.get('VITRINE_URL', f'https://{PROJECT}.multiproshop.com').rstrip('/'),
+    'color': os.environ.get('VITRINE_COLOR', THEME['color']),
+    'hero': os.environ.get('VITRINE_HERO', THEME['hero']),
+    'delivery': os.environ.get('VITRINE_DELIVERY', THEME['delivery']),
 }
-# Lots de l'accueil : produits Sérénis existants, vendus ensemble au prix de chacun (MPS recalcule tout)
-DEFAULT_RITUALS = [
-    {'name': 'Rituel du soir', 'text': 'Une lumière douce pour se lever, une brume légère et une lueur ambrée pour se coucher.',
-     'ids': [20987, 20986, 21135]},
-    {'name': 'Nuit étoilée', 'text': "Un ciel étoilé au plafond et une petite flamme pour s'endormir sans le noir complet.",
-     'ids': [21093, 20955]},
-    {'name': 'Cocon du dimanche', 'text': 'Plaid, coussin et couverture de sieste : tout pour ne plus quitter le canapé.',
-     'ids': [20913, 20910, 20911]},
-]
+# Lots de l'accueil (rituels, coffrets…) : produits existants, vendus ensemble au prix de chacun (MPS recalcule tout)
+DEFAULT_RITUALS = THEME['lots']
 try:
     RITUALS = json.loads(os.environ['VITRINE_RITUALS']) if os.environ.get('VITRINE_RITUALS') else DEFAULT_RITUALS
 except ValueError:
@@ -138,6 +136,13 @@ def delivery_window(today=None):
     return f'entre le {fmt(today + timedelta(days=low))} et le {fmt(today + timedelta(days=high))}'
 
 
+@app.template_filter('fill')
+def fill(text):
+    """Texte ou SVG du thème : {name} = nom de la boutique, {color} = accent, {night} = couleur sombre"""
+    return (text or '').replace('{name}', SITE['name']).replace('{color}', SITE['color']).replace(
+        '{night}', THEME['palette']['night'])
+
+
 @app.template_filter('eur')
 def eur(value):
     return ('%.2f' % (value or 0)).replace('.', ',') + ' €'
@@ -145,7 +150,7 @@ def eur(value):
 
 @app.context_processor
 def globals_():
-    return {'site': SITE, 'cart_count': sum(line['quantity'] for line in session.get('cart', [])),
+    return {'site': SITE, 'theme': THEME, 'cart_count': sum(line['quantity'] for line in session.get('cart', [])),
             'free_shipping': free_shipping()}
 
 
@@ -199,7 +204,7 @@ def product(product_id):
     return render_template('product.html', p=p, ritual=ritual, related=related[:4], delivery=delivery_window())
 
 
-@app.route('/rituel/<int:index>')
+@app.route(f"/{THEME['lot_slug']}/<int:index>")
 def ritual(index):
     """Un lot : chaque produit avec son choix de modèle, ajoutés ensemble au panier"""
     found = next((r for r in rituals(shop().get('products', [])) if r['index'] == index), None)
@@ -212,6 +217,10 @@ def ritual(index):
         except ApiError:
             continue
     return render_template('ritual.html', ritual=found, details=details, delivery=delivery_window())
+
+
+if THEME['lot_slug'] != 'rituel':  # anciens liens /rituel/<n>
+    app.add_url_rule('/rituel/<int:index>', 'ritual_legacy', ritual)
 
 
 def _cart_lines():
@@ -275,7 +284,7 @@ def cart_add_many():
     except ValueError:
         abort(400)
     session['cart'] = cart[:30]
-    flash('Le rituel est dans votre panier')
+    flash(THEME['lot_added'])
     return redirect(url_for('cart'))
 
 

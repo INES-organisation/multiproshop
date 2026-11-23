@@ -8,7 +8,7 @@
 @media (max-width:900px){.product{grid-template-columns:1fr;gap:28px}}
 .gallery{position:sticky;top:92px}
 @media (max-width:900px){.gallery{position:static}}
-.gallery .main{border-radius:24px;overflow:hidden;background:var(--sand-2);aspect-ratio:1;position:relative}
+.gallery .main{border-radius:calc(var(--radius) * 1.33);overflow:hidden;background:var(--sand-2);aspect-ratio:1;position:relative}
 .gallery .main img{width:100%;height:100%;object-fit:cover}
 .thumbs{display:flex;gap:10px;overflow-x:auto;margin-top:12px;padding-bottom:4px}
 .thumbs button{flex:none;border:2px solid transparent;border-radius:12px;padding:0;background:none;cursor:pointer;overflow:hidden}
@@ -82,13 +82,15 @@
       {% if ritual %}
       <a class="ritual-tip" href="{{ url_for('ritual', index=ritual.index) }}">
         <img src="{{ ritual.products[0].image_url }}" alt="">
-        <span><strong>Fait partie du {{ ritual.name }}</strong><br><span class="note">{{ ritual.products|length }} produits qui vont bien ensemble · Composer →</span></span>
+        <span><strong>Fait partie de « {{ ritual.name }} »</strong><br><span class="note">{{ ritual.products|length }} produits qui vont bien ensemble · Composer →</span></span>
       </a>
       {% endif %}
 
       <div style="margin-top:24px">
         <details open><summary>Description</summary><div class="desc">{{ p.description|safe if p.description else (p.short_description or '') }}</div></details>
         <details><summary>Livraison et retours</summary><div>Expédié depuis l'entrepôt de notre fournisseur, hors de l'Union européenne, en {{ site.delivery|replace('-', ' à ') }} jours. Le numéro de suivi vous est envoyé par e-mail. Vous avez 14 jours après réception pour nous retourner le produit.</div></details>
+        {% for title, text in theme.product_extra %}<details><summary>{{ title }}</summary><div>{{ text|fill }}</div></details>
+        {% endfor %}
         <details><summary>Questions fréquentes</summary><div>{% include '_faq.html' %}</div></details>
       </div>
     </div>
@@ -121,7 +123,7 @@
 
 {% if related %}
 <section class="section tight"><div class="wrap">
-  <div class="section-head"><div><p class="eyebrow">À associer</p><h2>Complétez votre rituel</h2></div></div>
+  <div class="section-head"><div><p class="eyebrow">À associer</p><h2>{{ theme.related_title }}</h2></div></div>
   <div class="grid">{% for p in related %}{% include '_card.html' %}{% endfor %}</div>
 </div></section>
 {% endif %}
@@ -141,6 +143,10 @@
     q.value=Math.max(1,Math.min(20,(parseInt(q.value,10)||1)+parseInt(b.dataset.step,10)));});});
   var v=document.getElementById('variant');
   if(v){var sync=function(){var o=v.options[v.selectedIndex];if(!o)return;document.getElementById('price').textContent=o.dataset.price;if(o.dataset.img)main.src=o.dataset.img;};v.addEventListener('change',sync);sync();}
+  // « Vus récemment » de l'accueil : gardé dans ce navigateur seulement
+  try{var key='vus-{{ site.name|lower }}',seen=JSON.parse(localStorage.getItem(key)||'[]');if(!Array.isArray(seen))seen=[];
+    var me={{ {'url': url_for('product', product_id=p.id), 'name': p.name, 'img': p.image_url, 'price': p.price_from|eur}|tojson }};
+    seen=[me].concat(seen.filter(function(x){return x&&x.url!==me.url;})).slice(0,8);localStorage.setItem(key,JSON.stringify(seen));}catch(e){}
 })();
 </script>
 {% endblock %}
