@@ -1,0 +1,194 @@
+{
+ "project": "patto",
+ "nom": "Patto (patto.multiproshop.com)",
+ "angle": "Des accessoires malins pour chats (et chiens) : d'abord le chat, beaux ou qui règlent un vrai problème (poils, griffes, ennui, hydratation). Pas d'objet connecté, pas de jouet à petites pièces, aucune promesse médicale.",
+ "autorises": [
+  "food bowl",
+  "cat food",
+  "dog food",
+  "food mat",
+  "food dispenser",
+  "snack ball",
+  "treat"
+ ],
+ "groups": [
+  {
+   "name": "Chat",
+   "queries": [
+    {
+     "q": "cat water fountain filter quiet",
+     "fr": "Fontaine à eau filtrante pour chat",
+     "db": [
+      "fontaine%chat",
+      "fontaine à eau"
+     ],
+     "must": [
+      "fountain|water dispenser",
+      "cat|pet"
+     ]
+    },
+    {
+     "q": "interactive cat toy ball automatic",
+     "fr": "Balle interactive pour chat",
+     "db": [
+      "jouet%chat",
+      "balle%chat"
+     ],
+     "must": [
+      "cat",
+      "toy|ball",
+      "interactive|automatic|smart|electric"
+     ]
+    },
+    {
+     "q": "wall mounted cat scratcher",
+     "fr": "Griffoir mural pour chat",
+     "db": [
+      "griffoir"
+     ],
+     "must": [
+      "cat",
+      "scratch"
+     ]
+    },
+    {
+     "q": "cat window hammock perch",
+     "fr": "Hamac de fenêtre pour chat",
+     "db": [
+      "hamac%chat"
+     ],
+     "must": [
+      "cat",
+      "hammock|perch|window"
+     ]
+    },
+    {
+     "q": "cat harness leash set escape proof",
+     "fr": "Harnais et laisse pour chat",
+     "db": [
+      "harnais%chat"
+     ],
+     "must": [
+      "cat",
+      "harness"
+     ]
+    }
+   ]
+  },
+  {
+   "name": "Anti-stress et soin",
+   "queries": [
+    {
+     "q": "pet lick mat slow feeder",
+     "fr": "Tapis de léchage et gamelle anti-glouton",
+     "db": [
+      "tapis de léchage",
+      "gamelle anti"
+     ],
+     "must": [
+      "lick|slow feed|slow feeder"
+     ]
+    },
+    {
+     "q": "self cleaning slicker brush cat dog",
+     "fr": "Brosse autonettoyante",
+     "db": [
+      "brosse%chat",
+      "brosse autonettoyante"
+     ],
+     "must": [
+      "brush|comb",
+      "self cleaning|deshedding|grooming"
+     ]
+    },
+    {
+     "q": "pet nail grinder electric quiet",
+     "fr": "Lime à griffes électrique",
+     "db": [
+      "lime%griffe",
+      "coupe-griffe"
+     ],
+     "must": [
+      "nail",
+      "grinder|trimmer|clipper"
+     ]
+    },
+    {
+     "q": "calming donut pet bed plush",
+     "fr": "Panier apaisant (donut)",
+     "db": [
+      "panier%chat",
+      "coussin apaisant",
+      "lit%chien"
+     ],
+     "must": [
+      "bed|cushion",
+      "calming|donut|round|plush"
+     ]
+    },
+    {
+     "q": "cat fountain replacement filter",
+     "fr": "Filtres de rechange pour fontaine",
+     "db": [
+      "filtre%fontaine"
+     ],
+     "must": [
+      "filter",
+      "fountain"
+     ]
+    }
+   ]
+  },
+  {
+   "name": "Esthétique et cadeau",
+   "queries": [
+    {
+     "q": "velvet cat collar bow tie",
+     "fr": "Collier velours avec nœud papillon",
+     "db": [
+      "collier%chat"
+     ],
+     "must": [
+      "collar",
+      "velvet|bow"
+     ]
+    },
+    {
+     "q": "dog collar leash set bow",
+     "fr": "Set collier, laisse et nœud",
+     "db": [
+      "collier%laisse"
+     ],
+     "must": [
+      "collar",
+      "leash",
+      "set|bow"
+     ]
+    },
+    {
+     "q": "pet bandana",
+     "fr": "Bandana pour chien et chat",
+     "db": [
+      "bandana"
+     ],
+     "must": [
+      "bandana|scarf",
+      "pet|dog|cat"
+     ]
+    },
+    {
+     "q": "feather wand cat teaser toy",
+     "fr": "Canne à plumes pour chat",
+     "db": [
+      "canne à pêche%chat",
+      "plume%chat"
+     ],
+     "must": [
+      "cat",
+      "feather|teaser|wand"
+     ]
+    }
+   ]
+  }
+ ]
+}

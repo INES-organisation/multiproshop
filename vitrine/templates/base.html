@@ -5,21 +5,20 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>{% block title %}{{ site.name }} · {{ site.tagline }}{% endblock %}</title>
 <meta name="description" content="{% block description %}{{ site.tagline }}{% endblock %}">
-<meta name="theme-color" content="#16213a">
+<meta name="theme-color" content="{{ theme.palette.night }}">
 <meta property="og:site_name" content="{{ site.name }}">
 <meta property="og:title" content="{{ self.title() }}">
 <meta property="og:description" content="{{ self.description() }}">
 {% block og_image %}{% endblock %}
-<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='14' fill='%2316213a'/%3E%3Cpath d='M14 42a18 18 0 0 1 36 0z' fill='%23e0975a'/%3E%3Cpath d='M10 46h44' stroke='%23f6f1e9' stroke-width='3' stroke-linecap='round'/%3E%3C/svg%3E">
+<link rel="icon" href="data:image/svg+xml,{{ (theme.favicon|fill)|urlencode }}">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,500;9..144,600&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+<link href="{{ theme.fonts_href }}" rel="stylesheet">
 <style>
 :root{
-  --night:#16213a;--night-2:#22325a;--dawn:{{ site.color }};--dawn-soft:#f3d9bf;--sand:#f6f1e9;--sand-2:#efe7da;
-  --ink:#1f2433;--muted:#626a7d;--card:#fff;--line:#e6ddcf;--ok:#3f7d5a;
-  --serif:"Fraunces",Georgia,"Times New Roman",serif;--sans:"Inter",system-ui,-apple-system,"Segoe UI",sans-serif;
-  --radius:18px;--shadow:0 10px 30px -12px rgba(22,33,58,.25)
+  {% for k, v in theme.palette.items() %}--{{ k }}:{{ v|safe }};{% endfor %}--dawn:{{ site.color }};
+  --serif:{{ theme.serif|safe }};--sans:{{ theme.sans|safe }};
+  --radius:{{ theme.radius }};--btn-radius:{{ theme.btn_radius }};--card-ratio:{{ theme.card_ratio }};--shadow:0 10px 30px -12px var(--shadow-ink)
 }
 *{box-sizing:border-box}
 html{scroll-behavior:smooth}
@@ -35,18 +34,27 @@ h1{font-size:clamp(2rem,4.5vw,3.3rem)}h2{font-size:clamp(1.6rem,3vw,2.3rem)}h3{f
 /* Bandeau et en-tête */
 .topbar{background:var(--night);color:var(--sand);font-size:.82rem;text-align:center;padding:8px 12px}
 .topbar strong{color:var(--dawn-soft);font-weight:600}
-header.site{background:rgba(246,241,233,.92);backdrop-filter:saturate(1.4) blur(10px);border-bottom:1px solid var(--line);position:sticky;top:0;z-index:20}
+header.site{background:var(--header-bg);backdrop-filter:saturate(1.4) blur(10px);border-bottom:1px solid var(--line);position:sticky;top:0;z-index:20}
 header.site .wrap{display:flex;align-items:center;justify-content:space-between;height:68px;gap:16px}
 .logo{display:flex;align-items:center;gap:10px;text-decoration:none;color:var(--night)}
 .logo span{font-family:var(--serif);font-size:1.6rem;font-weight:500;letter-spacing:.01em}
 .nav{display:flex;gap:26px;font-size:.95rem}.nav a{text-decoration:none;color:var(--muted)}.nav a:hover{color:var(--night)}
 @media (max-width:760px){.nav{display:none}}
+.tools{display:flex;align-items:center;gap:18px}
+.search{position:relative}.search input{width:190px;padding:9px 14px 9px 36px;border-radius:99px;font-size:.9rem;background:var(--card)}
+.search svg{position:absolute;left:12px;top:50%;transform:translateY(-50%);color:var(--muted);pointer-events:none}
+.menu{display:none;position:relative}.menu summary{padding:6px;border:0;display:grid;place-items:center;color:var(--night)}.menu summary::after,.menu[open] summary::after{content:none!important}.menu summary::-webkit-details-marker{display:none}
+.menu-panel{position:fixed;left:0;right:0;top:auto;margin-top:12px;background:var(--card);border-bottom:1px solid var(--line);box-shadow:var(--shadow);padding:18px 16px 22px;display:grid;gap:4px}
+.menu-panel a{text-decoration:none;padding:10px 0;border-bottom:1px solid var(--line);color:var(--night);font-weight:500}
+.menu-panel .search input{width:100%}
+@media (max-width:1020px){header.site .tools>.search{display:none}}
+@media (max-width:760px){.tb-extra{display:none}.menu{display:block}.cart-link span:not(.cart-count){display:none}}
 .cart-link{display:flex;align-items:center;gap:8px;text-decoration:none;font-weight:500;color:var(--night)}
 .cart-count{background:var(--dawn);color:#fff;border-radius:99px;font-size:.75rem;min-width:22px;height:22px;display:inline-grid;place-items:center;padding:0 6px}
 
 /* Boutons */
-.btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;background:var(--dawn);color:#fff;border:0;border-radius:99px;padding:14px 28px;font:600 1rem var(--sans);cursor:pointer;text-decoration:none;transition:transform .15s,box-shadow .15s,background .15s;box-shadow:0 8px 20px -10px rgba(224,151,90,.9)}
-.btn:hover{transform:translateY(-1px);background:#d88845}
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;background:var(--dawn);color:#fff;border:0;border-radius:var(--btn-radius);padding:14px 28px;font:600 1rem var(--sans);cursor:pointer;text-decoration:none;transition:transform .15s,box-shadow .15s,background .15s;box-shadow:0 8px 20px -10px var(--glow)}
+.btn:hover{transform:translateY(-1px);background:var(--dawn-hover)}
 .btn.dark{background:var(--night);box-shadow:none}.btn.dark:hover{background:var(--night-2)}
 .btn.ghost{background:transparent;color:var(--night);border:1.5px solid var(--night);box-shadow:none}
 .btn.light{background:var(--sand);color:var(--night);box-shadow:none}
@@ -59,7 +67,7 @@ header.site .wrap{display:flex;align-items:center;justify-content:space-between;
 .grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(230px,1fr));gap:22px}
 .card{background:var(--card);border-radius:var(--radius);overflow:hidden;text-decoration:none;display:flex;flex-direction:column;transition:transform .2s,box-shadow .2s;border:1px solid var(--line)}
 .card:hover{transform:translateY(-3px);box-shadow:var(--shadow)}
-.card .img{aspect-ratio:1;background:var(--sand-2);position:relative;overflow:hidden}
+.card .img{aspect-ratio:var(--card-ratio);background:var(--sand-2);position:relative;overflow:hidden}
 .card .img img{width:100%;height:100%;object-fit:cover}
 .card .body{padding:14px 16px 18px;display:flex;flex-direction:column;gap:6px;flex:1}
 .card .name{font-size:.97rem;line-height:1.35}
@@ -94,14 +102,14 @@ details[open] summary::after{content:"–"}
 details>div{padding:0 0 18px;color:var(--muted)}
 
 /* Newsletter et pied de page */
-.newsletter{background:var(--night);color:var(--sand);border-radius:28px;padding:48px;display:grid;grid-template-columns:1.1fr 1fr;gap:32px;align-items:center;position:relative;overflow:hidden}
-.newsletter::before{content:"";position:absolute;width:420px;height:420px;border-radius:50%;background:radial-gradient(circle,rgba(224,151,90,.45),transparent 65%);right:-120px;bottom:-220px}
-.newsletter h2{color:#fff}.newsletter p{color:#c9cfdd}
+.newsletter{background:var(--night);color:var(--sand);border-radius:calc(var(--radius) * 1.55);padding:48px;display:grid;grid-template-columns:1.1fr 1fr;gap:32px;align-items:center;position:relative;overflow:hidden}
+.newsletter::before{content:"";position:absolute;width:420px;height:420px;border-radius:50%;background:radial-gradient(circle,var(--glow-soft),transparent 65%);right:-120px;bottom:-220px}
+.newsletter h2{color:#fff}.newsletter p{color:var(--on-dark-2)}
 .newsletter form{position:relative;display:grid;gap:10px}
 .newsletter .row{display:flex;gap:8px}.newsletter .btn{white-space:nowrap}.newsletter input[type=email]{border:0}
-.newsletter .check{color:#c9cfdd}
+.newsletter .check{color:var(--on-dark-2)}
 @media (max-width:760px){.newsletter{grid-template-columns:1fr;padding:32px 22px}.newsletter .row{flex-direction:column}}
-footer.site{background:var(--night);color:#aab2c5;margin-top:80px;padding:56px 0 28px;font-size:.88rem}
+footer.site{background:var(--night);color:var(--footer-text);margin-top:80px;padding:56px 0 28px;font-size:.88rem}
 footer.site .cols{display:grid;grid-template-columns:1.4fr 1fr 1fr;gap:32px}
 @media (max-width:760px){footer.site .cols{grid-template-columns:1fr}}
 footer.site h3{color:#fff;font-size:1rem;font-family:var(--sans);font-weight:600}
@@ -115,22 +123,34 @@ main{flex:1 0 auto}
 </style>
 </head>
 <body>
-{% set logo %}<svg width="34" height="34" viewBox="0 0 64 64" aria-hidden="true"><rect width="64" height="64" rx="16" fill="#16213a"/><circle cx="32" cy="42" r="15" fill="{{ site.color }}"/><rect x="0" y="42" width="64" height="22" fill="#16213a"/><path d="M12 44h40" stroke="#f6f1e9" stroke-width="3" stroke-linecap="round"/><path d="M32 18v-6M16.5 24.5l-4-4M47.5 24.5l4-4" stroke="{{ site.color }}" stroke-width="3" stroke-linecap="round"/></svg>{% endset %}
+{% set logo %}{{ theme.logo|fill|safe }}{% endset %}
 <div class="topbar">
-  {% if free_shipping %}<strong>Livraison offerte dès {{ free_shipping|eur|replace(',00', '') }}</strong> en France · {% endif %}Paiement sécurisé · 14 jours pour changer d'avis
+  {% if free_shipping %}<strong>Livraison offerte dès {{ free_shipping|eur|replace(',00', '') }}</strong> en France · {% endif %}{% if theme.topbar_extra %}<span class="tb-extra">{{ theme.topbar_extra }} · </span>{% endif %}Paiement sécurisé · 14 jours pour changer d'avis
 </div>
 <header class="site"><div class="wrap">
   <a class="logo" href="{{ url_for('index') }}" aria-label="{{ site.name }}, accueil">{{ logo }}<span>{{ site.name }}</span></a>
   <nav class="nav" aria-label="Navigation principale">
-    <a href="{{ url_for('index') }}#rituels">Rituels</a>
+    <a href="{{ url_for('index') }}#{{ theme.lots_anchor }}">{{ theme.nav_lots }}</a>
     <a href="{{ url_for('index') }}#boutique">Boutique</a>
     <a href="{{ url_for('index', prix=30) }}#boutique">Idées cadeaux</a>
     <a href="{{ url_for('index') }}#questions">Livraison</a>
   </nav>
-  <a class="cart-link" href="{{ url_for('cart') }}">
+  <div class="tools">
+    {% if theme.search %}<form class="search" method="get" action="{{ url_for('index') }}" role="search"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg><label class="sr-only" for="q-top">Rechercher</label><input id="q-top" name="q" type="search" placeholder="Rechercher" value="{{ request.args.get('q', '') }}"></form>{% endif %}
+    <a class="cart-link" href="{{ url_for('cart') }}">
     <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 7h12l-1 13H7L6 7z"/><path d="M9 7a3 3 0 0 1 6 0"/></svg>
     <span>Panier</span>{% if cart_count %}<span class="cart-count">{{ cart_count }}</span>{% endif %}
   </a>
+    <details class="menu"><summary aria-label="Menu"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M4 7h16M4 12h16M4 17h16"/></svg></summary>
+      <nav class="menu-panel" aria-label="Menu mobile">
+        {% if theme.search %}<form class="search" method="get" action="{{ url_for('index') }}" role="search"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg><label class="sr-only" for="q-menu">Rechercher</label><input id="q-menu" name="q" type="search" placeholder="Rechercher" value="{{ request.args.get('q', '') }}"></form>{% endif %}
+        <a href="{{ url_for('index') }}#{{ theme.lots_anchor }}">{{ theme.nav_lots }}</a>
+    <a href="{{ url_for('index') }}#boutique">Boutique</a>
+    <a href="{{ url_for('index', prix=30) }}#boutique">Idées cadeaux</a>
+    <a href="{{ url_for('index') }}#questions">Livraison</a>
+      </nav>
+    </details>
+  </div>
 </div></header>
 <main>
   {% with messages = get_flashed_messages() %}{% if messages %}<div class="wrap">{% for message in messages %}<div class="flash" role="status">{{ message }}</div>{% endfor %}</div>{% endif %}{% endwith %}
@@ -140,11 +160,11 @@ main{flex:1 0 auto}
   <div class="cols">
     <div>
       <a class="logo" href="{{ url_for('index') }}" style="color:#fff">{{ logo }}<span>{{ site.name }}</span></a>
-      <p>{{ site.tagline }}. Des objets choisis pour ralentir le soir, mieux dormir et se réveiller en douceur.</p>
+      <p>{{ site.tagline }}. {{ theme.footer_text|fill }}</p>
     </div>
     <div>
       <h3>La boutique</h3>
-      <a href="{{ url_for('index') }}#rituels">Les rituels</a>
+      <a href="{{ url_for('index') }}#{{ theme.lots_anchor }}">{{ theme.lots_eyebrow }}</a>
       <a href="{{ url_for('index') }}#boutique">Tous les produits</a>
       <a href="{{ url_for('index', prix=15) }}#boutique">Cadeaux à moins de 15 €</a>
       <a href="{{ url_for('cart') }}">Mon panier</a>

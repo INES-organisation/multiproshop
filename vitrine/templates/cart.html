@@ -60,7 +60,7 @@
   {% else %}
   <div class="panel" style="text-align:center;padding:56px 24px;margin:32px 0">
     <p>Votre panier est vide.</p>
-    <a class="btn" href="{{ url_for('index') }}#rituels">Découvrir les rituels</a>
+    <a class="btn" href="{{ url_for('index') }}#{{ theme.lots_anchor }}">{{ theme.lots_cta }}</a>
   </div>
   {% endif %}
 </div>

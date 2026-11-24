@@ -2,7 +2,7 @@
   <div>
     <p class="eyebrow">Le club {{ site.name }}</p>
     <h2>-10 % sur votre première commande</h2>
-    <p>Recevez nos idées de rituels, nos nouveautés et nos offres, une à deux fois par mois. Désinscription en un clic.</p>
+    <p>{{ theme.newsletter_text|fill }}</p>
   </div>
   <form method="post" action="{{ url_for('newsletter') }}">
     <label class="sr-only" for="nl-email">Votre e-mail</label>

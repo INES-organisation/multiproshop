@@ -13,7 +13,7 @@
 {% block content %}
 <div class="wrap">
   <div class="ritual-head">
-    <p class="eyebrow">Rituel</p>
+    <p class="eyebrow">{{ theme.lot_eyebrow }}</p>
     <h1>{{ ritual.name }}</h1>
     <p class="muted" style="font-size:1.1rem">{{ ritual.text }}</p>
   </div>
@@ -39,7 +39,7 @@
     </div>
     <div class="total panel">
       <div><strong class="price" style="font-size:1.3rem">{{ ritual.total|eur }}</strong><div class="note">{{ details|length }} produits{% if free_shipping and ritual.total >= free_shipping %} · livraison offerte en France{% endif %}{% if delivery %} · livré {{ delivery }}{% endif %}</div></div>
-      <button class="btn" type="submit">Ajouter le rituel au panier</button>
+      <button class="btn" type="submit">{{ theme.lot_button }}</button>
     </div>
   </form>
 </div>
